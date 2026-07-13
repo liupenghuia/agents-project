@@ -4,6 +4,24 @@
 
 ## 快速开始
 
+### 自动交付闭环
+
+对已有任务运行本地交付编排器：
+
+```bash
+ruby scripts/deliver.rb recruitment-role-registration
+```
+
+它会执行工作流校验、后端测试与健康检查、小程序语法/逻辑测试、Web 静态检查与健康检查，并把每轮命令、结果和日志写入 `/tmp/ppfiles-learn-delivery/`。默认最多执行 3 轮。
+
+需要接入修复 Agent 时，设置 `DELIVERY_REPAIR_COMMAND`。命令会收到 `DELIVERY_TASK`、`DELIVERY_ROUND` 和 `DELIVERY_RUN_DIR` 环境变量；修复完成后编排器自动重新测试：
+
+```bash
+DELIVERY_REPAIR_COMMAND='your-agent-command' ruby scripts/deliver.rb recruitment-role-registration
+```
+
+修复命令未配置或连续失败时，流程会停止并保留失败证据，不会假定任务通过。微信 DevTools 授权、真实小程序渲染和生产部署仍属于平台/人工门禁。
+
 只有一句想法时，使用：
 
 ```text

@@ -351,6 +351,42 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /auth/wechat/phone:
+    post:
+      tags:
+        - Auth
+      summary: Exchange a WeChat phone authorization code for a phone number
+      operationId: exchangeWeChatPhone
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeChatPhoneRequest"
+      responses:
+        "200":
+          description: Authorized phone number
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WeChatPhone"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "503":
+          description: WeChat phone service is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /me/identities:
     get:
       tags:
@@ -825,6 +861,32 @@ components:
           minLength: 1
           maxLength: 512
           description: Short-lived code returned by wx.login
+    WeChatPhoneRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: One-time code returned by wx.getPhoneNumber
+    WeChatPhone:
+      type: object
+      required:
+        - phoneNumber
+        - purePhoneNumber
+        - countryCode
+      properties:
+        phoneNumber:
+          type: string
+          description: Phone number including country code when provided by WeChat
+        purePhoneNumber:
+          type: string
+          description: Phone number without country code
+        countryCode:
+          type: string
+          description: Country calling code
     AuthSession:
       type: object
       required:

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>寻职 · 人工审核</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main id="app" class="shell">
+      <section id="loginView" class="login-view" aria-labelledby="loginTitle">
+        <div class="brand-mark" aria-hidden="true">寻</div>
+        <p class="eyebrow">寻职 · 运营工作台</p>
+        <h1 id="loginTitle">身份审核</h1>
+        <p class="intro">查看招人方和应聘方的注册资料，完成审核决定。</p>
+        <form id="loginForm" class="login-form">
+          <label>管理员账号<input name="loginName" autocomplete="username" required maxlength="120"></label>
+          <label>密码<input name="password" type="password" autocomplete="current-password" minlength="12" required maxlength="256"></label>
+          <p id="loginError" class="alert error" role="alert" hidden></p>
+          <button class="button primary" type="submit">登录审核平台</button>
+        </form>
+      </section>
+
+      <section id="dashboardView" hidden aria-labelledby="dashboardTitle">
+        <header class="topbar">
+          <div><p class="eyebrow">寻职 · 运营工作台</p><h1 id="dashboardTitle">人工审核</h1></div>
+          <div class="account"><span id="adminIdentity"></span><button id="logoutButton" class="button quiet" type="button">退出登录</button></div>
+        </header>
+        <div class="workspace">
+          <aside class="queue-panel" aria-label="审核队列">
+            <div class="queue-heading"><div><span class="eyebrow">审核队列</span><h2>注册资料</h2></div><button id="refreshButton" class="icon-button" type="button" title="刷新队列" aria-label="刷新队列">↻</button></div>
+            <div class="tabs" role="tablist" aria-label="审核状态">
+              <button class="tab active" data-status="pending_review" role="tab" aria-selected="true" type="button">待审核</button>
+              <button class="tab" data-status="changes_requested" role="tab" aria-selected="false" type="button">待补充</button>
+            </div>
+            <div id="queueState" class="queue-state" role="status"></div>
+            <div id="queueList" class="queue-list"></div>
+          </aside>
+          <section class="detail-panel" aria-live="polite">
+            <div id="detailEmpty" class="detail-empty"><span class="empty-mark">○</span><h2>选择一份资料开始审核</h2><p>审核决定会被记录，申请人会看到修改原因。</p></div>
+            <div id="detailContent" hidden>
+              <div class="detail-heading"><div><span id="detailRole" class="eyebrow"></span><h2 id="detailTitle"></h2></div><span id="detailStatus" class="status"></span></div>
+              <div id="detailNotice" class="notice" hidden></div>
+              <dl id="profileFields" class="profile-fields"></dl>
+              <div id="reviewActions" class="review-actions">
+                <button id="approveButton" class="button primary" type="button">通过审核</button>
+                <button id="changesButton" class="button secondary" type="button">要求修改</button>
+              </div>
+              <div id="decisionForm" class="decision-form" hidden>
+                <label for="reason">修改原因 <span class="required">必填</span></label>
+                <textarea id="reason" maxlength="1000" rows="4" placeholder="说明需要补充或修改的资料"></textarea>
+                <div class="decision-actions"><button id="cancelDecision" class="button quiet" type="button">取消</button><button id="submitDecision" class="button secondary" type="button">发送修改意见</button></div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <p id="globalError" class="alert error global-error" role="alert" hidden></p>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

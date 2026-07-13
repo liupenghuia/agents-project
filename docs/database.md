@@ -147,6 +147,23 @@ Constraints:
 - Only `owner` can assign or change administrator roles.
 - At least one active `owner` must remain; the last active owner cannot be disabled, deleted, or demoted.
 
+## New Entity: admin_sessions
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| id | string | yes | Primary key |
+| user_id | string | yes | Foreign key to `admin_accounts.user_id` |
+| token_hash | string | yes | Hash of opaque admin session token; raw token is never persisted |
+| expires_at | datetime | yes | Session expiry |
+| revoked_at | datetime | no | Set on logout or security invalidation |
+| created_at | datetime | yes | Session creation time |
+
+Constraints:
+
+- Unique `token_hash`.
+- Disabled administrator accounts cannot use active sessions.
+- Admin sessions are separate from WeChat `sessions`.
+
 The effective permission set is defined by the role matrix in `docs/architecture.md`; it is not accepted from client input.
 
 ## Indexes
@@ -158,6 +175,7 @@ The effective permission set is defined by the role matrix in `docs/architecture
 - Review history index `(review_actions.role_profile_id, review_actions.created_at)`.
 - Unique `admin_accounts.login_name`.
 - Admin account index `(admin_accounts.status, admin_accounts.created_at)`.
+- Admin session index `(admin_sessions.user_id, admin_sessions.expires_at)`.
 
 ## Privacy And Security Rules
 

@@ -1,8 +1,8 @@
-const { createIdentity, resubmitIdentity } = require('../../services/api');
+const { createIdentity, exchangePhone, resubmitIdentity } = require('../../services/api');
 const { validateRegistration } = require('../../utils/registration');
 
 Page({
-  data: { role: 'recruiter', editingId: '', form: {}, submitting: false, agreed: false, error: '', fromChanges: false, organizationTypeLabel: '' },
+  data: { role: 'recruiter', editingId: '', form: {}, submitting: false, phoneAuthorizing: false, agreed: false, error: '', fromChanges: false, organizationTypeLabel: '' },
   onLoad(options) {
     const role = options.role === 'applicant' ? 'applicant' : 'recruiter';
     this.setData({ role, editingId: options.identityId || '', fromChanges: !!options.identityId });
@@ -13,11 +13,35 @@ Page({
     const labels = ['企业', '个体', '个人/其他'];
     this.setData({ 'form.organizationType': values[event.detail.value], organizationTypeLabel: labels[event.detail.value], error: '' });
   },
-  toggleAgreement(event) { this.setData({ agreed: event.detail.value.length > 0, error: '' }); },
-  getPhone(event) {
-    if (event.detail.errMsg && event.detail.errMsg.includes('ok')) this.setData({ 'form.contactPhone': event.detail.phoneNumber, error: '' });
-    else this.setData({ error: '未获取到手机号，请手动填写或重新授权' });
+  toggleAgreement(event) {
+    const value = event.detail && event.detail.value;
+    const agreed = Array.isArray(value) ? value.includes('agree') : Boolean(value);
+    this.setData({ agreed, error: '' });
   },
+  preparePhoneAuth() {
+    if (this.data.phoneAuthorizing) return;
+    this.setData({ phoneAuthorizing: true, error: '' });
+    this.phoneAuthTimer = setTimeout(() => this.setData({ phoneAuthorizing: false }), 3000);
+  },
+  getPhone(event) {
+    clearTimeout(this.phoneAuthTimer);
+    this.setData({ phoneAuthorizing: false });
+    if (event.detail && event.detail.phoneNumber) {
+      this.setData({ 'form.contactPhone': event.detail.phoneNumber, error: '' });
+      return;
+    }
+    if (event.detail && event.detail.code) {
+      this.setData({ phoneAuthorizing: true, error: '' });
+      exchangePhone(event.detail.code).then((phone) => {
+        this.setData({ 'form.contactPhone': phone.purePhoneNumber || phone.phoneNumber, error: '' });
+      }).catch((err) => {
+        this.setData({ error: err.message || '手机号获取失败，请手动填写手机号' });
+      }).finally(() => this.setData({ phoneAuthorizing: false }));
+      return;
+    }
+    this.setData({ error: '未获取到手机号，请手动填写或稍后重新授权' });
+  },
+  onUnload() { clearTimeout(this.phoneAuthTimer); },
   validate() {
     return validateRegistration(this.data.role, this.data.form, this.data.agreed);
   },

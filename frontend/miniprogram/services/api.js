@@ -34,8 +34,9 @@ function request(path, options = {}) {
 }
 
 const createSession = (code) => request('/auth/wechat/session', { method: 'POST', data: { code } });
+const exchangePhone = (code) => request('/auth/wechat/phone', { method: 'POST', data: { code } });
 const listIdentities = () => request('/me/identities');
 const createIdentity = (role, data) => request(`/me/identities/${role}`, { method: 'POST', data });
 const resubmitIdentity = (id, profile) => request(`/me/identities/${id}/resubmit`, { method: 'POST', data: { profile } });
 
-module.exports = { createSession, listIdentities, createIdentity, resubmitIdentity };
+module.exports = { createSession, exchangePhone, listIdentities, createIdentity, resubmitIdentity };

@@ -106,6 +106,16 @@ English equivalent: `deliver user-management`.
 
 Expands to: promote a matching approved idea when needed, then run Product, Architect, all required implementation scopes, Test, issue fix/retest, and the applicable release gate until the task is `Done` or a documented approval/blocker requires user input. Repository edits and local checks continue without phase-by-phase confirmation; production, destructive, secret, paid, legal, and unresolved product decisions still require approval.
 
+### Local Delivery Runner
+
+The repository also provides an executable local loop:
+
+```bash
+ruby scripts/deliver.rb user-management
+```
+
+The runner validates workflow metadata, executes required module checks, starts local backend/Web services for health checks, saves evidence, and can invoke a configured repair command before retesting. Configure `DELIVERY_REPAIR_COMMAND` or pass `--repair-command`; the default maximum is three rounds.
+
 ## Next Work
 
 ```text

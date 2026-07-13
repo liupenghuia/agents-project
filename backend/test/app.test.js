@@ -8,6 +8,8 @@ async function withServer(run) {
   const server = createServer((request, response) => app(request, response));
   app = createApp({
     wechatExchange: async (code) => ({ providerSubject: code, unionId: null }),
+    wechatPhoneExchange: async (code) => ({ phoneNumber: `+86${code}`, purePhoneNumber: code, countryCode: '86' }),
+    bootstrapAdmin: { loginName: 'owner', password: 'OwnerPassword123!' },
     sessionTtlMs: 60 * 60 * 1000,
   });
   await new Promise((resolve) => server.listen(0, resolve));
@@ -25,6 +27,7 @@ async function request(base, path, options = {}) {
     ...options,
     headers: { 'content-type': 'application/json', ...(options.headers || {}) },
   });
+  if (response.status === 204) return { status: response.status, body: null };
   const body = await response.json();
   return { status: response.status, body };
 }
@@ -89,13 +92,42 @@ test('creates WeChat session and supports two independent identities', async () 
   });
 });
 
+test('exchanges an authorized WeChat phone code for the current session', async () => {
+  await withServer(async (base) => {
+    const session = await request(base, '/auth/wechat/session', {
+      method: 'POST',
+      body: JSON.stringify({ code: 'phone-user' }),
+    });
+    const headers = { authorization: `Bearer ${session.body.data.sessionToken}` };
+    const phone = await request(base, '/auth/wechat/phone', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ code: '13800138000' }),
+    });
+    assert.equal(phone.status, 200);
+    assert.deepEqual(phone.body.data, {
+      phoneNumber: '+8613800138000',
+      purePhoneNumber: '13800138000',
+      countryCode: '86',
+    });
+
+    const unauthorized = await request(base, '/auth/wechat/phone', {
+      method: 'POST',
+      body: JSON.stringify({ code: '13800138000' }),
+    });
+    assert.equal(unauthorized.status, 401);
+  });
+});
+
 test('reviewer can approve and request profile changes', async () => {
   await withServer(async (base, app) => {
     const user = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'candidate' }) });
-    const reviewer = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'reviewer' }) });
     const userHeaders = { authorization: `Bearer ${user.body.data.sessionToken}` };
-    const reviewerHeaders = { authorization: `Bearer ${reviewer.body.data.sessionToken}` };
-    app.grantReviewer(reviewer.body.data.userId);
+    const adminLogin = await request(base, '/admin/auth/login', {
+      method: 'POST', body: JSON.stringify({ loginName: 'owner', password: 'OwnerPassword123!' }),
+    });
+    assert.equal(adminLogin.status, 200);
+    const reviewerHeaders = { authorization: `Bearer ${adminLogin.body.data.token}` };
 
     const created = await request(base, '/me/identities/applicant', {
       method: 'POST', headers: userHeaders, body: JSON.stringify(applicant),
@@ -135,6 +167,30 @@ test('review endpoints require reviewer permission', async () => {
     const response = await request(base, '/admin/identity-reviews', {
       headers: { authorization: `Bearer ${session.body.data.sessionToken}` },
     });
-    assert.equal(response.status, 403);
+    assert.equal(response.status, 401);
+  });
+});
+
+test('bootstrapped owner can authenticate, inspect itself, and log out', async () => {
+  await withServer(async (base) => {
+    const login = await request(base, '/admin/auth/login', {
+      method: 'POST', body: JSON.stringify({ loginName: 'owner', password: 'OwnerPassword123!' }),
+    });
+    assert.equal(login.status, 200);
+    assert.deepEqual(login.body.data.admin, {
+      id: login.body.data.admin.id,
+      loginName: 'owner',
+      status: 'active',
+      role: 'owner',
+      lastLoginAt: login.body.data.admin.lastLoginAt,
+    });
+    const headers = { authorization: `Bearer ${login.body.data.token}` };
+    const me = await request(base, '/admin/auth/me', { headers });
+    assert.equal(me.status, 200);
+    assert.equal(me.body.data.loginName, 'owner');
+    const logout = await request(base, '/admin/auth/logout', { method: 'POST', headers });
+    assert.equal(logout.status, 204);
+    const afterLogout = await request(base, '/admin/auth/me', { headers });
+    assert.equal(afterLogout.status, 401);
   });
 });

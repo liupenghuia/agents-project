@@ -1,17 +1,27 @@
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  bootstrapAdmin,
+  createAdminAccount,
+  createAdminSession,
   createDatabase,
   createSession,
   createUserForProvider,
+  findAdminByLogin,
+  findAdminSession,
   findSessionUser,
   grantReviewer,
+  listAdminAccounts,
+  revokeAdminSession,
+  touchAdminLogin,
+  verifyPassword,
 } from './db.js';
-import { createWeChatExchange } from './wechat.js';
+import { createWeChatExchange, createWeChatPhoneExchange } from './wechat.js';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 const MAX_BODY_BYTES = 1024 * 1024;
 const roles = new Set(['recruiter', 'applicant']);
 const statusValues = new Set(['pending_review', 'approved', 'changes_requested']);
+const adminRoles = new Set(['owner', 'admin', 'reviewer', 'operator']);
 
 const tokenHash = (token) => createHash('sha256').update(token).digest('hex');
 const isoAfter = (milliseconds) => new Date(Date.now() + milliseconds).toISOString();
@@ -248,9 +258,31 @@ function authenticate(request, db) {
   return user;
 }
 
-function requireReviewer(db, user) {
-  const permission = db.prepare(`SELECT 1 FROM reviewer_permissions WHERE user_id = ? AND permission = 'identity_review'`).get(user.id);
-  if (!permission) throw httpError(403, 'FORBIDDEN', '没有审核权限');
+function adminAccount(admin) {
+  return {
+    id: admin.user_id,
+    loginName: admin.login_name,
+    status: admin.status,
+    role: admin.role,
+    ...(admin.last_login_at ? { lastLoginAt: admin.last_login_at } : {}),
+  };
+}
+
+function adminBearer(request) {
+  const header = request.headers.authorization || '';
+  const match = /^Bearer\s+(.+)$/i.exec(header);
+  if (!match) throw httpError(401, 'UNAUTHORIZED', '需要管理员登录');
+  return match[1];
+}
+
+function authenticateAdmin(request, db) {
+  const admin = findAdminSession(db, tokenHash(adminBearer(request)));
+  if (!admin || admin.status !== 'active') throw httpError(401, 'UNAUTHORIZED', '管理员登录已失效');
+  return admin;
+}
+
+function requireAdminRole(admin, allowedRoles) {
+  if (!allowedRoles.includes(admin.role)) throw httpError(403, 'FORBIDDEN', '没有管理员权限');
 }
 
 function reviewRows(db, status) {
@@ -279,7 +311,7 @@ function decideReview(db, reviewerId, identityId, decision, reason) {
   try {
     db.prepare(`UPDATE role_profiles SET review_status = ?, review_reason = ?, reviewed_at = ?, updated_at = ? WHERE id = ?`)
       .run(decision, decision === 'changes_requested' ? text(reason) : null, timestamp, timestamp, identityId);
-    db.prepare(`INSERT INTO review_actions(id, role_profile_id, reviewer_user_id, decision, reason, created_at)
+    db.prepare(`INSERT INTO review_actions(id, role_profile_id, admin_user_id, decision, reason, created_at)
       VALUES (?, ?, ?, ?, ?, ?)`)
       .run(randomBytes(16).toString('hex'), identityId, reviewerId, decision, text(reason) || null, timestamp);
     db.exec('COMMIT');
@@ -292,8 +324,18 @@ function decideReview(db, reviewerId, identityId, decision, reason) {
 
 export function createApp(options = {}) {
   const db = options.db || createDatabase(options.dbPath);
+  const bootstrap = options.bootstrapAdmin || {
+    loginName: process.env.ADMIN_BOOTSTRAP_LOGIN_NAME,
+    password: process.env.ADMIN_BOOTSTRAP_PASSWORD,
+  };
+  if (process.env.NODE_ENV === 'production' && bootstrap.password) {
+    throw new Error('管理员 bootstrap 在 production 环境被禁止');
+  }
+  bootstrapAdmin(db, bootstrap);
   const exchange = options.wechatExchange || createWeChatExchange(options.wechat || {});
+  const exchangePhone = options.wechatPhoneExchange || createWeChatPhoneExchange(options.wechat || {});
   const sessionTtlMs = options.sessionTtlMs || 7 * 24 * 60 * 60 * 1000;
+  const adminSessionTtlMs = options.adminSessionTtlMs || 8 * 60 * 60 * 1000;
 
   const handler = async (request, response) => {
     response.setHeader('access-control-allow-origin', '*');
@@ -316,6 +358,55 @@ export function createApp(options = {}) {
         const sessionToken = randomBytes(32).toString('base64url');
         createSession(db, user.id, tokenHash(sessionToken), isoAfter(sessionTtlMs));
         return send(response, 200, { data: { userId: user.id, sessionToken, expiresAt: isoAfter(sessionTtlMs) } });
+      }
+
+      if (request.method === 'POST' && path === '/auth/wechat/phone') {
+        authenticate(request, db);
+        assertRequired(body, ['code']);
+        return send(response, 200, { data: await exchangePhone(text(body.code)) });
+      }
+
+      if (request.method === 'POST' && path === '/admin/auth/login') {
+        assertRequired(body, ['loginName', 'password']);
+        const admin = findAdminByLogin(db, text(body.loginName));
+        if (!admin || admin.status !== 'active' || !verifyPassword(text(body.password), admin.password_hash)) {
+          throw httpError(401, 'UNAUTHORIZED', '管理员账号或密码错误');
+        }
+        touchAdminLogin(db, admin.user_id);
+        const token = randomBytes(32).toString('base64url');
+        createAdminSession(db, admin.user_id, tokenHash(token), isoAfter(adminSessionTtlMs));
+        const current = findAdminSession(db, tokenHash(token));
+        return send(response, 200, { data: { token, expiresAt: isoAfter(adminSessionTtlMs), admin: adminAccount(current) } });
+      }
+
+      if (request.method === 'POST' && path === '/admin/auth/logout') {
+        const token = adminBearer(request);
+        revokeAdminSession(db, tokenHash(token));
+        return send(response, 204, null);
+      }
+
+      if (request.method === 'GET' && path === '/admin/auth/me') {
+        return send(response, 200, { data: adminAccount(authenticateAdmin(request, db)) });
+      }
+
+      if (request.method === 'GET' && path === '/admin/accounts') {
+        const admin = authenticateAdmin(request, db);
+        requireAdminRole(admin, ['owner', 'admin']);
+        return send(response, 200, { data: listAdminAccounts(db) });
+      }
+
+      if (request.method === 'POST' && path === '/admin/accounts') {
+        const admin = authenticateAdmin(request, db);
+        requireAdminRole(admin, ['owner', 'admin']);
+        assertRequired(body, ['loginName', 'password', 'role']);
+        if (!adminRoles.has(text(body.role))) throw httpError(422, 'VALIDATION_ERROR', '管理员角色无效');
+        if (text(body.password).length < 12) throw httpError(422, 'VALIDATION_ERROR', '管理员密码至少需要 12 位');
+        try {
+          return send(response, 201, { data: createAdminAccount(db, { loginName: text(body.loginName), password: text(body.password), role: text(body.role), createdBy: admin.user_id }) });
+        } catch (error) {
+          if (String(error.message).includes('UNIQUE constraint failed')) throw httpError(409, 'ADMIN_EXISTS', '管理员账号已存在');
+          throw error;
+        }
       }
 
       const identityPath = /^\/me\/identities\/([^/]+)$/u.exec(path);
@@ -345,16 +436,16 @@ export function createApp(options = {}) {
         return send(response, 200, { data: updateIdentityForResubmit(db, user.id, resubmitPath[1], validateProfile(row.role, body.profile)) });
       }
       if (request.method === 'GET' && path === '/admin/identity-reviews') {
-        const user = authenticate(request, db);
-        requireReviewer(db, user);
+        const admin = authenticateAdmin(request, db);
+        requireAdminRole(admin, ['owner', 'reviewer']);
         const status = url.searchParams.get('status') || null;
         if (status && !statusValues.has(status)) throw httpError(422, 'VALIDATION_ERROR', '审核状态无效');
         return send(response, 200, { data: reviewRows(db, status).map(identityFromRow) });
       }
       if (request.method === 'POST' && reviewDecisionPath) {
-        const user = authenticate(request, db);
-        requireReviewer(db, user);
-        return send(response, 200, { data: decideReview(db, user.id, reviewDecisionPath[1], body.decision, body.reason) });
+        const admin = authenticateAdmin(request, db);
+        requireAdminRole(admin, ['owner', 'reviewer']);
+        return send(response, 200, { data: decideReview(db, admin.user_id, reviewDecisionPath[1], body.decision, body.reason) });
       }
       throw httpError(404, 'NOT_FOUND', '请求地址不存在');
     } catch (error) {

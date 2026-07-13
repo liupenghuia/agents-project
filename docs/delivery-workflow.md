@@ -129,3 +129,17 @@ Severity is `P0` production/security/data-loss impact, `P1` core flow blocked, `
 - Linked issues are `Closed`; dependencies are `Done`.
 - `ruby scripts/validate_workflow.rb` passes.
 - Known limitations and follow-up work are documented rather than hidden.
+
+## Local Delivery Runner
+
+`ruby scripts/deliver.rb <task>` is the repository-level execution entry point for the reversible local loop. It must:
+
+1. Validate workflow metadata before feature checks.
+2. Read the task's required scopes and frontend targets.
+3. Run the applicable backend, Mini Program, Web, and service health checks.
+4. Store exact commands, outputs, and service logs under `/tmp/ppfiles-learn-delivery/<task-id>/`.
+5. Stop with failed evidence when no repair command is configured.
+6. When `DELIVERY_REPAIR_COMMAND` is configured, run the repair command with `DELIVERY_TASK`, `DELIVERY_ROUND`, and `DELIVERY_RUN_DIR`, then repeat checks.
+7. Stop after the configured maximum rounds; never report a passing task from an assumed or skipped check.
+
+The runner does not bypass human approval for production deployment, secrets, destructive changes, or real WeChat authorization. Platform-specific Mini Program checks remain explicit manual or DevTools gates.

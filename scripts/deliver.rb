@@ -34,7 +34,8 @@ def task_path(name)
 
   candidates = Dir[ROOT.join("tasks", "*.md")].map { |path| Pathname(path) }
   match = candidates.find do |path|
-    path.read[/^title:\s*["']?(.+?)["']?\s*$/]&.then { |title| title[1].strip == name }
+    title = path.read.match(/^title:\s*["']?(.+?)["']?\s*$/)&.[](1)
+    title&.strip == name
   end
   match
 end

@@ -187,6 +187,8 @@ iOS user-management
 
 ```text
 下一个 前端
+下一个 小程序
+下一个 Web
 下一个 后端
 下一个 移动端
 下一个 iOS
@@ -196,7 +198,7 @@ iOS user-management
 
 选择顺序为：同优先级下先处理 `Ready for Retest`，再处理角色拥有的 issue，最后处理可进入的任务；优先级按 `P0` 到 `P3`，同级按创建时间从早到晚。
 
-英文命令也可使用，例如 `deliver user-management`、`product login-auth`、`next frontend`。
+英文命令也可使用，例如 `deliver user-management`、`product login-auth`、`miniprogram login-auth`、`web login-auth`、`next frontend`。
 
 ## 权限与暂停边界
 
@@ -239,7 +241,11 @@ iOS user-management
 │   └── <issue>.md               # 缺陷与复测证据
 ├── scripts
 │   └── validate_workflow.rb     # 工作流静态校验
-├── frontend/AGENTS.md
+├── frontend
+│   ├── AGENTS.md              # 前端协调规则
+│   ├── miniprogram/AGENTS.md  # 微信小程序规则
+│   ├── web/AGENTS.md          # Web/审核端规则
+│   └── HISTORY.md             # 跨任务前端历史索引
 ├── backend/AGENTS.md
 ├── mobile/AGENTS.md
 ├── mobile/ios/AGENTS.md
@@ -286,11 +292,13 @@ tasks/order-management.md
 | `depends_on` | 必须先完成的任务 ID |
 | `linked_issues` | 关联 issue ID |
 | `required_scopes` | 哪些开发范围必须交付 |
-| `scope_status` | 各角色独立进度 |
+| `scope_status` | 各角色聚合进度 |
+| `frontend_targets` | 必需的前端目标端：`miniprogram`、`web` |
+| `frontend_target_status` | 小程序和 Web 的独立进度 |
 | `release_required` | 是否需要发布门禁 |
 | `blocked_*` | 阻塞原因、时间、负责人和解除条件 |
 
-一个任务只有一个整体 `status`，但可以同时拥有多个 `scope_status`。例如后端和前端可以并行为 `In Progress`，互不覆盖状态；所有必需范围完成后，整体任务才能进入 `Ready for Test`。
+一个任务只有一个整体 `status`，但可以同时拥有多个 `scope_status` 和前端目标状态。例如小程序可以完成而 Web 审核端仍在进行，互不覆盖状态；所有必需范围和目标端完成后，整体任务才能进入 `Ready for Test`。
 
 ## 状态说明
 
@@ -353,14 +361,31 @@ Closed
 | Product Agent | Idea 发现、证据与假设、产品决策、范围和验收标准 | `ideas/`、`docs/product-discovery.md`、`docs/requirements.md`、`tasks/` |
 | Architect Agent | 架构、API、数据库、兼容与回滚 | `docs/architecture.md`、`docs/openapi.yaml`、`docs/database.md` |
 | Backend Agent | API、业务规则、数据与后端测试 | `backend/` |
-| Frontend Agent | Web UI、状态、路由、API 集成与测试 | `frontend/` |
+| Frontend Agent | 跨目标协调、共享 API/UI 约束和聚合状态 | `frontend/AGENTS.md`、`frontend/HISTORY.md` |
+| Frontend MiniProgram Agent | 微信小程序 UI、生命周期、授权、注册和小程序测试 | `frontend/miniprogram/` |
+| Frontend Web Agent | Web UI、响应式、审核操作、权限和 Web 测试 | `frontend/web/` |
 | Mobile Agent | 跨平台移动端状态、网络、导航与共享逻辑 | `mobile/` |
 | iOS Agent | iOS UI、生命周期、权限、存储与测试 | `mobile/ios/` |
 | Android Agent | Android UI、生命周期、权限、存储与测试 | `mobile/android/` |
 | Test Agent | 独立验证、创建 issue、复测和关闭 issue | `tests/`、`docs/testing.md`、`issues/` |
 | Orchestrator Agent | 选择阶段、协调角色、推进整体状态 | 任务和交接记录 |
 
-每个角色开始工作前必须读取最近的角色 `AGENTS.md`、根 `AGENTS.md`、`docs/delivery-workflow.md`、目标 Idea/任务和关联 issue。
+每个角色开始工作前必须读取最近的角色 `AGENTS.md`、根 `AGENTS.md`、`docs/delivery-workflow.md`、目标 Idea/任务和关联 issue。前端目标 Agent 还必须更新任务交接记录和 `frontend/HISTORY.md`。
+
+## 前端目标端规则
+
+```text
+前端 <task>       # 协调小程序和 Web，维护 aggregate frontend 状态
+小程序 <task>     # 只实现 frontend_targets.miniprogram
+Web <task>        # 只实现 frontend_targets.web
+```
+
+目标端规则分别位于：
+
+- `frontend/miniprogram/AGENTS.md`：WXML/WXSS、微信生命周期、授权/隐私、`setData`、小程序状态和小屏可用性。
+- `frontend/web/AGENTS.md`：语义 HTML、响应式、键盘/无障碍、会话安全、路由和审核操作。
+
+每次前端交接必须记录：目标端、变更文件、精确命令和结果、关联 issue、下一步。详细历史写入 `frontend/HISTORY.md`，任务文件中的 handoff log 仍是当前任务的权威记录。
 
 ## 质量门禁
 
@@ -454,6 +479,7 @@ ruby scripts/validate_workflow.rb
 - Idea 的决策人、状态和晋升任务是否有效。
 - Idea 与任务的 `source_idea`/`promoted_tasks` 是否双向关联。
 - `required_scopes` 与 `scope_status` 是否一致。
+- `frontend_targets` 与 `frontend_target_status` 是否一致，必需目标端是否完成。
 - 进入测试或完成状态时，必需范围是否已经完成。
 - 任务依赖和 issue 双向关联是否有效。
 - `Done` 任务是否仍有未关闭 issue。

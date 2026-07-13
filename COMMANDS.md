@@ -68,6 +68,26 @@ Expands to: read Android rules, check Android issues first, then implement Andro
 
 Expands to: read frontend rules, check frontend issues first, then implement frontend work for the task.
 
+## WeChat Mini Program
+
+```text
+小程序 user-management
+```
+
+English equivalent: `miniprogram user-management`.
+
+Expands to: read `frontend/AGENTS.md` and `frontend/miniprogram/AGENTS.md`, check Mini Program issues first, then implement only the `frontend_targets.miniprogram` scope and record target history.
+
+## Web
+
+```text
+Web user-management
+```
+
+English equivalent: `web user-management`.
+
+Expands to: read `frontend/AGENTS.md` and `frontend/web/AGENTS.md`, check Web issues first, then implement only the `frontend_targets.web` scope and record target history. Web scope includes protected reviewer operations when the task requires it.
+
 ## Test
 
 ```text
@@ -90,6 +110,8 @@ Expands to: promote a matching approved idea when needed, then run Product, Arch
 
 ```text
 下一个 前端
+下一个 小程序
+下一个 Web
 下一个 后端
 下一个 移动端
 下一个 iOS

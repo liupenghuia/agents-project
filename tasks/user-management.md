@@ -15,6 +15,12 @@ required_scopes:
   mobile: false
   ios: false
   android: false
+frontend_targets:
+  miniprogram: false
+  web: true
+frontend_target_status:
+  miniprogram: N/A
+  web: Pending
 scope_status:
   product: Done
   architecture: Done
@@ -129,7 +135,7 @@ Out of scope:
 
 ## Handoff Log
 
-| Date | Actor | From | To | Evidence | Next action |
-| --- | --- | --- | --- | --- | --- |
-| 2026-07-01 | Product Agent | Draft | Ready for Architecture | Initial feature scope created. | Architect review. |
-| 2026-07-01 | Architect Agent | Ready for Architecture | Ready for Implementation | API and database contracts documented. | Backend and frontend implementation. |
+| Date | Actor | Target | From | To | Changed files | Evidence/commands | Issues | Next action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-07-01 | Product Agent | Coordinator | Draft | Ready for Architecture | Requirements/task | Initial feature scope created. | None | Architect review. |
+| 2026-07-01 | Architect Agent | Coordinator / Web | Ready for Architecture | Ready for Implementation | API/database contracts | Contracts documented. | None | Backend and Web implementation. |

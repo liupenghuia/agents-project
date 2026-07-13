@@ -31,6 +31,24 @@ Validate:
 - User interactions trigger expected behavior.
 - Form validation works before API submission.
 
+### WeChat Mini Program Tests
+
+When `frontend_targets.miniprogram: true`, validate:
+
+- WXML/WXSS rendering, page lifecycle, navigation, and duplicate-submission prevention.
+- WeChat authorization/privacy states and role-specific registration flows.
+- Loading, empty, validation, pending-review, changes-requested, timeout, and retry states.
+- Small-screen layout, readable errors, labels, and touch target behavior.
+
+### Web Tests
+
+When `frontend_targets.web: true`, validate:
+
+- Semantic structure, responsive layouts, keyboard navigation, focus, and accessible names.
+- Protected routes, session expiry, permission failures, and reviewer operations when Web owns the review surface.
+- Loading, empty, validation, pending-review, changes-requested, error, retry, and destructive-action states.
+- Browser integration and API contract behavior without exposing tokens or reviewer credentials.
+
 ### Mobile Unit, Component, and UI Tests
 
 Validate:
@@ -67,6 +85,8 @@ Validate:
 - Only Test Agent can move an issue from `Ready for Retest` to `Closed`.
 - If retest fails, Test Agent must set the issue to `Retest Failed` and return it to the same owner.
 - Mobile, iOS, and Android test runs are required when a task includes mobile scope.
+- Frontend target test runs are required for every target marked `true` in `frontend_targets`.
+- Each target result must be recorded in the task handoff and `frontend/HISTORY.md`.
 - Every test run must record date, environment/build, exact command or manual check, result, and evidence location.
 - A missing tool, environment, fixture, or credential is a blocker, not a passing result.
 - Run `ruby scripts/validate_workflow.rb` before the final task transition.

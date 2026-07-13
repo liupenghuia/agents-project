@@ -15,6 +15,7 @@ ISSUE_STATUSES = ["Open", "Assigned", "Fixing", "Ready for Retest", "Retest Fail
 SCOPE_STATUSES = ["N/A", "Pending", "In Progress", "Blocked", "Done"].freeze
 PRIORITIES = %w[P0 P1 P2 P3].freeze
 IMPLEMENTATION_SCOPES = %w[backend frontend mobile ios android].freeze
+FRONTEND_TARGETS = %w[miniprogram web].freeze
 ALL_SCOPES = %w[product architecture backend frontend mobile ios android test release].freeze
 OWNERS = [
   "Product Agent", "Architect Agent", "Backend Agent", "Frontend Agent", "Mobile Agent",
@@ -92,7 +93,7 @@ ideas.each do |path, idea|
 end
 
 tasks.each do |path, task|
-  require_fields(path, task, %w[id title status priority owner created updated source_idea depends_on linked_issues required_scopes scope_status release_required], errors)
+  require_fields(path, task, %w[id title status priority owner created updated source_idea depends_on linked_issues required_scopes frontend_targets frontend_target_status scope_status release_required], errors)
   errors << "#{path}: invalid task id #{task['id']}" unless task["id"].to_s.match?(/\ATASK-\d{8}-\d{3}\z/)
   errors << "#{path}: invalid status #{task['status']}" unless TASK_STATUSES.include?(task["status"])
   errors << "#{path}: invalid priority #{task['priority']}" unless PRIORITIES.include?(task["priority"])
@@ -111,14 +112,30 @@ tasks.each do |path, task|
   end
 
   required = task["required_scopes"]
+  frontend_targets = task["frontend_targets"]
+  frontend_target_status = task["frontend_target_status"]
   scopes = task["scope_status"]
-  unless required.is_a?(Hash) && scopes.is_a?(Hash)
-    errors << "#{path}: required_scopes and scope_status must be mappings"
+  unless required.is_a?(Hash) && frontend_targets.is_a?(Hash) && frontend_target_status.is_a?(Hash) && scopes.is_a?(Hash)
+    errors << "#{path}: required_scopes, frontend_targets, frontend_target_status, and scope_status must be mappings"
     next
   end
 
   IMPLEMENTATION_SCOPES.each do |scope|
     errors << "#{path}: required_scopes missing #{scope}" unless [true, false].include?(required[scope])
+  end
+  FRONTEND_TARGETS.each do |target|
+    errors << "#{path}: frontend_targets missing #{target}" unless [true, false].include?(frontend_targets[target])
+    errors << "#{path}: invalid or missing frontend_target_status.#{target}" unless SCOPE_STATUSES.include?(frontend_target_status[target])
+    if frontend_targets[target] == false && frontend_target_status[target] != "N/A"
+      errors << "#{path}: non-required frontend target #{target} must be N/A"
+    elsif frontend_targets[target] == true && frontend_target_status[target] == "N/A"
+      errors << "#{path}: required frontend target #{target} cannot be N/A"
+    end
+  end
+  if required["frontend"] == false && frontend_targets.values.any? { |needed| needed == true }
+    errors << "#{path}: frontend_targets cannot be required when frontend scope is false"
+  elsif required["frontend"] == true && frontend_targets.values.none? { |needed| needed == true }
+    errors << "#{path}: frontend scope requires at least one frontend target"
   end
   ALL_SCOPES.each do |scope|
     errors << "#{path}: invalid or missing scope_status.#{scope}" unless SCOPE_STATUSES.include?(scopes[scope])
@@ -149,6 +166,11 @@ tasks.each do |path, task|
   if implementation_done
     required.select { |_scope, needed| needed }.each_key do |scope|
       errors << "#{path}: required #{scope} scope must be Done at #{task['status']}" unless scopes[scope] == "Done"
+    end
+    FRONTEND_TARGETS.each do |target|
+      if frontend_targets[target] && frontend_target_status[target] != "Done"
+        errors << "#{path}: required frontend target #{target} must be Done at #{task['status']}"
+      end
     end
   end
 

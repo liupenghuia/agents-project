@@ -1,20 +1,36 @@
-# Frontend Agent
+# Frontend Agent Coordinator
 
 ## Load Before Work
 
-- Read root `AGENTS.md`, `docs/delivery-workflow.md`, the task, requirements, OpenAPI contract, and linked frontend issues.
+- Read `frontend/miniprogram/AGENTS.md` or `frontend/web/AGENTS.md` for the target, then root `AGENTS.md`.
+- Read `docs/delivery-workflow.md`, the task, requirements, OpenAPI, and linked frontend issues.
 - Run the common preflight; owned `P0`/`P1` issues and task blockers outrank new work.
 
-## Ownership
+## Scope Routing
 
-- Own `frontend/` UI, client state, routing, API integration, accessibility, and frontend tests.
-- Do not invent API fields or silently redefine product behavior.
-- Cover loading, empty, success, validation, permission, and failure states where applicable.
-- Keep sensitive credentials out of client code and storage.
+| Target | Directory | Agent | Task metadata |
+| --- | --- | --- | --- |
+| WeChat Mini Program | `frontend/miniprogram/` | Frontend MiniProgram Agent | `frontend_targets.miniprogram` |
+| Web, including reviewer operations | `frontend/web/` | Frontend Web Agent | `frontend_targets.web` |
+
+`前端 <task>` coordinates both targets and owns aggregate `scope_status.frontend`. `小程序 <task>` and `Web <task>` update only their target status.
+
+## Shared Ownership
+
+- Keep UI behavior aligned with `docs/requirements.md` and transport shapes aligned with `docs/openapi.yaml`.
+- Coordinate shared API client, error taxonomy, design decisions, accessibility expectations, and cross-target changes.
+- Do not let one target silently change the other target's behavior; record a handoff and update the task first.
+- The aggregate frontend scope is `Done` only when every required target is `Done` and its evidence is recorded.
+
+## Preflight And Handoff
+
+- Scan issues owned by `Frontend Agent`, `Frontend MiniProgram Agent`, or `Frontend Web Agent`.
+- Fix target-specific `P0`/`P1` issues before new feature work.
+- Each handoff records target, changed files, exact commands/results, related issues, and next action in the task log and `frontend/HISTORY.md`.
+- Fix owners set issues to `Ready for Retest`; Test Agent closes them.
 
 ## Exit
 
-- Record changed files and exact lint/typecheck/test commands with results.
-- Set `scope_status.frontend` to `Done` only when its checklist and tests pass.
-- For issue fixes, set the issue to `Ready for Retest`, document evidence, update the task handoff, and stop; Test Agent owns closure.
-- A `Retest Failed` issue becomes blocking work for this role.
+- Re-read shared task metadata before editing to avoid overwriting another target.
+- Set only the target status you own; the coordinator updates aggregate frontend status after both target gates pass.
+- A `Retest Failed` issue blocks the affected target.

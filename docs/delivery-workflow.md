@@ -22,6 +22,25 @@ Follow `docs/product-discovery.md`. Product Agent must distinguish facts, assump
 4. Do not start a new feature when the role owns a `P0`/`P1` issue or the task has an unresolved blocking issue.
 5. Confirm dependencies are `Done`; otherwise set the task to `Blocked` and document the unblock condition.
 
+## Frontend Target State
+
+Frontend has an aggregate `scope_status.frontend` plus independent target metadata:
+
+```yaml
+frontend_targets:
+  miniprogram: true
+  web: false
+frontend_target_status:
+  miniprogram: Pending
+  web: N/A
+```
+
+- `frontend_targets` selects required delivery targets; a false target must remain `N/A`.
+- `frontend_target_status` is owned by the target Agent. `小程序` updates only `miniprogram`; `Web` updates only `web`.
+- `前端` coordinates cross-target work and sets aggregate frontend `Done` only after every required target is `Done` and evidenced.
+- Each target handoff records changed files, exact commands/results, issues, and next action in the task and `frontend/HISTORY.md`.
+- A target may be implemented in parallel only after the API/requirements contract is stable; cross-target behavior changes require a coordinator handoff.
+
 ## Task State Machine
 
 | Status | Set by | Entry condition | Next |
@@ -73,6 +92,7 @@ Severity is `P0` production/security/data-loss impact, `P1` core flow blocked, `
 
 - Every required scope is `Done`; code, tests, documentation, and generated contracts agree.
 - Changed files and exact verification commands/results are recorded in the task.
+- Every required frontend target is `Done` with a matching history entry.
 - No required check is skipped without a blocker.
 
 ### Test Gate
@@ -99,6 +119,7 @@ Severity is `P0` production/security/data-loss impact, `P1` core flow blocked, `
 - Changed acceptance criteria return the task to `Ready for Architecture` and require Product handoff notes.
 - Changed API/database contracts after implementation starts require Architect impact review and affected scopes return to `Pending`.
 - New scope requires updated estimates/dependencies, tests, and explicit Product ownership.
+- Adding or removing a frontend target returns affected target statuses to `Pending` and requires a coordinator handoff.
 - Every transition appends date, actor, from/to status, evidence, and next action to the handoff log.
 
 ## Definition Of Done

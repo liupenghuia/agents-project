@@ -10,6 +10,9 @@ Build a maintainable full-stack application using a multi-agent development proc
 - Mobile user: uses the product features through iOS or Android apps when mobile is in scope.
 - Admin user: manages users and operational data when required.
 - Development team: uses this repository structure to coordinate product, architecture, frontend, backend, and testing work.
+- Recruiter: creates a hiring identity and submits recruitment information for manual review.
+- Applicant: creates a job-seeking identity and submits basic job-seeking information for manual review.
+- Reviewer: manually reviews registration profiles and approves or requests changes.
 
 ## Current Feature Scope
 
@@ -36,6 +39,26 @@ Minimum scope:
 - View the current authenticated user.
 - Protect authenticated-only pages and APIs.
 - Show clear errors for invalid credentials and expired sessions.
+
+### Recruitment Platform Phase 1: Role Selection And Registration
+
+The first recruitment phase is limited to a WeChat Mini Program. It establishes the identity boundary before job posting or job seeking features are built.
+
+Minimum scope:
+
+- Show new users two entry choices: `招人` and `应聘`.
+- Provide separate minimum registration flows for each identity.
+- Follow WeChat Mini Program authorization, privacy, and user agreement requirements.
+- Allow one WeChat user to own both a recruiter identity and an applicant identity.
+- Keep each created identity type immutable; creating the other identity uses a separate registration flow.
+- Submit registration profiles for manual review.
+- Show `待审核`, `通过`, and `拒绝/需修改` states with actionable feedback.
+- Do not perform real-name verification, identity document collection, or enterprise certification in phase one.
+
+Out of scope:
+
+- Job posting, resumes, search, matching, applications, chat, interviews, hiring, payments, and recommendations.
+- iOS App and Android App delivery in phase one.
 
 ## Non-Functional Requirements
 

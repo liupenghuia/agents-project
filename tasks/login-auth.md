@@ -15,6 +15,12 @@ required_scopes:
   mobile: false
   ios: false
   android: false
+frontend_targets:
+  miniprogram: false
+  web: true
+frontend_target_status:
+  miniprogram: N/A
+  web: Pending
 scope_status:
   product: Done
   architecture: Pending
@@ -143,6 +149,6 @@ Out of scope:
 
 ## Handoff Log
 
-| Date | Actor | From | To | Evidence | Next action |
-| --- | --- | --- | --- | --- | --- |
-| 2026-07-01 | Product Agent | Draft | Ready for Architecture | Acceptance criteria cover the authentication lifecycle. | Architect defines security and contracts. |
+| Date | Actor | Target | From | To | Changed files | Evidence/commands | Issues | Next action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-07-01 | Product Agent | Coordinator / Web | Draft | Ready for Architecture | Requirements/task | Acceptance criteria cover the authentication lifecycle. | None | Architect defines security and contracts. |

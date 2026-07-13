@@ -29,6 +29,8 @@
 | `架构 <task>` / `architect <task>` | Architect Agent |
 | `后端 <task>` / `backend <task>` | Backend Agent |
 | `前端 <task>` / `frontend <task>` | Frontend Agent |
+| `小程序 <task>` / `miniprogram <task>` | Frontend MiniProgram Agent |
+| `Web <task>` / `web <task>` | Frontend Web Agent |
 | `移动端 <task>` / `mobile <task>` | Mobile Agent |
 | `iOS <task>` / `ios <task>` | iOS Agent |
 | `安卓 <task>` / `android <task>` | Android Agent |

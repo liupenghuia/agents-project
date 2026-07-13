@@ -1,14 +1,20 @@
 openapi: 3.1.0
 info:
   title: Project API
-  version: 0.1.0
-  description: API contract between frontend and backend agents.
+  version: 0.2.0
+  description: API contract between the WeChat Mini Program, reviewer operations, and backend agents.
 servers:
   - url: http://localhost:3000
     description: Local backend
 tags:
+  - name: Auth
+    description: WeChat session exchange
   - name: Users
     description: User management
+  - name: Identities
+    description: Recruiter and applicant identity profiles
+  - name: Identity Reviews
+    description: Protected manual review operations
 paths:
   /users:
     get:
@@ -118,7 +124,270 @@ paths:
           description: User disabled
         "404":
           $ref: "#/components/responses/NotFound"
+  /auth/wechat/session:
+    post:
+      tags:
+        - Auth
+      summary: Exchange a WeChat login code for a platform session
+      operationId: createWeChatSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeChatSessionRequest"
+      responses:
+        "200":
+          description: Platform session created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AuthSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /me/identities:
+    get:
+      tags:
+        - Identities
+      summary: List the current user's identities
+      operationId: listMyIdentities
+      security:
+        - PlatformSession: []
+      responses:
+        "200":
+          description: Current user identities
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/IdentitySummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /me/identities/recruiter:
+    post:
+      tags:
+        - Identities
+      summary: Create a recruiter identity for the current user
+      operationId: createRecruiterIdentity
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecruiterRegistrationRequest"
+      responses:
+        "201":
+          description: Recruiter identity submitted for review
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RecruiterIdentity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/identities/applicant:
+    post:
+      tags:
+        - Identities
+      summary: Create an applicant identity for the current user
+      operationId: createApplicantIdentity
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicantRegistrationRequest"
+      responses:
+        "201":
+          description: Applicant identity submitted for review
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ApplicantIdentity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/identities/{identityId}:
+    get:
+      tags:
+        - Identities
+      summary: Get one of the current user's identities
+      operationId: getMyIdentity
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/IdentityId"
+      responses:
+        "200":
+          description: Identity detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Identity"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/identities/{identityId}/resubmit:
+    post:
+      tags:
+        - Identities
+      summary: Resubmit a changes-requested identity without changing its role
+      operationId: resubmitIdentity
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/IdentityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResubmitIdentityRequest"
+      responses:
+        "200":
+          description: Identity resubmitted for review
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Identity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /admin/identity-reviews:
+    get:
+      tags:
+        - Identity Reviews
+      summary: List identities awaiting manual review
+      operationId: listIdentityReviews
+      security:
+        - PlatformSession: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending_review
+              - changes_requested
+          description: Review queue status filter
+      responses:
+        "200":
+          description: Review queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Identity"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/identity-reviews/{identityId}/decision:
+    post:
+      tags:
+        - Identity Reviews
+      summary: Approve or request changes for an identity
+      operationId: decideIdentityReview
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/IdentityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewDecisionRequest"
+      responses:
+        "200":
+          description: Review decision recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Identity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
+  securitySchemes:
+    PlatformSession:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
   parameters:
     UserId:
       name: userId
@@ -127,6 +396,13 @@ components:
       schema:
         type: string
       description: User identifier
+    IdentityId:
+      name: identityId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Identity profile identifier
   responses:
     BadRequest:
       description: Invalid request
@@ -136,6 +412,30 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication required or session invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Authenticated user lacks required permission
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Identity or submission conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnprocessableEntity:
+      description: Request fields fail business validation
       content:
         application/json:
           schema:
@@ -207,4 +507,226 @@ components:
               type: string
             message:
               type: string
-
+    WeChatSessionRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: Short-lived code returned by wx.login
+    AuthSession:
+      type: object
+      required:
+        - userId
+        - sessionToken
+        - expiresAt
+      properties:
+        userId:
+          type: string
+        sessionToken:
+          type: string
+          description: Platform session token; never a WeChat session_key
+        expiresAt:
+          type: string
+          format: date-time
+    IdentitySummary:
+      type: object
+      required:
+        - id
+        - role
+        - reviewStatus
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum:
+            - recruiter
+            - applicant
+        reviewStatus:
+          type: string
+          enum:
+            - pending_review
+            - approved
+            - changes_requested
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Identity:
+      type: object
+      required:
+        - id
+        - userId
+        - role
+        - reviewStatus
+        - profile
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+          enum:
+            - recruiter
+            - applicant
+          description: Immutable after identity creation
+        reviewStatus:
+          type: string
+          enum:
+            - pending_review
+            - approved
+            - changes_requested
+        reviewReason:
+          type: string
+          description: Present when changes are requested
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/RecruiterProfile"
+            - $ref: "#/components/schemas/ApplicantProfile"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RecruiterIdentity:
+      allOf:
+        - $ref: "#/components/schemas/Identity"
+        - type: object
+          properties:
+            role:
+              const: recruiter
+            profile:
+              $ref: "#/components/schemas/RecruiterProfile"
+    ApplicantIdentity:
+      allOf:
+        - $ref: "#/components/schemas/Identity"
+        - type: object
+          properties:
+            role:
+              const: applicant
+            profile:
+              $ref: "#/components/schemas/ApplicantProfile"
+    RecruiterRegistrationRequest:
+      type: object
+      required:
+        - organizationName
+        - organizationType
+        - contactName
+        - contactPhone
+        - region
+        - industryOrJobDirection
+      properties:
+        organizationName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        organizationType:
+          type: string
+          enum:
+            - company
+            - individual
+            - other
+        contactName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        contactPhone:
+          type: string
+          minLength: 5
+          maxLength: 32
+        region:
+          type: string
+          minLength: 1
+          maxLength: 120
+        industryOrJobDirection:
+          type: string
+          minLength: 1
+          maxLength: 120
+    ApplicantRegistrationRequest:
+      type: object
+      required:
+        - displayName
+        - contactPhone
+        - region
+        - desiredJob
+        - experienceSummary
+        - preferredRegionOrTime
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        contactPhone:
+          type: string
+          minLength: 5
+          maxLength: 32
+        region:
+          type: string
+          minLength: 1
+          maxLength: 120
+        desiredJob:
+          type: string
+          minLength: 1
+          maxLength: 120
+        experienceSummary:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        preferredRegionOrTime:
+          type: string
+          minLength: 1
+          maxLength: 200
+    RecruiterProfile:
+      allOf:
+        - $ref: "#/components/schemas/RecruiterRegistrationRequest"
+        - type: object
+          required:
+            - roleProfileId
+          properties:
+            roleProfileId:
+              type: string
+    ApplicantProfile:
+      allOf:
+        - $ref: "#/components/schemas/ApplicantRegistrationRequest"
+        - type: object
+          required:
+            - roleProfileId
+          properties:
+            roleProfileId:
+              type: string
+    ResubmitIdentityRequest:
+      type: object
+      required:
+        - profile
+      properties:
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/RecruiterRegistrationRequest"
+            - $ref: "#/components/schemas/ApplicantRegistrationRequest"
+          description: Must match the immutable role of the identity being resubmitted
+    ReviewDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum:
+            - approved
+            - changes_requested
+        reason:
+          type: string
+          maxLength: 1000
+          description: Required when decision is changes_requested

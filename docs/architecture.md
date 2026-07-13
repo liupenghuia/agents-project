@@ -2,93 +2,105 @@
 
 ## Architecture Style
 
-Use a simple modular full-stack architecture:
+Use a modular monolith with a REST API:
 
-- `frontend/` owns UI, client-side state, routing, and API integration.
-- `backend/` owns API endpoints, business rules, validation, persistence, and external service integration.
-- `mobile/` owns shared mobile behavior; `mobile/ios/` and `mobile/android/` own platform integration.
-- `ideas/` owns Product Briefs, evidence labels, MVP decisions, and promotion references.
-- `docs/openapi.yaml` is the contract between frontend and backend.
-- `docs/database.md` is the contract for data model decisions.
-- YAML front matter in `tasks/` and `issues/` is the machine-readable delivery state.
+- `frontend/` owns the WeChat Mini Program UI, client state, navigation, and API integration for phase one.
+- `backend/` owns WeChat session exchange, account/identity rules, validation, persistence, review authorization, and audit records.
+- Reviewers use a protected operations surface or internal tool; a reviewer UI is not a phase-one end-user client, but manual review must not depend on direct database edits.
+- `ideas/` owns Product Briefs and product decisions.
+- `docs/openapi.yaml` is the client/backend contract.
+- `docs/database.md` is the data model and migration contract.
 - `docs/delivery-workflow.md` defines transitions, quality gates, blockers, and recovery.
 
-## Decision Principles
-
-- Start with a modular monolith unless scaling pressure proves otherwise.
-- Keep frontend and backend independently testable.
-- Treat OpenAPI as the source of truth for HTTP behavior.
-- Treat task acceptance criteria as the source of truth for testing.
-- Avoid adding infrastructure before a feature requires it.
-
-## Agent Handoff Model
+## Product Flow
 
 ```text
-raw idea
-  -> product discovery and approval
-  -> requirements and task
-  -> architecture and contracts
-  -> required implementation scopes
-       -> backend
-       -> frontend
-       -> shared mobile / iOS / Android
-  -> test verification
-       -> pass -> release gate -> done
-       -> fail -> issue -> owner fix -> independent retest
+WeChat Mini Program
+  -> exchange wx.login code for platform session
+  -> list existing identities
+  -> choose 招人 or 应聘
+  -> submit role-specific profile
+  -> pending_review
+  -> reviewer approves or requests changes
+  -> approved identity enters its role experience
 ```
 
-Implementation scopes may run concurrently after contracts are stable. Each owner updates only its `scope_status`; the overall task advances after every required scope passes its exit gate.
+The same platform user may have one recruiter identity, one applicant identity, or both. A role profile's `role` is immutable. Creating the other role creates a separate profile; it does not convert the existing profile.
 
-## Boundaries
+## Module Boundaries
 
-### Frontend Boundary
+### WeChat Session Module
 
-Frontend may:
+- Exchanges a short-lived WeChat login code on the backend.
+- Stores provider subject identifiers server-side; never exposes `openid` or `session_key` to the client.
+- Issues a platform session token and supports expiry/revocation.
 
-- Render screens and components.
-- Validate user input for user experience.
-- Call backend APIs.
-- Handle loading, empty, error, and success states.
+### Frontend Targets
 
-Frontend must not:
+- `frontend/miniprogram/` owns WeChat Mini Program pages, lifecycle, authorization/privacy prompts, role selection, registration, and user-facing review states.
+- `frontend/web/` owns browser workflows, including the protected reviewer operations surface when a task requires it.
+- Target agents share the OpenAPI client contract but do not share platform-specific UI code.
+- A task may require one or both targets; `frontend_targets` and `frontend_target_status` are the source of delivery scope.
 
-- Invent API fields not present in `docs/openapi.yaml`.
-- Rely on undocumented backend behavior.
-- Store sensitive secrets.
+### User And Identity Module
 
-### Backend Boundary
+- Owns the platform user account and provider link.
+- Enforces at most one `recruiter` and one `applicant` profile per user.
+- Enforces immutable role type and prevents duplicate submissions for the same role.
+- Returns only the profile fields allowed by the contract.
 
-Backend may:
+### Registration Module
 
-- Validate and authorize requests.
-- Execute business rules.
-- Read and write database records.
-- Return documented API responses.
+- Validates role-specific minimum fields.
+- Creates a profile in `pending_review` in one transaction.
+- Allows resubmission only for `changes_requested`, preserving prior review actions.
 
-Backend must not:
+### Review Module
 
-- Return undocumented response shapes.
-- Move product decisions into implementation without updating requirements.
-- Change database assumptions without updating `docs/database.md`.
+- Exposes protected reviewer operations.
+- Allows `pending_review` to become `approved` or `changes_requested`.
+- Requires a reason for `changes_requested`.
+- Records reviewer, decision, reason, and timestamp in an append-only review history.
 
-### Mobile Boundary
+## Decisions And Trade-offs
 
-Shared Mobile may own cross-platform state, navigation, API mapping, caching, and domain rules. iOS and Android own platform UI, lifecycle, permissions, secure storage, and packaging. Platform agents must not fork shared product behavior without updating requirements or architecture.
+Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles_Learn/agents-project/docs/architecture/adr-001-recruitment-phase-one.md).
 
-## Defect Routing
+- Modular monolith over microservices: the first phase is CRUD-heavy, low scale, and needs fast iteration.
+- REST over event-driven workflows: registration and review are synchronous; audit history is sufficient until throughput or integration requires events.
+- Normalized role tables over one polymorphic JSON profile: role-specific validation, reviewer queries, and future migrations need typed fields.
+- Provider-linked account over password registration: the requested client is a WeChat Mini Program and the product excludes self-managed passwords in phase one.
 
-- Product ambiguity goes to Product Agent.
-- Contract ambiguity goes to Architect Agent.
-- UI defects go to Frontend Agent.
-- API or persistence defects go to Backend Agent.
-- Shared mobile defects go to Mobile Agent; platform-only defects go to iOS Agent or Android Agent.
-- Cross-boundary defects go to Architect Agent first.
+## API Boundaries
+
+- Client endpoints use `/auth`, `/me`, and `/me/identities`.
+- Reviewer endpoints use `/admin/identity-reviews` and require reviewer authorization.
+- `docs/openapi.yaml` defines request/response shapes, error codes, and status enums.
+- Backend must reject undocumented fields where strict validation is available and must never return provider secrets.
+
+## State Rules
+
+| Entity | Allowed states | Rules |
+| --- | --- | --- |
+| Identity profile | `pending_review`, `approved`, `changes_requested` | Role immutable; `changes_requested` may resubmit to `pending_review`. |
+| Review action | `approved`, `changes_requested` | Append-only; a reason is required for changes. |
+| Session | active, expired, revoked | Expired/revoked sessions cannot access identity endpoints. |
+
+## Security And Privacy
+
+- Backend exchanges WeChat codes; the client never receives `session_key` or `openid`.
+- Store provider subjects, session token hashes, and contact data with least privilege and encryption appropriate to deployment.
+- Do not collect real-name documents or claim identity verification in phase one.
+- Consent screens and privacy policy links must follow current WeChat Mini Program rules.
+- Reviewer endpoints require explicit authorization and must be audit logged.
+- Rate-limit login-code exchange, registration submission, resubmission, and review decisions.
 
 ## Revisit Triggers
 
 Revisit this architecture when:
 
-- Frontend and backend need independent deployment.
-- Multiple backend services become necessary.
-- The API contract becomes too large to manage manually.
-- Performance or security requirements require specialized infrastructure.
+- iOS/Android or web clients are added.
+- A second identity per role or organization membership is required.
+- Reviewer volume requires queues, notifications, or event-driven processing.
+- Registration fields require a compatibility/versioning strategy.
+- Identity or business flows introduce real-name verification or regulated data.

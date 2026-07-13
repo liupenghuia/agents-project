@@ -15,6 +15,12 @@ required_scopes:
   mobile: false
   ios: false
   android: false
+frontend_targets:
+  miniprogram: false
+  web: false
+frontend_target_status:
+  miniprogram: N/A
+  web: N/A
 scope_status:
   product: In Progress
   architecture: Pending
@@ -87,10 +93,20 @@ Use `None` with a reason when an area is not affected.
 - [ ] Work or `N/A` reason:
 - [ ] Tests:
 
-### Frontend
+### Frontend Coordination
 
 - [ ] Work or `N/A` reason:
-- [ ] Tests and UI states:
+- [ ] Aggregate frontend status and cross-target decision:
+
+### WeChat Mini Program
+
+- [ ] Work or `N/A` reason:
+- [ ] UI states and tests:
+
+### Web
+
+- [ ] Work or `N/A` reason:
+- [ ] UI states and tests:
 
 ### Shared Mobile
 
@@ -132,6 +148,6 @@ Use `None` with a reason when an area is not affected.
 
 ## Handoff Log
 
-| Date | Actor | From | To | Evidence | Next action |
-| --- | --- | --- | --- | --- | --- |
-|  |  |  |  |  |  |
+| Date | Actor | Target | From | To | Changed files | Evidence/commands | Issues | Next action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |  |  |  |

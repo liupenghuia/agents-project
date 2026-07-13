@@ -1,83 +1,64 @@
-# Issue: <Short Title>
+---
+id: ISSUE-YYYYMMDD-NNN
+title: Short title
+status: Open
+severity: P2
+owner: Architect Agent
+task: TASK-YYYYMMDD-NNN
+found_by: Test Agent
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
 
-## Status
-
-Open
-
-## Found By
-
-Test Agent
-
-## Owner
-
-Frontend Agent | Backend Agent | Architect Agent | Product Agent
-
-## Related Task
-
-`tasks/<task-name>.md`
-
-## Severity
-
-Low | Medium | High | Critical
+# Issue: Short Title
 
 ## Problem
 
-Describe what failed.
+Describe the failed behavior and its impact.
 
 ## Expected Behavior
 
-Describe what should happen.
+Describe the observable expected result.
 
 ## Actual Behavior
 
-Describe what actually happened.
+Describe the observable actual result.
 
-## Reproduction Steps
+## Reproduction
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
-## Evidence
+## Discovery Evidence
 
-- Test command:
-- Error output:
-- Screenshot or log:
+- Environment/build:
+- Command or check:
+- Error/log/screenshot:
+- Reproduction rate:
 
-## Triage Notes
+## Triage
 
-- Suspected owner:
-- Reason:
+- Routing reason:
+- Suspected cause:
+- Blocking task/scope:
 
-## Fix Notes
+## Fix Handoff
 
-To be completed by the assigned agent.
-
-## Changed Files
-
-- 
-
-## Ready for Retest Handoff
-
-- [ ] Owner changed status to `Ready for Retest`.
-- [ ] Owner documented the fix.
-- [ ] Owner listed changed files.
-- [ ] Owner updated the related task handoff log.
-
-## Retest Result
-
-- [ ] Retest passed.
-- [ ] Retest failed.
+- Root cause:
+- Fix summary:
+- Changed files:
+- Verification command and result:
 
 ## Retest Evidence
 
-- Retest command:
-- Retest result:
-- Failure notes if retest failed:
+- Date/Test Agent:
+- Original reproduction result:
+- Automated regression command and result:
+- Failure evidence if retest failed:
 
-## Closure Checklist
+## History
 
-- [ ] Fix implemented by owner.
-- [ ] Tests rerun by Test Agent.
-- [ ] Related task updated.
-- [ ] Issue marked `Closed`.
+| Date | Actor | From | To | Evidence | Next action |
+| --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |

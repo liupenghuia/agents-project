@@ -1,349 +1,481 @@
-# 多 Agent 协作开发框架使用说明
+# 多 Agent 闭环交付框架
 
-这个项目目录用于支持前后端项目的多 Agent 协作开发。核心思想是：每个功能都有任务单，每个 Agent 有明确职责，测试发现问题后通过 issue 交给对应 Agent 修复，再由测试 Agent 回归验证。
+本项目用 Idea Brief、任务、角色、质量门禁和缺陷复测记录组织多 Agent 协作。目标不是让多个 Agent 各自输出代码，而是让一个原始想法经过产品判断、工程交付和独立验证后进入可信的 `Done`，且每次状态变化都有证据和下一步。
 
-## 目录说明
+## 快速开始
+
+只有一句想法时，使用：
 
 ```text
-├── AGENTS.md
-├── COMMANDS.md
+想法 <想法名称>
+<用一句或几句话描述你的想法>
+```
+
+例如：
+
+```text
+想法 smart-expense-assistant
+做一个帮助个人自动整理消费记录并发现异常支出的应用。
+```
+
+Product Agent 会创建 `ideas/smart-expense-assistant.md`，补全用户、问题、价值、MVP、指标和风险，并把没有证据的内容标记为假设或未知。产品评审批准后，再运行：
+
+```text
+产品 smart-expense-assistant
+```
+
+它会更新 `docs/requirements.md`、创建带 `source_idea` 的任务，并推进到架构入口。
+
+已有产品文档和任务时，直接使用：
+
+```text
+交付 <功能名>
+```
+
+例如：
+
+```text
+交付 login-auth
+```
+
+Orchestrator 会按以下闭环持续推进：
+
+```text
+原始想法
+  -> Product Brief 与产品决策
+  -> 产品需求和任务
+  -> 架构/API/数据库契约
+  -> required_scopes 中需要的开发范围
+  -> 独立测试
+  -> 缺陷修复与复测
+  -> 发布门禁（如需要）
+  -> Done
+```
+
+如果任务不存在但存在同名 `Approved` Idea，`交付 <功能名>` 可以先将它晋升为任务；Idea 尚未批准时会停在产品决策边界，不会擅自进入开发。
+
+## 从一个 Idea 到产品文档
+
+### 第一步：命名并提交原始想法
+
+名称使用英文小写和中横线。最少只需提供一句话：
+
+```text
+想法 team-meeting-memory
+让小团队能自动沉淀会议决定和待办，避免会后遗漏。
+```
+
+信息较多时，推荐使用下面的输入模板：
+
+```text
+想法 team-meeting-memory
+
+原始想法：
+让小团队能自动沉淀会议决定和待办，避免会后遗漏。
+
+我认为的目标用户：10-50 人的软件团队
+已观察到的问题：会后经常找不到最终决定，待办没有负责人
+现有替代方式：人工会议纪要、聊天记录、项目管理工具
+期望结果：会议结束后 2 分钟内得到可确认的决定和待办
+已知约束：第一版不接入电话会议，只处理上传的录音或文字
+已有证据：来自 3 次团队复盘；没有正式用户调研
+决策人：我
+决策权限：重要 MVP 取舍需要我确认
+```
+
+只写一句话也可以。Agent 会继续产出，但必须把推断标记为 `Assumption` 或 `Unknown`，不能虚构用户访谈、市场规模、竞品结论或技术可行性证据。
+
+### 第二步：Product Agent 完成发现
+
+Product Agent 根据 `ideas/template.md` 生成 Product Brief，并依次补齐：
+
+- 原始想法和一句话价值主张。
+- 目标用户、触发场景、核心问题、现有替代方式和问题成本。
+- 用户任务、用户结果和业务结果。
+- 事实、假设、未知、置信度和验证动作。
+- 核心用户旅程，包括首次使用、成功、失败、取消和返回流程。
+- MVP 必做项、明确不做项和后续机会。
+- 主结果指标、领先指标和护栏指标。
+- 产品、隐私、安全、可行性、成本、无障碍和运营风险。
+- 初步交付范围假设，但不代替 Architect 的技术决策。
+
+信息不足时，Agent 只询问会实质改变用户、问题、MVP、重大风险或交付范围的问题。其余未知项使用可逆假设继续推进，并给出验证计划。
+
+### 第三步：评审 Product Brief
+
+Brief 完整后状态为 `Ready for Review`。重点检查：
+
+- 解决的是具体用户问题，而不是只有功能设想。
+- 事实和假设已分开。
+- MVP 足够小且形成完整用户价值。
+- 成功指标可以验证。
+- 高风险假设有验证动作。
+- 不做什么已经明确。
+
+批准时输入：
+
+```text
+产品 team-meeting-memory
+评审结论：批准当前 MVP。
+调整：第一版只接受文字会议记录，不处理音频。
+请记录产品决策，更新需求，并创建可交付任务。
+```
+
+需要补充时输入：
+
+```text
+产品 team-meeting-memory
+评审结论：继续发现。
+需要先确认：用户是否愿意在会后人工确认待办负责人。
+```
+
+也可以选择 `Parked` 或 `Rejected`，并记录重新评估条件或拒绝原因。默认 `decision_owner: User`，没有明确授权时 Product Agent 不能自行批准。
+
+### 第四步：晋升为需求和任务
+
+批准后 Product Agent 会：
+
+1. 将稳定的产品级结论写入 `docs/requirements.md`。
+2. 从 `tasks/template.md` 创建一个或多个任务。
+3. 将任务 `source_idea` 设置为 Idea ID。
+4. 将任务 ID 写回 Idea 的 `promoted_tasks`。
+5. 将产品描述转成可观察的验收标准。
+6. 校验通过后把 Idea 标记为 `Promoted`。
+
+Idea 晋升不等于授权开发。任务仍需通过产品门禁和架构门禁，才能进入 `Ready for Implementation`。
+
+### 委托 Product Agent 自主决策
+
+不希望停在产品评审时，可以在输入中明确委托范围：
+
+```text
+想法 team-meeting-memory
+让小团队自动沉淀会议决定和待办。
+
+决策权限：授权 Product Agent 决定第一版 MVP 和非目标；涉及付费、隐私合规、外部数据共享或生产发布时仍需我批准。
+成功标准：4 周内让试用团队 80% 的会议待办具有负责人和截止时间。
+```
+
+Agent 必须把这项授权写入 Decision Log。授权只适用于记录的产品取舍，不会自动扩大生产、密钥、费用、法律或破坏性操作权限。
+
+## 三种交付方式
+
+### 1. 自动闭环
+
+```text
+交付 user-management
+```
+
+适合需求和权限边界已经明确的功能。Agent 会自动完成可逆的仓库修改、本地构建和测试，不需要每个阶段逐次确认。
+
+### 2. 分角色推进
+
+```text
+产品 user-management
+架构 user-management
+后端 user-management
+前端 user-management
+移动端 user-management
+iOS user-management
+安卓 user-management
+测试 user-management
+```
+
+只执行任务 `required_scopes` 中标记为 `true` 的开发范围。标记为 `false` 的范围应保持 `N/A`，无需为了走流程而执行。
+
+### 3. 自动领取下一项
+
+```text
+下一个 前端
+下一个 后端
+下一个 移动端
+下一个 iOS
+下一个 安卓
+下一个 测试
+```
+
+选择顺序为：同优先级下先处理 `Ready for Retest`，再处理角色拥有的 issue，最后处理可进入的任务；优先级按 `P0` 到 `P3`，同级按创建时间从早到晚。
+
+英文命令也可使用，例如 `deliver user-management`、`product login-auth`、`next frontend`。
+
+## 权限与暂停边界
+
+自动闭环可以在仓库内持续编辑文件、运行本地命令和修复测试问题。即使 Agent 拥有较高系统权限，以下操作仍必须获得明确授权：
+
+- 生产环境部署。
+- 破坏性数据变更或不可逆迁移。
+- 读取或修改密钥、凭据。
+- 产生费用的外部操作。
+- 法律、合规或隐私决策。
+- 产品文档无法确定的业务取舍。
+
+遇到工具缺失、依赖不可用或外部决策未完成时，不能假定通过。Agent 必须将任务设为 `Blocked`，记录原因、开始时间、解除负责人和解除条件。
+
+## 核心文件
+
+```text
+.
+├── AGENTS.md                    # 全局 Agent 入口和权限边界
+├── CLAUDE.md -> AGENTS.md       # 复用同一套 Agent 规则
+├── COMMANDS.md                  # 短命令速查
+├── README.md                    # 本使用说明
+├── ideas
+│   ├── template.md              # Idea/Product Brief 模板
+│   └── <idea>.md                # 产品发现、证据与决策
 ├── docs
-│   ├── AGENTS.md
-│   ├── requirements.md
-│   ├── architecture.md
-│   ├── openapi.yaml
-│   ├── database.md
-│   └── testing.md
+│   ├── AGENTS.md                # Product/Architect 角色规则
+│   ├── delivery-workflow.md     # 状态机、门禁、阻塞和恢复
+│   ├── product-discovery.md     # 从 Idea 到任务的方法
+│   ├── requirements.md          # 产品行为
+│   ├── architecture.md          # 系统边界
+│   ├── openapi.yaml             # HTTP 契约
+│   ├── database.md              # 数据模型
+│   └── testing.md               # 测试策略
 ├── tasks
-│   ├── template.md
-│   ├── user-management.md
-│   └── login-auth.md
+│   ├── template.md              # 任务模板
+│   └── <feature>.md             # 功能任务与交接证据
 ├── issues
-│   └── template.md
-├── frontend
-│   └── AGENTS.md
-├── backend
-│   └── AGENTS.md
-└── tests
-    └── AGENTS.md
+│   ├── template.md              # 缺陷模板
+│   └── <issue>.md               # 缺陷与复测证据
+├── scripts
+│   └── validate_workflow.rb     # 工作流静态校验
+├── frontend/AGENTS.md
+├── backend/AGENTS.md
+├── mobile/AGENTS.md
+├── mobile/ios/AGENTS.md
+├── mobile/android/AGENTS.md
+└── tests/AGENTS.md
 ```
 
-### 根目录文件
+## 信息来源
 
-- `AGENTS.md`：全局协作规则，定义 Product、Architect、Frontend、Backend、Test Agent 的职责和闭环流程。
-- `COMMANDS.md`：短命令说明，告诉你如何用一句话启动不同 Agent。
-- `README.md`：当前文件，用中文说明整个框架怎么使用。
+| 内容 | 唯一来源 |
+| --- | --- |
+| 原始想法、证据、假设和 MVP 决策 | `ideas/*.md` 与 `docs/product-discovery.md` |
+| 产品行为 | `docs/requirements.md` 与任务验收标准 |
+| 系统边界 | `docs/architecture.md` |
+| HTTP 接口 | `docs/openapi.yaml` |
+| 数据模型 | `docs/database.md` |
+| 任务和缺陷状态 | `tasks/*.md`、`issues/*.md` 顶部 YAML |
+| 状态流转和质量门禁 | `docs/delivery-workflow.md` |
+| 测试策略 | `docs/testing.md` |
 
-### docs
+如果实现与文档冲突，应先按所有权修正文档或实现，不能在任务交接记录中另造一套约定。
 
-- `docs/AGENTS.md`：产品和架构 Agent 的本地规则。
-- `docs/requirements.md`：产品需求文档。
-- `docs/architecture.md`：系统架构和前后端边界。
-- `docs/openapi.yaml`：前后端 API 契约。
-- `docs/database.md`：数据库设计。
-- `docs/testing.md`：测试策略和完成标准。
+## 任务模型
 
-### tasks
-
-`tasks/` 下面每个文件代表一个功能模块的开发任务单。
-
-例如：
+每个任务位于 `tasks/<功能名>.md`。文件名使用英文小写和中横线，例如：
 
 ```text
+tasks/login-auth.md
 tasks/user-management.md
-tasks/login-auth.md
-```
-
-以后新增功能时，也按这个规则创建：
-
-```text
 tasks/order-management.md
-tasks/product-management.md
-tasks/file-upload.md
 ```
 
-### issues
+任务顶部 YAML 是机器可读状态，正文用于记录目标、范围、验收标准、架构影响、实施清单、测试计划、验证证据、发布计划和交接历史。
 
-`issues/` 用来放测试发现的问题。
+关键字段：
 
-测试 Agent 发现 bug 后，不直接修改前后端代码，而是创建 issue，并指定 Owner：
+| 字段 | 用途 |
+| --- | --- |
+| `id` | 唯一任务编号，如 `TASK-20260713-001` |
+| `status` | 整体生命周期状态 |
+| `priority` | `P0`、`P1`、`P2`、`P3` |
+| `owner` | 当前负责角色 |
+| `source_idea` | 来源 Idea ID；豁免时为 `null` 并在正文说明原因 |
+| `depends_on` | 必须先完成的任务 ID |
+| `linked_issues` | 关联 issue ID |
+| `required_scopes` | 哪些开发范围必须交付 |
+| `scope_status` | 各角色独立进度 |
+| `release_required` | 是否需要发布门禁 |
+| `blocked_*` | 阻塞原因、时间、负责人和解除条件 |
+
+一个任务只有一个整体 `status`，但可以同时拥有多个 `scope_status`。例如后端和前端可以并行为 `In Progress`，互不覆盖状态；所有必需范围完成后，整体任务才能进入 `Ready for Test`。
+
+## 状态说明
+
+Idea 状态：
 
 ```text
-Owner = Frontend Agent
-Owner = Backend Agent
-Owner = Architect Agent
-Owner = Product Agent
+Captured
+Discovering
+Ready for Review
+Approved
+Parked
+Rejected
+Promoted
 ```
 
-对应 Agent 修复后，把 issue 状态改成：
+任务状态：
 
 ```text
+Draft
+Ready for Architecture
+Ready for Implementation
+In Progress
+Blocked
+Ready for Test
+Test Failed
 Ready for Retest
+Ready for Release
+Released
+Done
+Cancelled
 ```
 
-然后测试 Agent 回归测试。通过后关闭，失败则改成：
+范围状态：
 
 ```text
+N/A
+Pending
+In Progress
+Blocked
+Done
+```
+
+Issue 状态：
+
+```text
+Open
+Assigned
+Fixing
+Ready for Retest
 Retest Failed
+Closed
 ```
 
-再退回原 Owner 继续修。
+完整转换条件见 `docs/delivery-workflow.md`。不要手工跳过中间门禁，也不要用后端或前端状态替代整体任务状态。
 
-### frontend
+## 角色职责
 
-前端代码目录。
+| 角色 | 主要职责 | 主要目录/文档 |
+| --- | --- | --- |
+| Product Agent | Idea 发现、证据与假设、产品决策、范围和验收标准 | `ideas/`、`docs/product-discovery.md`、`docs/requirements.md`、`tasks/` |
+| Architect Agent | 架构、API、数据库、兼容与回滚 | `docs/architecture.md`、`docs/openapi.yaml`、`docs/database.md` |
+| Backend Agent | API、业务规则、数据与后端测试 | `backend/` |
+| Frontend Agent | Web UI、状态、路由、API 集成与测试 | `frontend/` |
+| Mobile Agent | 跨平台移动端状态、网络、导航与共享逻辑 | `mobile/` |
+| iOS Agent | iOS UI、生命周期、权限、存储与测试 | `mobile/ios/` |
+| Android Agent | Android UI、生命周期、权限、存储与测试 | `mobile/android/` |
+| Test Agent | 独立验证、创建 issue、复测和关闭 issue | `tests/`、`docs/testing.md`、`issues/` |
+| Orchestrator Agent | 选择阶段、协调角色、推进整体状态 | 任务和交接记录 |
 
-前端 Agent 工作前必须先读：
+每个角色开始工作前必须读取最近的角色 `AGENTS.md`、根 `AGENTS.md`、`docs/delivery-workflow.md`、目标 Idea/任务和关联 issue。
 
-```text
-frontend/AGENTS.md
-AGENTS.md
-```
+## 质量门禁
 
-它会先检查自己名下的未关闭 issue，再决定是否可以开发新功能。
+### Product Brief 就绪门禁
 
-### backend
+- 原始想法和决策人已记录。
+- 目标用户、场景、问题、替代方式和期望结果具体。
+- 事实、假设、未知、置信度和验证动作已分开。
+- MVP、非目标、旅程、指标、重大风险和交付假设已记录。
+- 阻塞产品决策已解决或明确提交给决策人。
 
-后端代码目录。
+### 产品门禁
 
-后端 Agent 工作前必须先读：
+- 来源 Idea 已是 `Approved`/`Promoted`，或任务明确记录无需发现流程的原因。
+- 目标、用户、优先级、范围、假设和依赖明确。
+- 验收标准可观察，覆盖适用的错误、空状态、权限和非功能要求。
+- 必需开发范围已经设置，非适用范围为 `N/A`。
 
-```text
-backend/AGENTS.md
-AGENTS.md
-```
+### 架构门禁
 
-它会先检查自己名下的未关闭 issue，再决定是否可以开发新功能。
+- 架构、API、数据库、安全、迁移、兼容性和回滚影响已记录，或明确说明 `None` 及原因。
+- 所有权、错误行为和外部依赖已经确定。
+- 破坏性契约变更有版本和消费者迁移方案。
 
-### tests
+### 实施门禁
 
-测试 Agent 的工作入口。
+- 所有必需范围为 `Done`。
+- 代码、测试、文档和契约一致。
+- 变更文件、精确验证命令及结果已经写入任务。
 
-测试 Agent 工作前必须先读：
+### 测试门禁
 
-```text
-tests/AGENTS.md
-AGENTS.md
-```
+- 每条验收标准都有通过或失败证据。
+- 适用的单元、集成、契约、UI 和端到端测试通过。
+- 所有关联 issue 都已由 Test Agent 复测并关闭。
 
-测试 Agent 会优先处理 `Ready for Retest` 的 issue，然后再测试新功能。
+### 发布门禁
 
-## 短命令使用方式
-
-你不需要每次输入很长的提示词，只需要使用：
-
-```text
-角色 功能名
-```
-
-常用角色：
-
-```text
-产品
-架构
-后端
-前端
-测试
-```
-
-功能名就是 `tasks/` 下面的任务文件名，不带 `.md`。
-
-例如：
-
-```text
-产品 login-auth
-架构 login-auth
-后端 login-auth
-前端 login-auth
-测试 login-auth
-```
-
-对应的任务文件是：
-
-```text
-tasks/login-auth.md
-```
-
-## 开发一个新功能的标准流程
-
-假设要开发订单管理功能，功能名叫：
-
-```text
-order-management
-```
-
-### 1. 产品阶段
-
-输入：
-
-```text
-产品 order-management
-```
-
-Product Agent 会：
-
-- 创建或完善 `tasks/order-management.md`
-- 更新 `docs/requirements.md`
-- 写清楚功能范围、用户故事、验收标准
-- 把任务推进到 `Ready for Architecture`
-
-### 2. 架构阶段
-
-输入：
-
-```text
-架构 order-management
-```
-
-Architect Agent 会：
-
-- 更新 `docs/architecture.md`
-- 更新 `docs/openapi.yaml`
-- 更新 `docs/database.md`
-- 明确前后端边界
-- 把任务推进到 `Ready for Implementation`
-
-### 3. 后端开发
-
-输入：
-
-```text
-后端 order-management
-```
-
-Backend Agent 会：
-
-- 先检查 `issues/` 中是否有自己的阻塞问题
-- 没有阻塞 issue 时，开发 `backend/`
-- 实现 API、业务逻辑、数据库访问和后端测试
-- 更新任务单状态和交接记录
-
-### 4. 前端开发
-
-输入：
-
-```text
-前端 order-management
-```
-
-Frontend Agent 会：
-
-- 先检查 `issues/` 中是否有自己的阻塞问题
-- 没有阻塞 issue 时，开发 `frontend/`
-- 实现页面、组件、接口调用和前端测试
-- 更新任务单状态和交接记录
-
-### 5. 测试阶段
-
-输入：
-
-```text
-测试 order-management
-```
-
-Test Agent 会：
-
-- 优先回测 `Ready for Retest` 的 issue
-- 没有待回测 issue 时，测试当前功能
-- 测试失败时，在 `issues/` 下创建问题
-- 指定问题 Owner
-- 等对应 Agent 修复后再次回测
+- `release_required: false` 时，测试通过后可直接进入 `Done`。
+- 需要发布时，必须记录环境、版本/产物、部署、冒烟测试、监控和回滚准备。
+- 生产发布仍受前述审批边界约束。
 
 ## Bug 修复闭环
 
-完整闭环如下：
-
 ```text
-Test Agent 测试失败
-  ↓
-创建 issues/xxx.md
-  ↓
-指定 Owner = Frontend Agent 或 Backend Agent
-  ↓
-对应 Agent 下次工作前先处理自己的 issue
-  ↓
-修复后改为 Ready for Retest
-  ↓
-Test Agent 回归测试
-  ↓
-通过：Closed
-失败：Retest Failed，退回原 Owner
+Test Agent 发现失败
+  -> 从 issues/template.md 创建 issue
+  -> 设置 P0-P3、Owner 和关联任务 ID
+  -> 任务 linked_issues 加入 issue ID
+  -> Owner 修复并记录根因、文件和验证结果
+  -> Owner 设置 Ready for Retest
+  -> Test Agent 重跑原复现步骤和相关自动化测试
+     -> 通过：Closed
+     -> 失败：Retest Failed，退回原 Owner
 ```
 
-前端或后端 Agent 不能自己关闭 issue。只有 Test Agent 回归通过后，才能把 issue 改成 `Closed`。
+实现角色不能关闭自己修复的 issue。只有 Test Agent 独立复测通过后才能设置 `Closed`。同优先级下，待复测 issue 优先于新功能。
 
-## 不知道下一步该做什么时
+## 优先级
 
-可以使用：
+| 等级 | 含义 |
+| --- | --- |
+| `P0` | 生产事故、安全问题或数据丢失风险 |
+| `P1` | 核心用户流程完全阻断 |
+| `P2` | 非核心行为降级或存在可接受绕行方式 |
+| `P3` | 轻微影响 |
 
-```text
-下一个 前端
-下一个 后端
-下一个 测试
+角色拥有 `P0` 或 `P1` issue 时，不应开始新的功能工作。
+
+## 阻塞、恢复与变更控制
+
+- 临时命令失败可在记录后重试两次；仍失败且没有安全替代方案时设为 `Blocked`。
+- 恢复任务时重新执行 preflight 和最后失败的门禁，不重复已经完成的阶段。
+- 验收标准改变后，任务返回 `Ready for Architecture`。
+- 实施开始后改变 API 或数据库契约，需要 Architect 重新评估，并将受影响范围重置为 `Pending`。
+- 并行 Agent 只更新自己的 `scope_status`，修改共享任务文件前应重新读取，避免覆盖其他交接记录。
+- 每次状态转换都要记录日期、操作者、原状态、新状态、证据和下一步。
+
+## 校验工作流
+
+每次状态交接前以及标记 `Done` 前运行：
+
+```bash
+ruby scripts/validate_workflow.rb
 ```
 
-含义：
+校验器会检查：
 
-- `下一个 前端`：前端 Agent 先找自己的高优先级 issue，没有再找前端任务。
-- `下一个 后端`：后端 Agent 先找自己的高优先级 issue，没有再找后端任务。
-- `下一个 测试`：测试 Agent 先找 `Ready for Retest`，没有再找 `Ready for Test` 的任务。
+- Idea、任务和 issue 是否包含合法 YAML 元数据。
+- ID、Owner、优先级和状态是否合法且不重复。
+- Idea 的决策人、状态和晋升任务是否有效。
+- Idea 与任务的 `source_idea`/`promoted_tasks` 是否双向关联。
+- `required_scopes` 与 `scope_status` 是否一致。
+- 进入测试或完成状态时，必需范围是否已经完成。
+- 任务依赖和 issue 双向关联是否有效。
+- `Done` 任务是否仍有未关闭 issue。
+- `Blocked` 任务是否记录完整解除条件。
 
-## 功能命名规则
-
-建议使用英文小写加中横线：
-
-```text
-login-auth
-user-management
-order-management
-product-management
-file-upload
-payment
-notification
-dashboard
-```
-
-规则：
+当前仓库的期望输出：
 
 ```text
-tasks/<功能名>.md
+Workflow validation passed (0 ideas, 2 tasks, 0 issues).
 ```
 
-例如：
+如果项目子模块定义了自己的构建、lint、类型检查或测试命令，还必须执行对应模块命令；根目录目前没有统一应用包管理器。
 
-```text
-tasks/login-auth.md
-```
+## Done 的最低条件
 
-对应命令：
+任务只有同时满足以下条件才能标记为 `Done`：
 
-```text
-产品 login-auth
-架构 login-auth
-后端 login-auth
-前端 login-auth
-测试 login-auth
-```
+- 产品、架构、实施、测试和适用的发布门禁均通过。
+- 必需范围为 `Done`，排除范围为 `N/A`。
+- 依赖任务已经 `Done`。
+- 所有关联 issue 已 `Closed`。
+- 工作流校验通过。
+- 已知限制和后续工作已记录，没有被隐藏成“测试通过”。
 
-## 当前推荐用法
-
-先按这个顺序推进：
-
-```text
-产品 <功能名>
-架构 <功能名>
-后端 <功能名>
-前端 <功能名>
-测试 <功能名>
-```
-
-如果测试发现问题，再使用：
-
-```text
-下一个 前端
-下一个 后端
-下一个 测试
-```
-
-这套框架当前是文档驱动的多 Agent 协作模式。后续如果项目变复杂，可以再增加自动调度脚本、状态看板和 CI 校验。
-
+具体规则以 `AGENTS.md` 和 `docs/delivery-workflow.md` 为准，本 README 用于日常操作和团队沉淀。

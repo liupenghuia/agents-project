@@ -2,13 +2,23 @@
 
 Use these short commands when asking an agent to work in this repository.
 
+## Idea Discovery
+
+```text
+想法 smart-expense-assistant
+```
+
+English equivalent: `idea smart-expense-assistant`.
+
+Include the raw idea after the command. If `ideas/smart-expense-assistant.md` does not exist, Product Agent creates it from `ideas/template.md`, separates facts/assumptions/unknowns, defines the problem, user, MVP, journey, metrics, risks, and presents a product recommendation. It stops at `Ready for Review` unless the recorded decision owner approves.
+
 ## Product
 
 ```text
 产品 user-management
 ```
 
-Expands to: read product/architecture rules, update requirements and task acceptance criteria.
+Expands to: continue discovery when the name matches an idea, or update requirements and task acceptance criteria when it matches a task. An approved idea is promoted into requirements and bidirectionally linked task files.
 
 ## Architect
 
@@ -26,6 +36,30 @@ Expands to: read architecture rules, update `docs/architecture.md`, `docs/openap
 
 Expands to: read backend rules, check backend issues first, then implement backend work for the task.
 
+## Mobile
+
+```text
+移动端 user-management
+```
+
+Expands to: read mobile rules, check mobile issues first, then implement shared mobile work for the task.
+
+## iOS
+
+```text
+iOS user-management
+```
+
+Expands to: read iOS rules, check iOS issues first, then implement iOS work for the task.
+
+## Android
+
+```text
+安卓 user-management
+```
+
+Expands to: read Android rules, check Android issues first, then implement Android work for the task.
+
 ## Frontend
 
 ```text
@@ -42,13 +76,25 @@ Expands to: read frontend rules, check frontend issues first, then implement fro
 
 Expands to: read test rules, retest `Ready for Retest` issues first, then test the task.
 
+## Autonomous Delivery
+
+```text
+交付 user-management
+```
+
+English equivalent: `deliver user-management`.
+
+Expands to: promote a matching approved idea when needed, then run Product, Architect, all required implementation scopes, Test, issue fix/retest, and the applicable release gate until the task is `Done` or a documented approval/blocker requires user input. Repository edits and local checks continue without phase-by-phase confirmation; production, destructive, secret, paid, legal, and unresolved product decisions still require approval.
+
 ## Next Work
 
 ```text
 下一个 前端
 下一个 后端
+下一个 移动端
+下一个 iOS
+下一个 安卓
 下一个 测试
 ```
 
-Expands to: pick the highest-priority pending issue first; if none exists, pick the next eligible task.
-
+Expands to: pick `Ready for Retest` first at equal priority, then owned issues, then eligible tasks. Sort by `P0` through `P3`, then oldest creation date.

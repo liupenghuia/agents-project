@@ -7,6 +7,7 @@ Build a maintainable full-stack application using a multi-agent development proc
 ## Users
 
 - End user: uses the product features through the frontend.
+- Mobile user: uses the product features through iOS or Android apps when mobile is in scope.
 - Admin user: manages users and operational data when required.
 - Development team: uses this repository structure to coordinate product, architecture, frontend, backend, and testing work.
 
@@ -58,6 +59,8 @@ Minimum scope:
 - API behavior must match `docs/openapi.yaml`.
 - Database changes must be reflected in `docs/database.md`.
 - Every feature must have a task file in `tasks/`.
+- Every new feature task must reference its approved source Idea, or document why product discovery is not required.
+- Mobile features must also define iOS and Android task coverage when mobile delivery is in scope.
 
 ### Testability
 
@@ -66,7 +69,8 @@ Minimum scope:
 
 ## Acceptance Criteria
 
-- A feature is not complete until it passes the quality gates in `AGENTS.md`.
+- A feature is not complete until it passes the quality gates in `docs/delivery-workflow.md`.
 - Any failed verification must create an issue under `issues/`.
 - Issues must be fixed by the owning agent and retested by the Test Agent.
 - Login authentication is not complete until registration, login, logout, current-user lookup, protected route behavior, and invalid-session behavior are all testable.
+- Mobile-authored flows are not complete until iOS and Android behavior is testable where mobile delivery is in scope.

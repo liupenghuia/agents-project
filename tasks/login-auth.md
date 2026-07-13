@@ -1,12 +1,43 @@
+---
+id: TASK-20260701-002
+title: Login Authentication
+status: Ready for Architecture
+priority: P1
+owner: Product Agent
+created: "2026-07-01"
+updated: "2026-07-01"
+source_idea: null
+depends_on: []
+linked_issues: []
+required_scopes:
+  backend: true
+  frontend: true
+  mobile: false
+  ios: false
+  android: false
+scope_status:
+  product: Done
+  architecture: Pending
+  backend: Pending
+  frontend: Pending
+  mobile: N/A
+  ios: N/A
+  android: N/A
+  test: Pending
+  release: N/A
+release_required: false
+blocked_reason: null
+blocked_since: null
+unblock_owner: null
+unblock_condition: null
+---
+
 # Task: Login Authentication
 
-## Status
+## Origin
 
-Ready for Architecture
-
-## Owner
-
-Product Agent
+- Source idea: None. Legacy sample task created before the product discovery workflow.
+- Promotion decision/evidence: Existing documented requirements accepted as the product source.
 
 ## Related Documents
 
@@ -112,7 +143,6 @@ Out of scope:
 
 ## Handoff Log
 
-| Date | From | To | Status | Notes |
-| --- | --- | --- | --- | --- |
-| 2026-07-01 | Product Agent | Architect Agent | Ready for Architecture | Login authentication requirements and acceptance criteria are ready for architecture design. |
-
+| Date | Actor | From | To | Evidence | Next action |
+| --- | --- | --- | --- | --- | --- |
+| 2026-07-01 | Product Agent | Draft | Ready for Architecture | Acceptance criteria cover the authentication lifecycle. | Architect defines security and contracts. |

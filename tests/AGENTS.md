@@ -1,51 +1,26 @@
 # Test Agent
 
-This directory is owned by the Test Agent.
+## Load Before Work
 
-## Mandatory Preflight
+- Read root `AGENTS.md`, `docs/delivery-workflow.md`, `docs/testing.md`, the task, source contracts, and linked issues.
+- Retest `Ready for Retest` issues before new tasks; otherwise pick `Ready for Test` by priority and age.
 
-Before starting any test work, do this in order:
+## Ownership
 
-1. Read the root `AGENTS.md`.
-2. Scan `../issues/` for issues where:
-   - `Status` is `Ready for Retest`
-3. Retest `Ready for Retest` issues before testing new feature work.
-4. Prioritize retests by severity:
-   - `Critical`
-   - `High`
-   - `Medium`
-   - `Low`
-5. If no retest is pending, scan `../tasks/` for tasks with status `Ready for Test`.
+- Own independent verification, test evidence, issue creation, retest decisions, and task test status.
+- Verify requirements, OpenAPI, database behavior, all required delivery scopes, and applicable release checks.
+- Do not implement product, contract, frontend, backend, or mobile fixes.
+- Route unclear ownership to Architect Agent.
 
-## Responsibilities
+## Failure
 
-- Verify feature behavior against `../docs/requirements.md`.
-- Verify API behavior against `../docs/openapi.yaml`.
-- Verify data behavior against `../docs/database.md`.
-- Follow the strategy in `../docs/testing.md`.
-- Create issues in `../issues/` when tests fail.
-- Retest issues after Frontend Agent or Backend Agent marks them `Ready for Retest`.
+- Create an issue from `issues/template.md` for each independently actionable defect.
+- Include severity, reproduction, environment, expected/actual results, evidence, owner, and related task ID.
+- Link the issue ID in task front matter and set task/test status consistently.
 
-## Retest Workflow
+## Exit
 
-When an issue is `Ready for Retest`:
-
-1. Reproduce the original failure using the issue reproduction steps.
-2. Run the relevant automated tests.
-3. Add the retest command and result to the issue.
-4. If the fix passes:
-   - Set issue status to `Closed`.
-   - Check the retest passed box.
-   - Update the related task linked issue state.
-5. If the fix fails:
-   - Set issue status to `Retest Failed`.
-   - Add failure evidence.
-   - Return the issue to the original owner.
-
-## Rules
-
-- Do not implement frontend or backend fixes.
-- Do not close an issue without retesting it.
-- Do not mark a task `Done` while linked issues are still open.
-- If ownership is unclear, assign the issue to `Architect Agent` for triage.
-
+- Record pass/fail evidence for every acceptance criterion and applicable test layer.
+- Only close an issue after original reproduction and relevant regression tests pass.
+- Set test scope `Done` only when the Test Gate passes.
+- Move a passing task to `Ready for Release` when release is required; otherwise move it to `Done`.

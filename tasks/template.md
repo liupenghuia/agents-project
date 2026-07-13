@@ -1,78 +1,137 @@
-# Task: <Feature Name>
+---
+id: TASK-YYYYMMDD-NNN
+title: Feature name
+status: Draft
+priority: P2
+owner: Product Agent
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+source_idea: null
+depends_on: []
+linked_issues: []
+required_scopes:
+  backend: false
+  frontend: false
+  mobile: false
+  ios: false
+  android: false
+scope_status:
+  product: In Progress
+  architecture: Pending
+  backend: N/A
+  frontend: N/A
+  mobile: N/A
+  ios: N/A
+  android: N/A
+  test: Pending
+  release: N/A
+release_required: false
+blocked_reason: null
+blocked_since: null
+unblock_owner: null
+unblock_condition: null
+---
 
-## Status
+# Task: Feature Name
 
-Draft
+## Origin
 
-## Owner
-
-Product Agent
-
-## Related Documents
-
-- Requirements: `docs/requirements.md`
-- Architecture: `docs/architecture.md`
-- API: `docs/openapi.yaml`
-- Database: `docs/database.md`
-- Testing: `docs/testing.md`
+- Source idea: `IDEA-YYYYMMDD-NNN`, or `None` with the reason discovery is not required.
+- Promotion decision/evidence:
 
 ## Goal
 
-Describe the user or business outcome.
+Describe the observable user or business outcome.
+
+## Users And Assumptions
+
+- Primary user:
+- Assumptions:
+- External dependencies:
 
 ## Scope
 
 In scope:
 
-- 
+-
 
 Out of scope:
 
-- 
+-
 
 ## User Stories
 
-- As a user, I want to ..., so that ...
+- As a ..., I want ..., so that ...
 
 ## Acceptance Criteria
 
-- [ ] 
+- [ ] Given ..., when ..., then ...
+- [ ] Error, empty, loading, and permission behavior is observable where applicable.
+- [ ] Applicable security, reliability, performance, accessibility, and compatibility requirements pass.
 
-## Frontend Work
+## Architecture Impact
 
-- [ ] Screens/components:
-- [ ] API integration:
-- [ ] UI states:
-- [ ] Frontend tests:
+- Architecture:
+- API:
+- Database/migration:
+- Security/privacy:
+- Compatibility/versioning:
+- Rollback:
 
-## Backend Work
+Use `None` with a reason when an area is not affected.
 
-- [ ] API endpoints:
-- [ ] Validation:
-- [ ] Persistence:
-- [ ] Backend tests:
+## Implementation Checklist
 
-## Architecture Checklist
+### Backend
 
-- [ ] API contract updated.
-- [ ] Database design updated.
-- [ ] Security concerns reviewed.
-- [ ] Error handling defined.
+- [ ] Work or `N/A` reason:
+- [ ] Tests:
+
+### Frontend
+
+- [ ] Work or `N/A` reason:
+- [ ] Tests and UI states:
+
+### Shared Mobile
+
+- [ ] Work or `N/A` reason:
+- [ ] Tests and app states:
+
+### iOS
+
+- [ ] Work or `N/A` reason:
+- [ ] Tests and platform behavior:
+
+### Android
+
+- [ ] Work or `N/A` reason:
+- [ ] Tests and platform behavior:
 
 ## Test Plan
 
-- [ ] Unit tests:
-- [ ] Integration tests:
-- [ ] End-to-end tests:
-- [ ] Regression tests:
+- [ ] Unit:
+- [ ] Integration/contract:
+- [ ] UI/end-to-end:
+- [ ] Regression:
 
-## Linked Issues
+## Verification Evidence
+
+| Date | Scope | Command/check | Result | Evidence |
+| --- | --- | --- | --- | --- |
+|  |  |  |  |  |
+
+## Release Plan
+
+- Environment/artifact:
+- Deployment and smoke test:
+- Monitoring and rollback:
+
+## Known Limitations
 
 - None
 
 ## Handoff Log
 
-| Date | From | To | Status | Notes |
-| --- | --- | --- | --- | --- |
-|  |  |  |  |  |
-
+| Date | Actor | From | To | Evidence | Next action |
+| --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  |

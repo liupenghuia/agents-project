@@ -1,193 +1,70 @@
 # AGENTS
 
-This project uses a closed-loop multi-agent workflow. Each agent owns a clear part of the delivery lifecycle, and handoffs must be documented in project files.
+## Instruction Order
 
-## Directory Contract
+- Before editing, read the nearest role `AGENTS.md`, then this file.
+- Read `docs/delivery-workflow.md` and the target idea/task before work.
+- Role instructions may tighten, but never weaken, this contract.
+- Preserve unrelated user changes; never discard work to resolve a conflict silently.
 
-```text
-.
-├── AGENTS.md
-├── docs
-│   ├── AGENTS.md
-│   ├── requirements.md
-│   ├── architecture.md
-│   ├── openapi.yaml
-│   ├── database.md
-│   └── testing.md
-├── tasks
-│   ├── template.md
-│   └── user-management.md
-├── issues
-│   └── template.md
-├── tests
-│   └── AGENTS.md
-├── frontend
-│   └── AGENTS.md
-└── backend
-    └── AGENTS.md
-```
+## Sources of Truth
 
-## Instruction Loading Rule
+| Concern | Source |
+| --- | --- |
+| Idea, assumptions, MVP decision | `ideas/*.md` and `docs/product-discovery.md` |
+| Product behavior | `docs/requirements.md` and task acceptance criteria |
+| System boundaries | `docs/architecture.md` |
+| HTTP contract | `docs/openapi.yaml` |
+| Data model | `docs/database.md` |
+| Delivery state | YAML front matter in `tasks/*.md` and `issues/*.md` |
+| Gates and transitions | `docs/delivery-workflow.md` |
+| Test policy | `docs/testing.md` |
 
-Every agent must load instructions before changing files.
+## Role Commands
 
-- If working in `docs/`, read `docs/AGENTS.md` first, then root `AGENTS.md`.
-- If working in `frontend/`, read `frontend/AGENTS.md` first, then root `AGENTS.md`.
-- If working in `backend/`, read `backend/AGENTS.md` first, then root `AGENTS.md`.
-- If working as Test Agent, read `tests/AGENTS.md` first, then root `AGENTS.md`.
-- If working outside a role directory, read root `AGENTS.md`.
-- Local role instructions may add stricter rules, but must not weaken the root workflow.
+| Command | Role |
+| --- | --- |
+| `想法 <idea>` / `idea <idea>` | Product Discovery |
+| `产品 <task>` / `product <task>` | Product Agent |
+| `架构 <task>` / `architect <task>` | Architect Agent |
+| `后端 <task>` / `backend <task>` | Backend Agent |
+| `前端 <task>` / `frontend <task>` | Frontend Agent |
+| `移动端 <task>` / `mobile <task>` | Mobile Agent |
+| `iOS <task>` / `ios <task>` | iOS Agent |
+| `安卓 <task>` / `android <task>` | Android Agent |
+| `测试 <task>` / `test <task>` | Test Agent |
+| `交付 <task>` / `deliver <task>` | Orchestrator Agent |
+| `下一个 <role>` / `next <role>` | Highest-priority eligible issue, then task |
 
-## Short Command Mode
+Short task names map to `tasks/<task>.md`. See `COMMANDS.md` for examples.
 
-The user may give short commands instead of full role prompts. Expand them using these rules.
+## Operating Contract
 
-| User command | Agent mode | Required behavior |
-| --- | --- | --- |
-| `产品 <task>` or `product <task>` | Product Agent | Read `docs/AGENTS.md`, root `AGENTS.md`, then update requirements and task acceptance criteria. |
-| `架构 <task>` or `architect <task>` | Architect Agent | Read `docs/AGENTS.md`, root `AGENTS.md`, then update architecture, OpenAPI, database docs, and task readiness. |
-| `前端 <task>` or `frontend <task>` | Frontend Agent | Read `frontend/AGENTS.md`, root `AGENTS.md`, run preflight issue check, then work on the task if not blocked. |
-| `后端 <task>` or `backend <task>` | Backend Agent | Read `backend/AGENTS.md`, root `AGENTS.md`, run preflight issue check, then work on the task if not blocked. |
-| `测试 <task>` or `test <task>` | Test Agent | Read `tests/AGENTS.md`, root `AGENTS.md`, retest pending issues first, then test the task. |
-| `下一个 前端` or `next frontend` | Frontend Agent | Pick the highest-priority frontend issue first; if none, pick the next frontend task. |
-| `下一个 后端` or `next backend` | Backend Agent | Pick the highest-priority backend issue first; if none, pick the next backend task. |
-| `下一个 测试` or `next test` | Test Agent | Pick `Ready for Retest` first; if none, pick a `Ready for Test` task. |
+- Perform the preflight, entry gate, work, verification, and exit gate defined in `docs/delivery-workflow.md`.
+- Update task/issue front matter and append a handoff row in the same change as each transition.
+- Use `P0`, `P1`, `P2`, `P3` priority order; retests outrank new feature work at equal priority.
+- An implementation owner may mark an issue `Ready for Retest`, but only Test Agent may mark it `Closed`.
+- Do not mark a task `Done` unless the validator and all applicable quality gates pass.
+- Record exact commands and results. If a required check cannot run, use `Blocked`; never report an assumed pass.
 
-If the task name is short, map it to `tasks/<task>.md` when possible. For example, `架构 user-management` means `tasks/user-management.md`.
+## Autonomous Delivery
 
-## Agent Roles
+`交付 <task>` runs the full loop: Product -> Architect -> required implementation scopes -> Test -> issue fix/retest -> release gate -> Done.
 
-### Product Agent
+- If the task is missing, Product may promote a matching `Approved` idea; otherwise stop at the product decision required.
+- Continue through reversible repository edits and local verification without asking between phases.
+- Use role-separated handoffs and evidence even when one agent performs multiple roles.
+- Delegate independent scopes when agent delegation is available; otherwise execute them sequentially.
+- Stop only for a documented blocker or approval boundary, record it in the task, and state the exact decision needed.
+- Approval is mandatory for production deployment, destructive data changes, secret/credential access, paid external actions, legal/compliance decisions, and unresolved product tradeoffs.
 
-Owns product clarity.
+## Root Tooling
 
-- Maintains `docs/requirements.md`.
-- Defines user stories, scope, priorities, and acceptance criteria.
-- Answers requirement questions raised by other agents.
-- Decides whether ambiguous behavior is a bug or a requirement change.
+- No application package manager is defined at repository root.
+- Validate workflow files with `ruby scripts/validate_workflow.rb`.
+- Use the closest module's documented file-scoped test, lint, and typecheck commands when implementation tooling exists.
 
-### Architect Agent
+## Commit Attribution
 
-Owns system shape and technical contracts.
-
-- Maintains `docs/architecture.md`.
-- Maintains API boundaries in `docs/openapi.yaml`.
-- Maintains data model decisions in `docs/database.md`.
-- Reviews feature tasks before implementation starts.
-- Resolves frontend/backend ownership disputes when a defect crosses boundaries.
-
-### Backend Agent
-
-Owns backend behavior.
-
-- Implements backend code in `backend/`.
-- Keeps implementation aligned with `docs/openapi.yaml`.
-- Adds backend unit and integration tests.
-- Fixes issues assigned to `Backend Agent`.
-
-### Frontend Agent
-
-Owns user-facing behavior.
-
-- Implements frontend code in `frontend/`.
-- Keeps UI behavior aligned with `docs/requirements.md`.
-- Integrates with APIs defined in `docs/openapi.yaml`.
-- Adds frontend unit, component, and UI integration tests.
-- Fixes issues assigned to `Frontend Agent`.
-
-### Test Agent
-
-Owns verification, not feature implementation.
-
-- Maintains `docs/testing.md`.
-- Creates test cases from task acceptance criteria.
-- Runs frontend, backend, API, and end-to-end tests.
-- Creates issue files under `issues/` when tests fail.
-- Performs regression testing after fixes.
-- Closes issues only after retest passes.
-
-## Closed-Loop Workflow
-
-1. Product Agent writes or updates `docs/requirements.md`.
-2. Architect Agent updates `docs/architecture.md`, `docs/openapi.yaml`, and `docs/database.md`.
-3. A task is created from `tasks/template.md`.
-4. Architect Agent marks the task as `Ready for Implementation`.
-5. Backend Agent implements backend scope and updates task status.
-6. Frontend Agent implements frontend scope and updates task status.
-7. Test Agent executes tests from `docs/testing.md` and the task acceptance criteria.
-8. If tests pass, Test Agent marks the task as `Done`.
-9. If tests fail, Test Agent creates an issue from `issues/template.md`.
-10. The issue is assigned to Product, Architect, Frontend, or Backend.
-11. The assigned agent fixes the issue and marks it `Ready for Retest`.
-12. Test Agent must pick up `Ready for Retest` issues before new test work.
-13. Test Agent retests. If passed, the issue is closed. If failed, the issue becomes `Retest Failed` and returns to the same owner.
-14. The task can move forward only after all linked issues are `Closed`.
-
-## Fix-to-Retest Handoff
-
-Frontend Agent and Backend Agent must not close issues they fixed.
-
-When a fix is complete, the fixing agent must:
-
-1. Update the issue status to `Ready for Retest`.
-2. Add fix notes explaining what changed.
-3. Add changed files or commits when available.
-4. Update the related task handoff log.
-5. Stop on that issue until Test Agent retests it.
-
-Test Agent must then:
-
-1. Scan for `Ready for Retest` issues before new test work.
-2. Rerun the original reproduction steps.
-3. Run the relevant automated tests.
-4. Set the issue to `Closed` if it passes.
-5. Set the issue to `Retest Failed` and return it to the owner if it fails.
-
-## Task Statuses
-
-Use these exact statuses in `tasks/*.md`:
-
-- `Draft`
-- `Ready for Architecture`
-- `Ready for Implementation`
-- `Backend In Progress`
-- `Backend Done`
-- `Frontend In Progress`
-- `Frontend Done`
-- `Ready for Test`
-- `Test Failed`
-- `Fixing`
-- `Ready for Retest`
-- `Done`
-
-## Issue Statuses
-
-Use these exact statuses in `issues/*.md`:
-
-- `Open`
-- `Assigned`
-- `Fixing`
-- `Ready for Retest`
-- `Retest Failed`
-- `Retest Passed`
-- `Closed`
-
-## Ownership Rules
-
-- Requirement mismatch: assign to `Product Agent`.
-- API contract mismatch: assign to `Architect Agent`.
-- API implementation bug: assign to `Backend Agent`.
-- Database/query bug: assign to `Backend Agent`.
-- UI rendering or interaction bug: assign to `Frontend Agent`.
-- Frontend API integration bug: assign to `Frontend Agent` unless the backend violates `docs/openapi.yaml`.
-- Unclear ownership: assign to `Architect Agent` for triage.
-
-## Quality Gates
-
-A task can be marked `Done` only when:
-
-- Requirements are documented.
-- API and database impact are documented.
-- Frontend and backend scopes are complete or explicitly marked not applicable.
-- Required tests pass.
-- All linked issues are `Closed`.
+- Commit only when requested.
+- AI commits must include `Co-Authored-By: <agent model and attribution byline>`.

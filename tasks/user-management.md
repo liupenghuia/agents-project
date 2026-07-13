@@ -1,12 +1,43 @@
+---
+id: TASK-20260701-001
+title: User Management
+status: Ready for Implementation
+priority: P2
+owner: Architect Agent
+created: "2026-07-01"
+updated: "2026-07-01"
+source_idea: null
+depends_on: []
+linked_issues: []
+required_scopes:
+  backend: true
+  frontend: true
+  mobile: false
+  ios: false
+  android: false
+scope_status:
+  product: Done
+  architecture: Done
+  backend: Pending
+  frontend: Pending
+  mobile: N/A
+  ios: N/A
+  android: N/A
+  test: Pending
+  release: N/A
+release_required: false
+blocked_reason: null
+blocked_since: null
+unblock_owner: null
+unblock_condition: null
+---
+
 # Task: User Management
 
-## Status
+## Origin
 
-Ready for Implementation
-
-## Owner
-
-Architect Agent
+- Source idea: None. Legacy sample task created before the product discovery workflow.
+- Promotion decision/evidence: Existing documented requirements accepted as the product source.
 
 ## Related Documents
 
@@ -98,8 +129,7 @@ Out of scope:
 
 ## Handoff Log
 
-| Date | From | To | Status | Notes |
-| --- | --- | --- | --- | --- |
-| 2026-07-01 | Product Agent | Architect Agent | Ready for Architecture | Initial feature scope created. |
-| 2026-07-01 | Architect Agent | Backend Agent, Frontend Agent | Ready for Implementation | API and database contracts are ready for initial implementation. |
-
+| Date | Actor | From | To | Evidence | Next action |
+| --- | --- | --- | --- | --- | --- |
+| 2026-07-01 | Product Agent | Draft | Ready for Architecture | Initial feature scope created. | Architect review. |
+| 2026-07-01 | Architect Agent | Ready for Architecture | Ready for Implementation | API and database contracts documented. | Backend and frontend implementation. |

@@ -1,7 +1,7 @@
 ---
 id: TASK-20260713-002
 title: 招聘平台角色选择与注册审核
-status: Ready for Implementation
+status: In Progress
 priority: P1
 owner: Architect Agent
 created: "2026-07-13"
@@ -19,12 +19,12 @@ frontend_targets:
   miniprogram: true
   web: true
 frontend_target_status:
-  miniprogram: Pending
+  miniprogram: Done
   web: Pending
 scope_status:
   product: Done
   architecture: Done
-  backend: Pending
+  backend: Done
   frontend: Pending
   mobile: N/A
   ios: N/A
@@ -120,8 +120,8 @@ unblock_condition: null
 
 - Architecture: 模块化单体；微信会话、用户账户、身份档案、注册和审核模块边界已记录在 `docs/architecture.md`。
 - API: `docs/openapi.yaml` 定义微信会话、身份创建/列表/详情/重提和审核接口。
-- Database/migration: `docs/database.md` 定义 `auth_accounts`、`sessions`、`role_profiles`、两类 profile、`review_actions` 和 reviewer 权限。
-- Security/privacy: 后端交换微信登录 code；不暴露 `openid`/`session_key`，不做实名认证，审核操作必须授权并审计。
+- Database/migration: `docs/database.md` 定义 `auth_accounts`、`sessions`、`role_profiles`、两类 profile、`review_actions`、`admin_accounts` 和 `admin_roles`。
+- Security/privacy: 后端交换微信登录 code；不暴露 `openid`/`session_key`，不做实名认证；Web 管理员使用独立账号密码登录，权限变更和审核操作必须授权并审计。
 - Compatibility/versioning: 第一阶段只支持微信小程序；账户与身份模型保留未来客户端/provider 扩展空间。
 - Rollback: 审核动作追加记录；`changes_requested` 允许同角色资料重提，不允许修改身份类型。
 
@@ -129,13 +129,13 @@ unblock_condition: null
 
 ### Backend
 
-- [ ] 实现 `POST /auth/wechat/session` 会话交换。
-- [ ] 实现微信用户账户与多身份数据模型。
-- [ ] 实现两类注册资料校验和提交接口。
-- [ ] 实现身份列表、详情和审核状态接口。
-- [ ] 实现人工审核通过、拒绝/需修改及原因记录。
-- [ ] 实现重复身份、重复提交和 reviewer 权限校验。
-- [ ] 后端单元、集成和权限测试。
+- [x] 实现 `POST /auth/wechat/session` 会话交换。
+- [x] 实现微信用户账户与多身份数据模型。
+- [x] 实现两类注册资料校验和提交接口。
+- [x] 实现身份列表、详情和审核状态接口。
+- [x] 实现人工审核通过、拒绝/需修改及原因记录。
+- [x] 实现重复身份、重复提交和管理员权限校验。
+- [x] 后端单元、集成和权限测试。
 
 ### Frontend Coordination
 
@@ -143,17 +143,21 @@ unblock_condition: null
 
 ### WeChat Mini Program
 
-- [ ] 微信小程序双入口首页。
-- [ ] 招人方注册表单。
-- [ ] 应聘方注册表单。
-- [ ] 双身份入口和不可转换提示。
-- [ ] 微信授权、隐私、表单、提交、审核状态和异常页面。
-- [ ] 审核人员最小操作界面，或复用现有内部运营工具并记录使用方式。
+- [x] 微信小程序双入口首页。
+- [x] 招人方注册表单。
+- [x] 应聘方注册表单。
+- [x] 双身份入口和不可转换提示。
+- [x] 微信授权、隐私、表单、提交、审核状态和异常页面。
+- [ ] 管理后台审核入口与身份状态处理。
 - [ ] 小程序组件和流程测试。
 
-### Web Reviewer Surface
+### Web Management System
 
-- [ ] 审核人员最小操作界面，或复用现有内部运营工具并记录使用方式。
+- [ ] 管理员登录和会话管理。
+- [ ] 管理员账号创建、禁用、密码变更和角色分配。
+- [ ] `owner`、`admin`、`reviewer`、`operator` 权限规则。
+- [ ] 身份审核队列、审核状态、拒绝原因和审核操作。
+- [ ] 权限变更、账号变更和审核操作审计日志。
 - [ ] Web 权限、审核状态、拒绝原因和审核操作测试。
 
 ### Shared Mobile / iOS / Android
@@ -193,3 +197,5 @@ unblock_condition: null
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-13 | Product Agent | Coordinator | Draft | Ready for Architecture | `ideas/recruitment-platform.md`, task | `IDEA-20260713-001` promoted | None | Architect defines contracts and data model |
 | 2026-07-13 | Architect Agent | Coordinator / Mini Program / Web | Ready for Architecture | Ready for Implementation | Architecture, OpenAPI, database, frontend target rules | `ruby scripts/validate_workflow.rb`; OpenAPI parsed | None | Backend, Mini Program, and Web agents implement scopes |
+| 2026-07-13 | Frontend MiniProgram Agent | Coordinator / Test Agent | Ready for Implementation | In Progress | `frontend/miniprogram/app.*`, `pages/home/*`, `pages/register/*`, `pages/identities/*`, `services/api.js`, `utils/registration.js`, `tests/registration.test.js` | `node --check` for all Mini Program JS: Passed; `node frontend/miniprogram/tests/registration.test.js`: Passed; `ruby scripts/validate_workflow.rb`: Passed. WeChat DevTools render/authorization manual check: Not run, tool unavailable. | No issue created; runtime verification remains | Web target and backend continue; Test Agent runs Mini Program UI/flow checks |
+| 2026-07-13 | Backend Agent | Backend | Pending | Done | `backend/package.json`, `backend/src/*`, `backend/test/app.test.js`, `backend/README.md` | `npm test`: 3 passed; `node --check src/app.js`; `node --check src/db.js src/wechat.js src/server.js` | None | Web target continues; Test Agent runs backend integration checks |

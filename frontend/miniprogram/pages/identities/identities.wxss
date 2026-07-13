@@ -1,0 +1,7 @@
+.identity-card { margin-top: 24rpx; padding: 32rpx; background: #fff; border: 1rpx solid #e3e7e9; border-radius: 8rpx; }
+.identity-card.focus { border-color: #0d7c66; box-shadow: 0 0 0 2rpx #d8eee8; }
+.card-head { display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 34rpx; font-weight: 700; }
+.card-copy { display: block; margin-top: 24rpx; color: #68747d; line-height: 1.65; }
+.empty { text-align: center; }
+.empty-title { display: block; margin-bottom: 16rpx; font-size: 32rpx; font-weight: 600; }

@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="eyebrow">{{role === 'recruiter' ? '招人方' : '应聘方'}}注册</view>
+  <text class="title">提交你的基础资料</text>
+  <text class="muted">资料仅用于本次身份审核。第一阶段不做实名认证或企业认证。</text>
+  <view class="form panel">
+    <block wx:if="{{role === 'recruiter'}}">
+      <label class="label">招聘主体名称 <text>*</text><input data-field="organizationName" value="{{form.organizationName}}" bindinput="input" placeholder="企业名称或个人招聘名称" maxlength="120" /></label>
+      <label class="label">主体类型 <text>*</text><picker range="{{['企业','个体','个人/其他']}}" bindchange="pickType"><view class="picker">{{organizationTypeLabel || '请选择主体类型'}}</view></picker></label>
+      <label class="label">联系人称呼 <text>*</text><input data-field="contactName" value="{{form.contactName}}" bindinput="input" placeholder="怎么称呼你" maxlength="80" /></label>
+      <label class="label">主要行业或岗位方向 <text>*</text><input data-field="industryOrJobDirection" value="{{form.industryOrJobDirection}}" bindinput="input" placeholder="例如：餐饮服务、前端开发" maxlength="120" /></label>
+    </block>
+    <block wx:else>
+      <label class="label">姓名或展示昵称 <text>*</text><input data-field="displayName" value="{{form.displayName}}" bindinput="input" placeholder="希望平台如何称呼你" maxlength="80" /></label>
+      <label class="label">期望岗位或工种 <text>*</text><input data-field="desiredJob" value="{{form.desiredJob}}" bindinput="input" placeholder="例如：服务员、产品经理" maxlength="120" /></label>
+      <label class="label">工作经验概况 <text>*</text><textarea data-field="experienceSummary" value="{{form.experienceSummary}}" bindinput="input" placeholder="简单介绍相关经历" maxlength="2000" auto-height="true" /></label>
+      <label class="label">可工作地区或时间偏好 <text>*</text><input data-field="preferredRegionOrTime" value="{{form.preferredRegionOrTime}}" bindinput="input" placeholder="例如：杭州，周末可工作" maxlength="200" /></label>
+    </block>
+    <label class="label">所在地区 <text>*</text><input data-field="region" value="{{form.region}}" bindinput="input" placeholder="例如：上海市浦东新区" maxlength="120" /></label>
+    <label class="label">联系手机号 <text>*</text><input data-field="contactPhone" value="{{form.contactPhone}}" bindinput="input" type="number" placeholder="用于审核沟通" maxlength="32" /></label>
+    <button class="phone-button" open-type="getPhoneNumber" bindgetphonenumber="getPhone">授权微信手机号</button>
+  </view>
+  <view class="agreement"><checkbox value="agree" checked="{{agreed}}" bindchange="toggleAgreement" /><text>我已阅读并同意</text><text class="link">用户协议</text><text>和</text><text class="link">隐私政策</text></view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <button class="button-primary" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">{{submitting ? '正在提交...' : '提交审核'}}</button>
+  <text class="footnote">提交后身份类型不可转换；你仍可从首页创建另一种身份。</text>
+</view>

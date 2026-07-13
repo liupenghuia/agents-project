@@ -105,22 +105,49 @@ Constraints:
 | --- | --- | --- | --- |
 | id | string | yes | Primary key |
 | role_profile_id | string | yes | Reviewed profile |
-| reviewer_user_id | string | yes | Authorized reviewer account |
+| admin_user_id | string | yes | Authorized administrator account |
 | decision | string | yes | `approved` or `changes_requested` |
 | reason | string | conditional | Required for `changes_requested`; recommended for approval notes |
 | created_at | datetime | yes | Append-only decision timestamp |
 
 Review actions are never overwritten. The current status on `role_profiles` is a query optimization; the action history is the audit source.
 
-## New Entity: reviewer_permissions
+## New Entity: admin_accounts
 
 | Column | Type | Required | Notes |
 | --- | --- | --- | --- |
-| user_id | string | yes | Reviewer account |
-| permission | string | yes | `identity_review` |
-| created_at | datetime | yes | Grant timestamp |
+| user_id | string | yes | Primary/foreign key to `users.id`; administrator identity |
+| login_name | string | yes | Unique administrator login identifier |
+| password_hash | string | yes | Argon2id/bcrypt hash; plaintext password is never stored |
+| status | string | yes | `active` or `disabled` |
+| last_login_at | datetime | no | Last successful admin login |
+| created_by | string | no | Administrator user id that created this account |
+| created_at | datetime | yes | Account creation time |
+| updated_at | datetime | yes | Last account or password change |
 
-Unique `(user_id, permission)`.
+Constraints:
+
+- Unique `login_name` and `user_id`.
+- Admin credentials are separate from WeChat provider credentials.
+- Disabled admin accounts cannot log in or use existing admin sessions.
+- The initial `owner` account is created only by a one-time secure bootstrap flow.
+
+## New Entity: admin_roles
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| user_id | string | yes | Primary/foreign key to `admin_accounts.user_id` |
+| role | string | yes | `owner`, `admin`, `reviewer`, or `operator` |
+| assigned_by | string | yes | Administrator who assigned the role |
+| created_at | datetime | yes | Assignment time |
+
+Constraints:
+
+- One active role per administrator in phase one.
+- Only `owner` can assign or change administrator roles.
+- At least one active `owner` must remain; the last active owner cannot be disabled, deleted, or demoted.
+
+The effective permission set is defined by the role matrix in `docs/architecture.md`; it is not accepted from client input.
 
 ## Indexes
 
@@ -129,6 +156,8 @@ Unique `(user_id, permission)`.
 - Unique `(role_profiles.user_id, role_profiles.role)`.
 - Review queue index `(role_profiles.review_status, role_profiles.submitted_at)`.
 - Review history index `(review_actions.role_profile_id, review_actions.created_at)`.
+- Unique `admin_accounts.login_name`.
+- Admin account index `(admin_accounts.status, admin_accounts.created_at)`.
 
 ## Privacy And Security Rules
 
@@ -136,7 +165,8 @@ Unique `(user_id, permission)`.
 - Hash platform session tokens before persistence.
 - Encrypt or otherwise protect contact phone fields at rest and restrict reviewer access.
 - Do not store identity documents or real-name verification material in phase one.
-- Every reviewer decision must identify the reviewer and be audit logged.
+- Every admin login, password/role/account change, user management action, and review decision must identify the administrator and be audit logged.
+- Administrator credentials must use a password hash and must never be returned by an API.
 - Retain rejected/changed profiles according to the product retention policy; do not hard-delete without Product and Architect approval.
 
 ## Migration Notes

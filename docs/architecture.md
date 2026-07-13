@@ -5,8 +5,8 @@
 Use a modular monolith with a REST API:
 
 - `frontend/` owns the WeChat Mini Program UI, client state, navigation, and API integration for phase one.
-- `backend/` owns WeChat session exchange, account/identity rules, validation, persistence, review authorization, and audit records.
-- Reviewers use a protected operations surface or internal tool; a reviewer UI is not a phase-one end-user client, but manual review must not depend on direct database edits.
+- `backend/` owns WeChat session exchange, account/identity rules, validation, persistence, administrator authorization, review operations, and audit records.
+- `frontend/web/` is the protected management system for administrator accounts, permissions, user management, and identity review; manual review must not depend on direct database edits.
 - `ideas/` owns Product Briefs and product decisions.
 - `docs/openapi.yaml` is the client/backend contract.
 - `docs/database.md` is the data model and migration contract.
@@ -57,10 +57,22 @@ The same platform user may have one recruiter identity, one applicant identity, 
 
 ### Review Module
 
-- Exposes protected reviewer operations.
+- Belongs to the protected Admin Management Module and exposes the identity review queue and decisions.
 - Allows `pending_review` to become `approved` or `changes_requested`.
 - Requires a reason for `changes_requested`.
-- Records reviewer, decision, reason, and timestamp in an append-only review history.
+- Records administrator, decision, reason, and timestamp in an append-only review history.
+
+### Admin Management Module
+
+- Owns administrator account creation, password login, account status, role assignment, and permission checks.
+- Uses RBAC roles: `owner`, `admin`, `reviewer`, and `operator`.
+- `owner` is the initial maximum-permission role and can manage all administrator, user, permission, and review operations.
+- `admin` manages users and administrator accounts but cannot change the final `owner` protection rules.
+- `reviewer` can view review queues and approve or request changes for identities.
+- `operator` can view permitted operational data but cannot assign permissions or make review decisions.
+- The first `owner` account is created through a one-time deployment/bootstrap flow; credentials are never hardcoded or committed.
+- At least one active `owner` must remain. An owner cannot delete or disable the last active owner account.
+- Administrator password changes, role changes, account disabling, and review decisions are audit logged.
 
 ## Decisions And Trade-offs
 
@@ -70,11 +82,14 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - REST over event-driven workflows: registration and review are synchronous; audit history is sufficient until throughput or integration requires events.
 - Normalized role tables over one polymorphic JSON profile: role-specific validation, reviewer queries, and future migrations need typed fields.
 - Provider-linked account over password registration: the requested client is a WeChat Mini Program and the product excludes self-managed passwords in phase one.
+- One protected Web management system for permissions and review: these operations share administrator identity, authorization, and audit requirements.
 
 ## API Boundaries
 
 - Client endpoints use `/auth`, `/me`, and `/me/identities`.
-- Reviewer endpoints use `/admin/identity-reviews` and require reviewer authorization.
+- Admin endpoints use `/admin` and require an administrator session plus the permission required by each operation.
+- Administrator authentication uses a separate password-backed admin session; WeChat users cannot access admin endpoints merely by being authenticated in the Mini Program.
+- `/admin/identity-reviews` is the review area inside the management system, not a separate reviewer product.
 - `docs/openapi.yaml` defines request/response shapes, error codes, and status enums.
 - Backend must reject undocumented fields where strict validation is available and must never return provider secrets.
 
@@ -85,6 +100,7 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 | Identity profile | `pending_review`, `approved`, `changes_requested` | Role immutable; `changes_requested` may resubmit to `pending_review`. |
 | Review action | `approved`, `changes_requested` | Append-only; a reason is required for changes. |
 | Session | active, expired, revoked | Expired/revoked sessions cannot access identity endpoints. |
+| Admin session | active, expired, revoked | Separate from WeChat sessions; disabled administrators lose access. |
 
 ## Security And Privacy
 
@@ -92,7 +108,8 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - Store provider subjects, session token hashes, and contact data with least privilege and encryption appropriate to deployment.
 - Do not collect real-name documents or claim identity verification in phase one.
 - Consent screens and privacy policy links must follow current WeChat Mini Program rules.
-- Reviewer endpoints require explicit authorization and must be audit logged.
+- Admin login, account/permission changes, user management, and review decisions require explicit authorization and must be audit logged.
+- The initial maximum-permission account is the user-provided `owner` account created during secure bootstrap; no default password is allowed.
 - Rate-limit login-code exchange, registration submission, resubmission, and review decisions.
 
 ## Revisit Triggers

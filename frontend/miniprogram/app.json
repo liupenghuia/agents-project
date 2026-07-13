@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/register/register",
+    "pages/identities/identities"
+  ],
+  "window": {
+    "navigationBarTitleText": "寻职",
+    "navigationBarBackgroundColor": "#f7f8fa",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f8fa"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

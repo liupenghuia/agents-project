@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="eyebrow">寻职 · 招聘双方都能找到自己的位置</view>
+  <text class="title">你这次想做什么？</text>
+  <view wx:if="{{!loading && !error}}">
+    <text class="muted intro">先选择一个身份，提交资料后等待人工审核。两种身份可以同时拥有，互不转换。</text>
+    <view class="role-grid">
+      <button class="role-card recruiter" data-role="recruiter" bindtap="chooseRole">
+        <text class="role-mark">招</text><text class="role-title">招人</text><text class="role-desc">寻找合适的人才</text>
+      </button>
+      <button class="role-card applicant" data-role="applicant" bindtap="chooseRole">
+        <text class="role-mark">应</text><text class="role-title">应聘</text><text class="role-desc">寻找合适的工作</text>
+      </button>
+    </view>
+    <view wx:if="{{identities.length}}" class="identity-section">
+      <view class="section-row"><text class="section-title">已有身份</text><text class="link" bindtap="viewIdentities">查看全部</text></view>
+      <view wx:for="{{identities}}" wx:key="id" class="identity-row" data-role="{{item.role}}" bindtap="viewIdentities">
+        <view><text class="identity-name">{{item.role === 'recruiter' ? '招人方' : '应聘方'}}</text><text class="identity-id">身份已独立保存</text></view>
+        <text class="status status-{{item.reviewStatus}}">{{statusText[item.reviewStatus]}}</text>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{loading}}" class="loading">正在安全连接，请稍候...</view>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重新连接</button></view>
+</view>

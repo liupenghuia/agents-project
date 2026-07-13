@@ -1,0 +1,16 @@
+<view class="page">
+  <view class="eyebrow">身份管理</view>
+  <text class="title">你的身份</text>
+  <text class="muted">每种身份独立审核，已创建的身份类型不能转换。</text>
+  <view wx:if="{{loading}}" class="loading">正在读取身份状态...</view>
+  <view wx:if="{{error}}" class="error">{{error}}<button class="button-secondary" bindtap="retry">重新连接</button></view>
+  <view wx:if="{{!loading && !error && !identities.length}}" class="panel empty"><text class="empty-title">还没有身份</text><text class="muted">选择一个身份，提交资料开始使用寻职。</text></view>
+  <view wx:for="{{identities}}" wx:key="id" class="identity-card {{item.id === focusId ? 'focus' : ''}}">
+    <view class="card-head"><text class="card-title">{{roleText[item.role]}}</text><text class="status status-{{item.reviewStatus}}">{{statusText[item.reviewStatus]}}</text></view>
+    <text wx:if="{{item.reviewStatus === 'pending_review'}}" class="card-copy">资料已提交，审核人员会尽快处理。审核完成前不能进入对应端。</text>
+    <text wx:if="{{item.reviewStatus === 'approved'}}" class="card-copy">审核已通过，可以进入对应的服务。</text>
+    <block wx:if="{{item.reviewStatus === 'changes_requested'}}"><text class="card-copy">审核意见：{{item.reviewReason || '请补充或修改资料后重新提交。'}}</text><button class="button-secondary" data-role="{{item.role}}" data-id="{{item.id}}" bindtap="edit">修改并重新提交</button></block>
+  </view>
+  <button wx:if="{{identities.length < 2 && !loading}}" class="button-primary" bindtap="startOtherRole">创建另一种身份</button>
+  <button class="button-secondary" bindtap="home">返回首页</button>
+</view>

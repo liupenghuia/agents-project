@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Project API
-  version: 0.2.0
-  description: API contract between the WeChat Mini Program, reviewer operations, and backend agents.
+  version: 0.3.0
+  description: API contract between the WeChat Mini Program, Web Admin Management System, and backend agents.
 servers:
   - url: http://localhost:3000
     description: Local backend
@@ -14,14 +14,205 @@ tags:
   - name: Identities
     description: Recruiter and applicant identity profiles
   - name: Identity Reviews
-    description: Protected manual review operations
+    description: Manual review operations inside the protected admin system
+  - name: Admin Auth
+    description: Administrator account/password authentication
+  - name: Admin Accounts
+    description: Administrator account and RBAC management
 paths:
+  /health:
+    get:
+      tags:
+        - Auth
+      summary: Check backend health
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Backend is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - status
+                      - service
+                    properties:
+                      status:
+                        type: string
+                        const: ok
+                      service:
+                        type: string
+  /admin/auth/login:
+    post:
+      tags:
+        - Admin Auth
+      summary: Log in an administrator
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Administrator session
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminSession"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /admin/auth/logout:
+    post:
+      tags:
+        - Admin Auth
+      summary: Log out the current administrator session
+      operationId: adminLogout
+      security:
+        - AdminSession: []
+      responses:
+        "204":
+          description: Administrator session revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /admin/auth/me:
+    get:
+      tags:
+        - Admin Auth
+      summary: Get the current administrator and effective role
+      operationId: getAdminMe
+      security:
+        - AdminSession: []
+      responses:
+        "200":
+          description: Current administrator
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminAccount"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /admin/accounts:
+    get:
+      tags:
+        - Admin Accounts
+      summary: List administrator accounts
+      operationId: listAdminAccounts
+      security:
+        - AdminSession: []
+      responses:
+        "200":
+          description: Administrator accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminAccount"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - Admin Accounts
+      summary: Create an administrator account
+      operationId: createAdminAccount
+      security:
+        - AdminSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAdminAccountRequest"
+      responses:
+        "201":
+          description: Administrator account created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminAccount"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /admin/accounts/{adminId}:
+    patch:
+      tags:
+        - Admin Accounts
+      summary: Update an administrator account, password, status, or role
+      operationId: updateAdminAccount
+      security:
+        - AdminSession: []
+      parameters:
+        - $ref: "#/components/parameters/AdminId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminAccountRequest"
+      responses:
+        "200":
+          description: Administrator account updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminAccount"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /users:
     get:
       tags:
         - Users
       summary: List users
       operationId: listUsers
+      security:
+        - AdminSession: []
       responses:
         "200":
           description: User list
@@ -41,6 +232,8 @@ paths:
         - Users
       summary: Create user
       operationId: createUser
+      security:
+        - AdminSession: []
       requestBody:
         required: true
         content:
@@ -67,6 +260,8 @@ paths:
         - Users
       summary: Get user
       operationId: getUser
+      security:
+        - AdminSession: []
       parameters:
         - $ref: "#/components/parameters/UserId"
       responses:
@@ -88,6 +283,8 @@ paths:
         - Users
       summary: Update user
       operationId: updateUser
+      security:
+        - AdminSession: []
       parameters:
         - $ref: "#/components/parameters/UserId"
       requestBody:
@@ -117,6 +314,8 @@ paths:
         - Users
       summary: Disable user
       operationId: disableUser
+      security:
+        - AdminSession: []
       parameters:
         - $ref: "#/components/parameters/UserId"
       responses:
@@ -315,7 +514,7 @@ paths:
       summary: List identities awaiting manual review
       operationId: listIdentityReviews
       security:
-        - PlatformSession: []
+        - AdminSession: []
       parameters:
         - name: status
           in: query
@@ -351,7 +550,7 @@ paths:
       summary: Approve or request changes for an identity
       operationId: decideIdentityReview
       security:
-        - PlatformSession: []
+        - AdminSession: []
       parameters:
         - $ref: "#/components/parameters/IdentityId"
       requestBody:
@@ -388,6 +587,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: opaque
+    AdminSession:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
   parameters:
     UserId:
       name: userId
@@ -403,6 +606,13 @@ components:
       schema:
         type: string
       description: Identity profile identifier
+    AdminId:
+      name: adminId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Administrator user identifier
   responses:
     BadRequest:
       description: Invalid request
@@ -441,6 +651,104 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    AdminLoginRequest:
+      type: object
+      required:
+        - loginName
+        - password
+      properties:
+        loginName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        password:
+          type: string
+          minLength: 12
+          maxLength: 256
+    AdminSession:
+      type: object
+      required:
+        - token
+        - expiresAt
+        - admin
+      properties:
+        token:
+          type: string
+          description: Opaque token returned only at login
+        expiresAt:
+          type: string
+          format: date-time
+        admin:
+          $ref: "#/components/schemas/AdminAccount"
+    AdminAccount:
+      type: object
+      required:
+        - id
+        - loginName
+        - status
+        - role
+      properties:
+        id:
+          type: string
+        loginName:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        role:
+          type: string
+          enum:
+            - owner
+            - admin
+            - reviewer
+            - operator
+        lastLoginAt:
+          type: string
+          format: date-time
+    CreateAdminAccountRequest:
+      type: object
+      required:
+        - loginName
+        - password
+        - role
+      properties:
+        loginName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        password:
+          type: string
+          minLength: 12
+          maxLength: 256
+        role:
+          type: string
+          enum:
+            - owner
+            - admin
+            - reviewer
+            - operator
+    UpdateAdminAccountRequest:
+      type: object
+      minProperties: 1
+      properties:
+        password:
+          type: string
+          minLength: 12
+          maxLength: 256
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+        role:
+          type: string
+          enum:
+            - owner
+            - admin
+            - reviewer
+            - operator
     User:
       type: object
       required:

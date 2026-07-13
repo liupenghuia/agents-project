@@ -8,11 +8,11 @@ Build a maintainable full-stack application using a multi-agent development proc
 
 - End user: uses the product features through the frontend.
 - Mobile user: uses the product features through iOS or Android apps when mobile is in scope.
-- Admin user: manages users and operational data when required.
+- Admin user: uses the Web management system to manage users, administrator accounts, permissions, and operational data.
 - Development team: uses this repository structure to coordinate product, architecture, frontend, backend, and testing work.
 - Recruiter: creates a hiring identity and submits recruitment information for manual review.
 - Applicant: creates a job-seeking identity and submits basic job-seeking information for manual review.
-- Reviewer: manually reviews registration profiles and approves or requests changes.
+- Reviewer: an administrator role that manually reviews registration profiles and approves or requests changes.
 
 ## Current Feature Scope
 
@@ -54,6 +54,30 @@ Minimum scope:
 - Submit registration profiles for manual review.
 - Show `待审核`, `通过`, and `拒绝/需修改` states with actionable feedback.
 - Do not perform real-name verification, identity document collection, or enterprise certification in phase one.
+
+### Web Management System
+
+The Web client is an administrator management system, not a general end-user client in phase one.
+
+Minimum scope:
+
+- Administrator account login with assigned username/password.
+- Administrator account creation, disabling, password reset/change, and role assignment.
+- RBAC roles: `owner`, `admin`, `reviewer`, and `operator`.
+- One initial `owner` account with maximum permission, created through secure bootstrap and without a committed default password.
+- User management and identity review in the same protected system.
+- Audit history for administrator login, permission changes, account changes, user changes, and review decisions.
+
+Permission rules:
+
+| Role | Permissions |
+| --- | --- |
+| `owner` | All administrator, permission, user, and identity review operations |
+| `admin` | Manage users and administrator accounts; cannot change owner protection rules |
+| `reviewer` | View identity review queues and approve/request changes |
+| `operator` | View explicitly allowed operational data; no permission assignment or review decisions |
+
+The last active `owner` cannot be disabled, deleted, or demoted. Administrator sessions are separate from WeChat Mini Program sessions.
 
 Out of scope:
 

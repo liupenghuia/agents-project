@@ -28,11 +28,16 @@ Environment variables for a real WeChat integration:
 - `WECHAT_MOCK=1`: development-only mock exchange; ignored when `NODE_ENV=production`.
 - `ADMIN_BOOTSTRAP_LOGIN_NAME`: local-only initial owner login name.
 - `ADMIN_BOOTSTRAP_PASSWORD`: local-only initial owner password, minimum 12 characters; ignored/forbidden in production.
+- `MEDIA_ROOT`: local image-storage directory; defaults to `media` under the backend process working directory.
 
 Without WeChat credentials, the session and phone endpoints return `WECHAT_NOT_CONFIGURED` unless development mock mode is enabled. Tests inject provider adapters and never call WeChat.
 
 The phone endpoint is `POST /auth/wechat/phone` with a platform session bearer token and the one-time `code` returned by `wx.getPhoneNumber`. The backend exchanges the code with WeChat; the AppSecret is never sent to the Mini Program.
 
 The implementation follows `docs/openapi.yaml` and `docs/database.md`. Reviewer accounts are provisioned through the application/admin layer via the `identity_review` permission; this phase does not expose a public reviewer self-registration endpoint.
+
+Owner accounts can read recent sanitized administrator activity through `GET /admin/audit-logs`. Passwords, raw session tokens, and provider secrets are never written to those audit records.
+
+The development server applies bounded in-memory rate limits to login exchange, administrator login, identity submission/resubmission, and review decisions. A multi-instance production deployment must enforce equivalent shared limits at the gateway or in shared storage.
 
 For local development, copy `.env.example` to `.env`, replace the bootstrap password with a local secret, and run `npm start`. The first start creates the owner account from the two bootstrap variables. Bootstrap is one-time for a database: changing the variables does not overwrite an existing account. No administrator password is committed to the repository.

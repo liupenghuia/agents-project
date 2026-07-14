@@ -1,21 +1,35 @@
 const { createSession } = require('./services/api');
+const { resolveApiBaseUrl } = require('./config');
+
+function sessionValid(session) {
+  return Boolean(session && session.sessionToken && new Date(session.expiresAt).getTime() > Date.now());
+}
 
 App({
   globalData: {
     session: null,
     identities: [],
+    apiBaseUrl: '',
   },
 
   onLaunch() {
+    this.globalData.apiBaseUrl = resolveApiBaseUrl();
     const session = wx.getStorageSync('platformSession');
-    if (session && session.sessionToken && new Date(session.expiresAt).getTime() > Date.now()) {
-      this.globalData.session = session;
-    }
+    if (sessionValid(session)) this.globalData.session = session;
+    else wx.removeStorageSync('platformSession');
+  },
+
+  clearSession() {
+    this.globalData.session = null;
+    this.globalData.identities = [];
+    wx.removeStorageSync('platformSession');
   },
 
   ensureSession() {
-    if (this.globalData.session) return Promise.resolve(this.globalData.session);
-    return new Promise((resolve, reject) => {
+    if (sessionValid(this.globalData.session)) return Promise.resolve(this.globalData.session);
+    this.clearSession();
+    if (this._sessionPromise) return this._sessionPromise;
+    this._sessionPromise = new Promise((resolve, reject) => {
       wx.login({
         success: ({ code }) => {
           if (!code) {
@@ -30,6 +44,7 @@ App({
         },
         fail: () => reject(new Error('微信登录已取消或暂时不可用，请重试')),
       });
-    });
+    }).finally(() => { this._sessionPromise = null; });
+    return this._sessionPromise;
   },
 });

@@ -16,6 +16,15 @@
     "navigationBarTextStyle": "black",
     "backgroundColor": "#f7f8fa"
   },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于展示附近招聘或求职信息，并在发布信息时确认工作位置"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation",
+    "chooseLocation"
+  ],
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }

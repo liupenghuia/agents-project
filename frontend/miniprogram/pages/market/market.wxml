@@ -1,11 +1,47 @@
-<view class="page">
-  <view class="eyebrow">{{role === 'applicant' ? '招聘信息' : '求职信息'}}</view>
-  <text class="title">最新发布</text>
-  <view class="search-row"><input value="{{keyword}}" bindinput="input" placeholder="搜索工种" /><button bindtap="load">搜索</button></view>
-  <view wx:if="{{loading}}" class="muted">正在加载...</view>
-  <view wx:elif="{{!items.length}}" class="panel empty">暂时没有符合条件的信息</view>
-  <block wx:else><button wx:for="{{items}}" wx:key="id" class="action-card" data-id="{{item.id}}" bindtap="open"><text class="action-title">{{role === 'applicant' ? item.jobType : item.jobTypeName}}</text><text class="muted">{{role === 'applicant' ? item.salaryRange : item.expectedSalary}} · {{item.locationText}}</text><text class="published">发布时间：{{item.publishedAt}}</text></button></block>
-  <view wx:if="{{error}}" class="error">{{error}}</view>
-  <button class="button-secondary" bindtap="openFavorites">我的收藏</button>
-  <view wx:if="{{selected}}" class="detail panel"><view class="detail-head"><text class="section-title">详情</text><button bindtap="closeDetail">关闭</button></view><text class="detail-line">工种：{{selected.jobType || selected.jobTypeName}}</text><text class="detail-line">薪资：{{selected.salaryRange || selected.expectedSalary}}</text><text class="detail-line">结算：{{selected.settlementMethod || selected.workMethod}}</text><text class="detail-line">位置：{{selected.locationText}}</text><text class="detail-line">联系方式：{{selected.contactPhone}}</text><text class="detail-line">发布时间：{{selected.publishedAt}}</text><view class="detail-actions"><button bindtap="favorite">收藏</button><button bindtap="report">举报</button></view></view>
+<view class="page market-page">
+  <view class="market-header">
+    <view><view class="eyebrow">{{role === 'applicant' ? '招聘市场' : '人才市场'}}</view><text class="title">附近机会</text></view>
+    <button class="favorite-button" bindtap="openFavorites">收藏</button>
+  </view>
+  <view class="mode-switch" role="tablist">
+    <button class="mode-button {{mode === 'map' ? 'active' : ''}}" data-mode="map" bindtap="switchMode">地图</button>
+    <button class="mode-button {{mode === 'list' ? 'active' : ''}}" data-mode="list" bindtap="switchMode">列表</button>
+  </view>
+  <view class="search-row"><input value="{{keyword}}" bindinput="input" confirm-type="search" bindconfirm="search" placeholder="搜索工种" /><button bindtap="search">搜索</button></view>
+
+  <view wx:if="{{locationNotice && mode === 'map'}}" class="location-notice"><text>{{locationNotice}}</text><button bindtap="retryLocation">重新定位</button></view>
+
+  <view wx:if="{{mode === 'map'}}" class="map-shell">
+    <map id="marketMap" class="market-map" latitude="{{latitude}}" longitude="{{longitude}}" scale="{{scale}}" markers="{{markers}}" show-location bindmarkertap="markerTap" bindregionchange="regionChange"></map>
+    <view wx:if="{{loading}}" class="map-state">正在读取这个区域...</view>
+    <view wx:elif="{{!markers.length && !error}}" class="map-state">这个区域暂时没有信息</view>
+    <view class="map-legend"><text class="legend-dot"></text><text>缩放地图查看区域聚合，点击标记进入详情</text></view>
+  </view>
+
+  <view wx:else class="list-view">
+    <view wx:if="{{loading}}" class="loading">正在加载...</view>
+    <view wx:elif="{{!items.length}}" class="panel empty">暂时没有符合条件的信息</view>
+    <block wx:else>
+      <button wx:for="{{items}}" wx:key="id" class="action-card market-card" data-id="{{item.id}}" bindtap="open">
+        <image wx:if="{{item.coverImage}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" />
+        <view class="card-copy"><text class="action-title">{{role === 'applicant' ? item.jobType : item.jobTypeName}}</text><text class="muted">{{role === 'applicant' ? item.salaryRange : item.expectedSalary}} · {{item.locationText}}</text><text class="published">发布时间：{{item.publishedAt}}</text></view>
+      </button>
+      <view wx:if="{{loadingMore}}" class="list-progress">正在加载更多...</view>
+      <view wx:elif="{{!nextCursor}}" class="list-progress">已显示全部信息</view>
+    </block>
+  </view>
+
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="retry-button" bindtap="retry">重试</button></view>
+
+  <view wx:if="{{selected}}" class="detail-backdrop" bindtap="closeDetail"></view>
+  <view wx:if="{{selected}}" class="detail panel">
+    <view class="detail-head"><view><text class="detail-eyebrow">信息详情</text><text class="detail-title">{{selected.jobType || selected.jobTypeName}}</text></view><button bindtap="closeDetail">关闭</button></view>
+    <text class="detail-line">薪资：{{selected.salaryRange || selected.expectedSalary}}</text>
+    <text class="detail-line">结算：{{selected.settlementMethod || selected.workMethod}}</text>
+    <text class="detail-line">位置：{{selected.locationText}}</text>
+    <text class="detail-line">发布时间：{{selected.publishedAt}}</text>
+    <scroll-view wx:if="{{selected.images.length}}" class="detail-images" scroll-x enhanced show-scrollbar="false"><image wx:for="{{selected.images}}" wx:key="id" src="{{item.url}}" mode="aspectFill" /></scroll-view>
+    <view class="contact-row"><view><text class="contact-label">{{selected.contactName || '联系方式'}}</text><text class="contact-phone">{{selected.contactPhone}}</text></view><button bindtap="callContact">拨打</button></view>
+    <view class="detail-actions"><button class="primary-action" loading="{{actionLoading}}" disabled="{{actionLoading}}" bindtap="favorite">{{selected.isFavorited ? '取消收藏' : '收藏'}}</button><button bindtap="report">举报</button></view>
+  </view>
 </view>

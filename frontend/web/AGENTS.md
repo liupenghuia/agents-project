@@ -3,8 +3,9 @@
 ## Load Before Work
 
 - Read parent `frontend/AGENTS.md`, then root `AGENTS.md`.
-- Read `docs/delivery-workflow.md`, the task, requirements, OpenAPI, and linked Web issues.
+- Read `docs/delivery-workflow.md`, `docs/client-architecture.md`, the task, requirements, OpenAPI, and linked Web issues.
 - Run preflight and verify `frontend_targets.web: true` before starting feature work.
+- Complete and record the client architecture pre-coding check before editing Web code.
 
 ## Ownership
 

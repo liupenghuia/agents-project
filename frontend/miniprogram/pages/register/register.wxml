@@ -2,7 +2,8 @@
   <view class="eyebrow">{{role === 'recruiter' ? '招人方' : '应聘方'}}注册</view>
   <text class="title">提交你的基础资料</text>
   <text class="muted">资料仅用于本次身份审核。第一阶段不做实名认证或企业认证。</text>
-  <view class="form panel">
+  <view wx:if="{{loading}}" class="loading">正在读取原资料...</view>
+  <view wx:if="{{!loading}}" class="form panel">
     <block wx:if="{{role === 'recruiter'}}">
       <label class="label">招聘主体名称 <text>*</text><input data-field="organizationName" value="{{form.organizationName}}" bindinput="input" placeholder="企业名称或个人招聘名称" maxlength="120" /></label>
       <label class="label">主体类型 <text>*</text><picker range="{{['企业','个体','个人/其他']}}" bindchange="pickType"><view class="picker">{{organizationTypeLabel || '请选择主体类型'}}</view></picker></label>
@@ -19,8 +20,8 @@
     <label class="label">联系手机号 <text>*</text><input data-field="contactPhone" value="{{form.contactPhone}}" bindinput="input" type="number" placeholder="用于审核沟通" maxlength="32" /></label>
     <button class="phone-button" open-type="getPhoneNumber" disabled="{{phoneAuthorizing}}" bindtap="preparePhoneAuth" bindgetphonenumber="getPhone">{{phoneAuthorizing ? '正在请求授权...' : '授权微信手机号'}}</button>
   </view>
-  <checkbox-group class="agreement" bindchange="toggleAgreement"><label><checkbox value="agree" checked="{{agreed}}" /></label><text>我已阅读并同意</text><text class="link">用户协议</text><text>和</text><text class="link">隐私政策</text></checkbox-group>
+  <checkbox-group wx:if="{{!loading}}" class="agreement" bindchange="toggleAgreement"><label><checkbox value="agree" checked="{{agreed}}" /></label><text>我已阅读并同意</text><text class="link">用户协议</text><text>和</text><text class="link">隐私政策</text></checkbox-group>
   <view wx:if="{{error}}" class="error">{{error}}</view>
-  <button class="button-primary" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">{{submitting ? '正在提交...' : '提交审核'}}</button>
+  <button wx:if="{{!loading}}" class="button-primary" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">{{submitting ? '正在提交...' : fromChanges ? '重新提交审核' : '提交审核'}}</button>
   <text class="footnote">提交后身份类型不可转换；你仍可从首页创建另一种身份。</text>
 </view>

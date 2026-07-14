@@ -1,7 +1,7 @@
 ---
 id: TASK-20260714-004
 title: 招聘者信息填写
-status: Blocked
+status: Done
 priority: P1
 owner: Architect Agent
 created: "2026-07-14"
@@ -29,13 +29,13 @@ scope_status:
   mobile: N/A
   ios: N/A
   android: N/A
-  test: Blocked
+  test: Done
   release: N/A
 release_required: false
-blocked_reason: 微信 DevTools 不可用，无法完成真实小程序渲染、定位授权和地址交互验证。
-blocked_since: "2026-07-14"
-unblock_owner: Test Agent
-unblock_condition: 在微信 DevTools 中完成招聘者信息页面渲染、定位授权、楼栋地址填写、保存和失败重试验证。
+blocked_reason: null
+blocked_since: null
+unblock_owner: null
+unblock_condition: null
 ---
 
 # 任务：招聘者信息填写
@@ -79,16 +79,16 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] 已登录且拥有招人身份的用户可以进入招聘者信息填写页面。
-- [ ] 没有招人身份的用户不能直接提交，并能看到进入招人身份创建流程的入口或提示。
-- [ ] 用户可以发起设备地理定位并看到定位结果或失败原因。
-- [ ] 用户可以填写详细地址，且提交前必须精确到楼栋。
-- [ ] 定位授权被拒绝、定位失败或网络失败时，页面保留输入内容并提供重试或手动处理路径。
-- [ ] 有效信息提交成功后，后端保存且页面显示已保存内容。
-- [ ] 用户再次进入页面可以查看并修改自己的招聘者地点信息。
-- [ ] 用户只能查看和修改自己的信息。
-- [ ] 本任务不新增企业认证、人工审核或职位发布流程。
-- [ ] Test Agent 可以验证授权、定位失败、提交和重试流程。
+- [x] 已登录且拥有招人身份的用户可以进入招聘者信息填写页面。
+- [x] 没有招人身份的用户不能直接提交，并能看到进入招人身份创建流程的入口或提示。
+- [x] 用户可以发起设备地理定位并看到定位结果或失败原因。
+- [x] 用户可以填写详细地址，且提交前必须精确到楼栋。
+- [x] 定位授权被拒绝、定位失败或网络失败时，页面保留输入内容并提供重试或手动处理路径。
+- [x] 有效信息提交成功后，后端保存且页面显示已保存内容。
+- [x] 用户再次进入页面可以查看并修改自己的招聘者地点信息。
+- [x] 用户只能查看和修改自己的信息。
+- [x] 本任务不新增企业认证、人工审核或职位发布流程。
+- [x] Test Agent 可以验证授权、定位失败、提交和重试流程。
 
 ## Architecture Impact
 
@@ -117,15 +117,15 @@ Out of scope:
 
 ### Web / Mobile / iOS / Android
 
-- [ ] `N/A`: Web is administrator-only in this phase; iOS and Android are not implemented.
+- [x] `N/A`: Web is administrator-only in this phase; iOS and Android are not implemented.
 
 ## Test Plan
 
-- [ ] Location permission accepted and denied.
-- [ ] Location/network failure and retry.
-- [ ] Required detailed address validation.
-- [ ] Create, read, update, reload, and ownership behavior.
-- [ ] Workflow validation.
+- [x] Location permission accepted and denied.
+- [x] Location/network failure and retry.
+- [x] Required detailed address validation.
+- [x] Create, read, update, reload, and ownership behavior.
+- [x] Workflow validation.
 
 ## Verification Evidence
 
@@ -152,3 +152,5 @@ Out of scope:
 | 2026-07-14 | Backend Agent | Coordinator / Test Agent | In Progress | Ready for Test | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js` | `npm test`: 8 passed; `node --check backend/src/app.js backend/src/db.js`: Passed | None | Test Agent verifies acceptance and platform-specific behavior. |
 | 2026-07-14 | Frontend MiniProgram Agent | Coordinator / Test Agent | In Progress | Ready for Test | `frontend/miniprogram/pages/recruiter-information/*`, `services/api.js`, `utils/information.js`, `tests/information.test.js` | `node --check` all Mini Program JS: Passed; information tests: Passed; delivery runner report: `/tmp/ppfiles-learn-delivery/TASK-20260714-004/20260714-111247-2507be/report.md` | WeChat DevTools unavailable | Test Agent must run real Mini Program rendering and location authorization checks. |
 | 2026-07-14 | Test Agent | Coordinator | Ready for Test | Blocked | Test evidence and task metadata | Delivery runner passed; required DevTools manual check unavailable | Platform verification blocker | Run the documented DevTools checks, then resume the Test Gate. |
+| 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Recruiter location validation/API contract and shared backend tests | Backend `npm test`: 11 passed; Mini Program information tests passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260714-004/20260714-181439-cfa2d9/report.md` | WeChat DevTools/real-device location authorization checks pending | Run the documented platform checks, then resume the Test Gate. |
+| 2026-07-14 | Test Agent | Coordinator | Blocked | Done | DevTools recruiter-information page and isolated backend; screenshot `/tmp/task-004-recruiter-information.png` | DevTools location selection, building-level address validation, submit, saved state and reload passed; failure/retry state inspected; runner report `/tmp/ppfiles-learn-delivery/TASK-20260714-004/20260714-185003-7f637b/report.md` | None | Dependency accepted. |

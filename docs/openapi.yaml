@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Project API
-  version: 0.3.0
+  version: 0.4.0
   description: API contract between the WeChat Mini Program, Web Admin Management System, and backend agents.
 servers:
   - url: http://localhost:3000
@@ -25,12 +25,16 @@ tags:
     description: Direction-specific persistent favorites
   - name: Market Reports
     description: User reports and protected administrator resolution
+  - name: Market Moderation
+    description: Protected market content operations and state transitions
   - name: Identity Reviews
     description: Manual review operations inside the protected admin system
   - name: Admin Auth
     description: Administrator account/password authentication
   - name: Admin Accounts
     description: Administrator account and RBAC management
+  - name: Admin Audit
+    description: Owner-readable administrator security and operation history
 paths:
   /health:
     get:
@@ -85,6 +89,8 @@ paths:
                     $ref: "#/components/schemas/AdminSession"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /admin/auth/logout:
     post:
       tags:
@@ -217,6 +223,43 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /admin/audit-logs:
+    get:
+      tags:
+        - Admin Audit
+      summary: List recent administrator audit records
+      operationId: listAdminAuditLogs
+      security:
+        - AdminSession: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+      responses:
+        "200":
+          description: Recent audit records, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminAuditLog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /users:
     get:
       tags:
@@ -363,6 +406,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /auth/wechat/phone:
     post:
       tags:
@@ -457,6 +502,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /me/identities/applicant:
     post:
       tags:
@@ -491,6 +538,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /me/identities/{identityId}:
     get:
       tags:
@@ -555,6 +604,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /me/applicant/job-seeking-information:
     get:
       tags:
@@ -900,6 +951,44 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /market/recruitment-posts/map:
+    get:
+      tags:
+        - Market
+      summary: Get privacy-safe recruitment map points for an approved applicant
+      operationId: mapMarketRecruitmentPosts
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/MapSouth"
+        - $ref: "#/components/parameters/MapWest"
+        - $ref: "#/components/parameters/MapNorth"
+        - $ref: "#/components/parameters/MapEast"
+        - $ref: "#/components/parameters/MapZoom"
+        - $ref: "#/components/parameters/MarketLimit"
+        - name: jobType
+          in: query
+          schema:
+            type: string
+        - name: salaryRange
+          in: query
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Privacy-safe recruitment map projection without contacts or precise coordinates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketMapResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /market/recruitment-posts:
     get:
       tags:
@@ -911,6 +1000,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/MarketCursor"
         - $ref: "#/components/parameters/MarketLimit"
+        - name: keyword
+          in: query
+          schema:
+            type: string
         - name: jobType
           in: query
           schema:
@@ -933,7 +1026,6 @@ paths:
             type: string
             enum:
               - newest
-              - nearest
             default: newest
       responses:
         "200":
@@ -974,6 +1066,88 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /market/media/{imageId}:
+    get:
+      tags:
+        - Market
+      summary: Read an image belonging to a currently published recruitment post
+      operationId: getPublicRecruitmentImage
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Validated recruitment image bytes
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Responses are not cached so moderation takes effect immediately
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /market/job-seeking-information/map:
+    get:
+      tags:
+        - Market
+      summary: Get privacy-safe applicant map points for an approved recruiter
+      operationId: mapMarketJobSeekingInformation
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/MapSouth"
+        - $ref: "#/components/parameters/MapWest"
+        - $ref: "#/components/parameters/MapNorth"
+        - $ref: "#/components/parameters/MapEast"
+        - $ref: "#/components/parameters/MapZoom"
+        - $ref: "#/components/parameters/MarketLimit"
+        - name: jobTypeName
+          in: query
+          schema:
+            type: string
+        - name: expectedSalary
+          in: query
+          schema:
+            type: string
+        - name: workMethod
+          in: query
+          schema:
+            type: string
+            enum:
+              - monthly_settlement
+              - indefinite_duration
+        - name: location
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Privacy-safe applicant map projection without contacts or precise coordinates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketMapResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /market/job-seeking-information:
     get:
       tags:
@@ -985,6 +1159,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/MarketCursor"
         - $ref: "#/components/parameters/MarketLimit"
+        - name: keyword
+          in: query
+          schema:
+            type: string
         - name: jobTypeName
           in: query
           schema:
@@ -1010,7 +1188,6 @@ paths:
             type: string
             enum:
               - newest
-              - nearest
             default: newest
       responses:
         "200":
@@ -1051,6 +1228,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
   /me/favorites/recruitment-posts:
     get:
       tags:
@@ -1189,6 +1368,118 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+  /admin/market-content:
+    get:
+      tags:
+        - Market Moderation
+      summary: List market content for authorized operations administrators
+      operationId: listAdminMarketContent
+      security:
+        - AdminSession: []
+      parameters:
+        - name: targetType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - recruitment_post
+              - applicant_information
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/MarketContentStatus"
+        - name: publishedFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: publishedTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+      responses:
+        "200":
+          description: Filtered market content queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminMarketContentItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /admin/market-content/{targetType}/{targetId}/decision:
+    post:
+      tags:
+        - Market Moderation
+      summary: Change the moderation state of one market object
+      operationId: decideAdminMarketContent
+      security:
+        - AdminSession: []
+      parameters:
+        - name: targetType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - recruitment_post
+              - applicant_information
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketModerationDecisionRequest"
+      responses:
+        "200":
+          description: Moderation transition and audit entry recorded atomically
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AdminMarketContentItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /admin/market-reports:
     get:
       tags:
@@ -1197,6 +1488,16 @@ paths:
       operationId: listMarketReports
       security:
         - AdminSession: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - open
+              - resolved
+              - rejected
       responses:
         "200":
           description: Market report queue
@@ -1215,6 +1516,48 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /admin/market-reports/{reportId}/decision:
+    post:
+      tags:
+        - Market Reports
+      summary: Resolve a report and optionally disable its target, or reject the report
+      operationId: decideMarketReport
+      security:
+        - AdminSession: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketReportDecisionRequest"
+      responses:
+        "200":
+          description: Report decision recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MarketReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /admin/identity-reviews:
     get:
       tags:
@@ -1289,6 +1632,10 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
 components:
   securitySchemes:
     PlatformSession:
@@ -1335,6 +1682,46 @@ components:
       schema:
         type: string
       description: Applicant job-seeking information identifier
+    MapSouth:
+      name: south
+      in: query
+      required: true
+      schema:
+        type: number
+        minimum: -90
+        maximum: 90
+    MapWest:
+      name: west
+      in: query
+      required: true
+      schema:
+        type: number
+        minimum: -180
+        maximum: 180
+    MapNorth:
+      name: north
+      in: query
+      required: true
+      schema:
+        type: number
+        minimum: -90
+        maximum: 90
+    MapEast:
+      name: east
+      in: query
+      required: true
+      schema:
+        type: number
+        minimum: -180
+        maximum: 180
+    MapZoom:
+      name: zoom
+      in: query
+      required: true
+      schema:
+        type: integer
+        minimum: 3
+        maximum: 20
     MarketCursor:
       name: cursor
       in: query
@@ -1389,21 +1776,98 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Request rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    MarketMapResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - items
+            - zoom
+            - nextCursor
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/MarketMapItem"
+            zoom:
+              type: integer
+            nextCursor:
+              anyOf:
+                - type: string
+                - type: "null"
+    MarketMapItem:
+      type: object
+      required:
+        - cluster
+        - latitude
+        - longitude
+      properties:
+        id:
+          type: string
+          description: Present only for a single market record
+        cluster:
+          type: boolean
+        count:
+          type: integer
+          minimum: 1
+          description: Present for a cluster item
+        latitude:
+          type: number
+          description: Privacy-projected display coordinate, never the stored raw coordinate
+        longitude:
+          type: number
+          description: Privacy-projected display coordinate, never the stored raw coordinate
+        jobType:
+          type: string
+        jobTypeName:
+          type: string
+        salaryRange:
+          type: string
+        expectedSalary:
+          type: string
+        settlementMethod:
+          type: string
+        workMethod:
+          type: string
+          enum:
+            - monthly_settlement
+            - indefinite_duration
+        locationText:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/MarketContentStatus"
     MarketRecruitmentPostListResponse:
       type: object
       required:
         - data
-        - nextCursor
       properties:
         data:
-          type: array
-          items:
-            $ref: "#/components/schemas/MarketRecruitmentPostSummary"
-        nextCursor:
-          anyOf:
-            - type: string
-            - type: "null"
+          type: object
+          required:
+            - items
+            - nextCursor
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/MarketRecruitmentPostSummary"
+            nextCursor:
+              anyOf:
+                - type: string
+                - type: "null"
     MarketRecruitmentPostSummary:
       type: object
       required:
@@ -1430,14 +1894,16 @@ components:
           type: string
           format: date-time
         status:
-          type: string
-          enum:
-            - published
-            - disabled
+          $ref: "#/components/schemas/MarketContentStatus"
         isFavorited:
           type: boolean
         coverImage:
           type: string
+        images:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/PublicRecruitmentPostImage"
     MarketRecruitmentPostDetail:
       allOf:
         - $ref: "#/components/schemas/MarketRecruitmentPostSummary"
@@ -1451,7 +1917,7 @@ components:
               type: array
               maxItems: 6
               items:
-                $ref: "#/components/schemas/RecruitmentPostImage"
+                $ref: "#/components/schemas/PublicRecruitmentPostImage"
             contactName:
               type: string
             contactPhone:
@@ -1460,20 +1926,25 @@ components:
       type: object
       required:
         - data
-        - nextCursor
       properties:
         data:
-          type: array
-          items:
-            $ref: "#/components/schemas/MarketJobSeekingSummary"
-        nextCursor:
-          anyOf:
-            - type: string
-            - type: "null"
+          type: object
+          required:
+            - items
+            - nextCursor
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/MarketJobSeekingSummary"
+            nextCursor:
+              anyOf:
+                - type: string
+                - type: "null"
     MarketJobSeekingSummary:
       type: object
       required:
-        - informationId
+        - id
         - jobTypeName
         - expectedSalary
         - workMethod
@@ -1482,7 +1953,7 @@ components:
         - status
         - isFavorited
       properties:
-        informationId:
+        id:
           type: string
         jobTypeName:
           type: string
@@ -1501,10 +1972,7 @@ components:
           type: string
           format: date-time
         status:
-          type: string
-          enum:
-            - published
-            - disabled
+          $ref: "#/components/schemas/MarketContentStatus"
         isFavorited:
           type: boolean
     MarketJobSeekingDetail:
@@ -1530,8 +1998,122 @@ components:
           type: array
           items:
             oneOf:
-              - $ref: "#/components/schemas/MarketRecruitmentPostSummary"
-              - $ref: "#/components/schemas/MarketJobSeekingSummary"
+              - $ref: "#/components/schemas/RecruitmentFavorite"
+              - $ref: "#/components/schemas/JobSeekingFavorite"
+    RecruitmentFavorite:
+      type: object
+      required:
+        - id
+        - favoritedAt
+        - status
+        - publishedAt
+        - jobType
+        - salaryRange
+      properties:
+        id:
+          type: string
+        favoritedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/MarketContentStatus"
+        publishedAt:
+          type: string
+          format: date-time
+        jobType:
+          type: string
+        salaryRange:
+          type: string
+    JobSeekingFavorite:
+      type: object
+      required:
+        - id
+        - favoritedAt
+        - status
+        - publishedAt
+        - jobTypeName
+        - expectedSalary
+      properties:
+        id:
+          type: string
+        favoritedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/MarketContentStatus"
+        publishedAt:
+          type: string
+          format: date-time
+        jobTypeName:
+          type: string
+        expectedSalary:
+          type: string
+    MarketContentStatus:
+      type: string
+      enum:
+        - published
+        - pending_review
+        - changes_requested
+        - disabled
+    AdminMarketContentItem:
+      type: object
+      required:
+        - targetType
+        - id
+        - ownerRole
+        - title
+        - locationText
+        - status
+        - publishedAt
+        - updatedAt
+      properties:
+        targetType:
+          type: string
+          enum:
+            - recruitment_post
+            - applicant_information
+        id:
+          type: string
+        ownerRole:
+          type: string
+          enum:
+            - recruiter
+            - applicant
+        title:
+          type: string
+        subtitle:
+          type: string
+        locationText:
+          type: string
+        status:
+          $ref: "#/components/schemas/MarketContentStatus"
+        publishedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        moderationReason:
+          type: string
+        moderatedAt:
+          type: string
+          format: date-time
+    MarketModerationDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum:
+            - approve
+            - request_changes
+            - disable
+            - restore
+        reason:
+          type: string
+          maxLength: 1000
+          description: Required for request_changes and optional for disable
     CreateMarketReportRequest:
       type: object
       required:
@@ -1550,6 +2132,16 @@ components:
           type: string
           minLength: 1
           maxLength: 1000
+    MarketReportDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum:
+            - resolved
+            - rejected
     MarketReport:
       type: object
       required:
@@ -1581,8 +2173,10 @@ components:
           type: string
           format: date-time
         resolvedAt:
-          type: string
-          format: date-time
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
     ApplicantJobSeekingInformationRequest:
       type: object
       required:
@@ -1632,21 +2226,23 @@ components:
         - type: object
           required:
             - roleProfileId
-            - visibilityStatus
+            - status
             - publishedAt
             - updatedAt
           properties:
             roleProfileId:
               type: string
-            visibilityStatus:
-              type: string
-              enum:
-                - published
-                - disabled
+            status:
+              $ref: "#/components/schemas/MarketContentStatus"
             publishedAt:
               type: string
               format: date-time
             disabledAt:
+              type: string
+              format: date-time
+            moderationReason:
+              type: string
+            moderatedAt:
               type: string
               format: date-time
             updatedAt:
@@ -1790,14 +2386,16 @@ components:
             recruiterRoleProfileId:
               type: string
             status:
-              type: string
-              enum:
-                - published
-                - disabled
+              $ref: "#/components/schemas/MarketContentStatus"
             publishedAt:
               type: string
               format: date-time
             disabledAt:
+              type: string
+              format: date-time
+            moderationReason:
+              type: string
+            moderatedAt:
               type: string
               format: date-time
             images:
@@ -1828,6 +2426,27 @@ components:
           type: string
         byteSize:
           type: integer
+        sortOrder:
+          type: integer
+    PublicRecruitmentPostImage:
+      type: object
+      required:
+        - id
+        - url
+        - contentType
+        - sortOrder
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          description: Relative public-media URL; internal object keys are never exposed
+        contentType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
         sortOrder:
           type: integer
     UpdateRecruitmentPostRequest:
@@ -1919,6 +2538,38 @@ components:
         lastLoginAt:
           type: string
           format: date-time
+    AdminAuditLog:
+      type: object
+      required:
+        - id
+        - adminUserId
+        - adminLoginName
+        - action
+        - targetType
+        - details
+        - createdAt
+      properties:
+        id:
+          type: string
+        adminUserId:
+          type: string
+        adminLoginName:
+          type: string
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          anyOf:
+            - type: string
+            - type: "null"
+        details:
+          type: object
+          additionalProperties: true
+          description: Sanitized metadata; passwords and session tokens are never recorded
+        createdAt:
+          type: string
+          format: date-time
     CreateAdminAccountRequest:
       type: object
       required:
@@ -1998,15 +2649,23 @@ components:
         email:
           type: string
           format: email
+          maxLength: 160
         name:
           type: string
           minLength: 1
+          maxLength: 120
     UpdateUserRequest:
       type: object
+      minProperties: 1
       properties:
+        email:
+          type: string
+          format: email
+          maxLength: 160
         name:
           type: string
           minLength: 1
+          maxLength: 120
         status:
           type: string
           enum:

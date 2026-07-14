@@ -318,9 +318,9 @@ function migrateMarketStatusConstraints(db) {
         ALTER TABLE recruitment_posts_new RENAME TO recruitment_posts;
       `);
     }
-    db.exec('COMMIT; PRAGMA foreign_keys = ON');
     const violations = db.prepare('PRAGMA foreign_key_check').all();
     if (violations.length) throw new Error('MARKET_SCHEMA_FOREIGN_KEY_VIOLATION');
+    db.exec('COMMIT; PRAGMA foreign_keys = ON');
   } catch (error) {
     try { db.exec('ROLLBACK'); } catch {}
     db.exec('PRAGMA foreign_keys = ON');

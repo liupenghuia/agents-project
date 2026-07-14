@@ -5,3 +5,15 @@
 .placeholder .section-title { margin: 0 0 12rpx; }
 .action-card { width: 100%; margin-top: 20rpx; padding: 28rpx 32rpx; background: #fff; border: 1rpx solid #d9e6e2; border-radius: 8rpx; text-align: left; }
 .action-title { display: block; margin-bottom: 8rpx; color: #0d7c66; font-size: 32rpx; font-weight: 700; }
+.publication-section { margin-top: 32rpx; }
+.section-row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.publication-empty { margin-top: 14rpx; color: #7b8883; text-align: center; }
+.publication-row { display: flex; width: 100%; min-height: 116rpx; align-items: center; justify-content: space-between; gap: 20rpx; margin-top: 12rpx; padding: 22rpx 24rpx; border: 1rpx solid #dce6e2; border-radius: 6rpx; background: #fff; text-align: left; }
+.publication-row > view { min-width: 0; flex: 1; }
+.publication-title { display: block; margin-bottom: 6rpx; color: #17332d; font-weight: 700; }
+.publication-state { flex: none; padding: 8rpx 12rpx; font-size: 22rpx; }
+.state-published { background: #e9f4f0; color: #187049; }
+.state-disabled { background: #fff3e8; color: #9a552b; }
+.state-pending_review { background: #fff8db; color: #886813; }
+.state-changes_requested { background: #fff0ee; color: #a53f36; }
+.publication-reason { display: block; margin-top: 8rpx; color: #a53f36; font-size: 22rpx; overflow-wrap: anywhere; }

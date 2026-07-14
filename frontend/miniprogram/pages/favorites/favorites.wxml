@@ -1,1 +1,12 @@
-<view class="page"><view class="eyebrow">我的收藏</view><text class="title">已收藏信息</text><view wx:if="{{!items.length}}" class="panel empty">暂无收藏</view><button wx:for="{{items}}" wx:key="id" class="action-card" data-id="{{item.id}}" bindtap="remove"><text class="action-title">{{item.jobType || item.jobTypeName}}</text><text class="muted">{{item.salaryRange || item.expectedSalary}} · {{item.status === 'published' ? '可查看' : '已失效'}}</text><text class="published">发布时间：{{item.publishedAt}}</text><text class="published">点击取消收藏</text></button><view wx:if="{{error}}" class="error">{{error}}</view></view>
+<view class="page">
+  <view class="eyebrow">我的收藏</view><text class="title">已收藏信息</text>
+  <view wx:if="{{loading}}" class="loading">正在读取收藏...</view>
+  <view wx:elif="{{!items.length && !error}}" class="panel empty">暂无收藏</view>
+  <view wx:for="{{items}}" wx:key="id" class="action-card">
+    <text class="action-title">{{item.jobType || item.jobTypeName}}</text>
+    <text class="muted">{{item.salaryRange || item.expectedSalary}} · {{item.status === 'published' ? '可查看' : '已失效'}}</text>
+    <text class="published">发布时间：{{item.publishedAt}}</text>
+    <button class="remove-button" data-id="{{item.id}}" loading="{{removingId === item.id}}" disabled="{{!!removingId}}" bindtap="remove">取消收藏</button>
+  </view>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+</view>

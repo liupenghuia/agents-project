@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
-    <title>寻职 · 人工审核</title>
+    <title>寻职 · 运营工作台</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -27,7 +27,14 @@
           <div><p class="eyebrow">寻职 · 运营工作台</p><h1 id="dashboardTitle">人工审核</h1></div>
           <div class="account"><span id="adminIdentity"></span><button id="logoutButton" class="button quiet" type="button">退出登录</button></div>
         </header>
-        <div class="workspace">
+        <nav class="admin-nav" aria-label="管理模块">
+          <button id="reviewTab" class="button quiet module-tab" data-module="review" type="button">身份审核</button>
+          <button id="usersTab" class="button quiet module-tab" data-module="users" type="button">用户管理</button>
+          <button id="moderationTab" class="button quiet module-tab" data-module="moderation" type="button">内容运营</button>
+          <button id="reportsTab" class="button quiet module-tab" data-module="reports" type="button">举报处理</button>
+          <button id="adminsTab" class="button quiet module-tab" data-module="admins" type="button">管理员账号</button>
+        </nav>
+        <div id="reviewPanel" class="workspace module-panel">
           <aside class="queue-panel" aria-label="审核队列">
             <div class="queue-heading"><div><span class="eyebrow">审核队列</span><h2>注册资料</h2></div><button id="refreshButton" class="icon-button" type="button" title="刷新队列" aria-label="刷新队列">↻</button></div>
             <div class="tabs" role="tablist" aria-label="审核状态">
@@ -55,28 +62,50 @@
             </div>
           </section>
         </div>
-        <nav class="admin-nav" aria-label="管理模块">
-          <button id="usersTab" class="button secondary" type="button">用户管理</button>
-          <button id="reportsTab" class="button secondary" type="button">举报处理</button>
-          <button id="adminsTab" class="button secondary" type="button">管理员账号</button>
-        </nav>
-        <section id="usersPanel" class="admin-panel" hidden aria-labelledby="usersTitle">
+        <section id="usersPanel" class="admin-panel module-panel" hidden aria-labelledby="usersTitle">
           <div class="panel-heading"><div><span class="eyebrow">账号数据</span><h2 id="usersTitle">用户管理</h2></div><button id="usersRefresh" class="icon-button" type="button" title="刷新用户" aria-label="刷新用户">↻</button></div>
-          <form id="userForm" class="inline-form"><input name="name" placeholder="姓名" required maxlength="120"><input name="email" type="email" placeholder="邮箱" required maxlength="160"><button class="button primary" type="submit">创建用户</button></form>
+          <form id="userForm" class="inline-form"><input name="name" aria-label="新用户姓名" placeholder="姓名" required maxlength="120"><input name="email" type="email" aria-label="新用户邮箱" placeholder="邮箱" required maxlength="160"><button class="button primary" type="submit">创建用户</button></form>
           <p id="usersState" class="queue-state" role="status"></p><div id="usersList" class="admin-list"></div>
         </section>
-        <section id="adminsPanel" class="admin-panel" hidden aria-labelledby="adminsTitle">
+        <section id="adminsPanel" class="admin-panel module-panel" hidden aria-labelledby="adminsTitle">
           <div class="panel-heading"><div><span class="eyebrow">权限控制</span><h2 id="adminsTitle">管理员账号</h2></div><button id="adminsRefresh" class="icon-button" type="button" title="刷新管理员" aria-label="刷新管理员">↻</button></div>
-          <form id="adminForm" class="inline-form"><input name="loginName" placeholder="登录账号" required maxlength="120"><input name="password" type="password" placeholder="至少 12 位密码" required minlength="12"><select name="role"><option value="reviewer">审核员</option><option value="operator">运营员</option><option value="admin">管理员</option></select><button class="button primary" type="submit">创建管理员</button></form>
+          <form id="adminForm" class="inline-form"><input name="loginName" aria-label="新管理员登录账号" placeholder="登录账号" required maxlength="120"><input name="password" type="password" aria-label="新管理员初始密码" autocomplete="new-password" placeholder="至少 12 位密码" required minlength="12" maxlength="256"><select name="role" aria-label="新管理员角色"></select><button class="button primary" type="submit">创建管理员</button></form>
           <p id="adminsState" class="queue-state" role="status"></p><div id="adminsList" class="admin-list"></div>
+          <section id="auditSection" class="audit-section" hidden aria-labelledby="auditTitle">
+            <div class="subsection-heading"><h3 id="auditTitle">审计记录</h3><span id="auditState" class="queue-state" role="status"></span></div>
+            <div id="auditList" class="audit-list"></div>
+          </section>
         </section>
-        <section id="reportsPanel" class="admin-panel" hidden aria-labelledby="reportsTitle">
+        <section id="reportsPanel" class="admin-panel module-panel" hidden aria-labelledby="reportsTitle">
           <div class="panel-heading"><div><span class="eyebrow">风险处理</span><h2 id="reportsTitle">举报处理</h2></div><button id="reportsRefresh" class="icon-button" type="button" title="刷新举报" aria-label="刷新举报">↻</button></div>
           <p id="reportsState" class="queue-state" role="status"></p><div id="reportsList" class="admin-list"></div>
         </section>
+        <section id="moderationPanel" class="admin-panel module-panel" hidden aria-labelledby="moderationTitle">
+          <div class="panel-heading"><div><span class="eyebrow">市场内容</span><h2 id="moderationTitle">内容运营</h2></div><button id="moderationRefresh" class="icon-button" type="button" title="刷新内容" aria-label="刷新内容">↻</button></div>
+          <form id="moderationFilters" class="filter-bar">
+            <label>内容类型<select name="targetType"><option value="">全部类型</option><option value="recruitment_post">招聘信息</option><option value="applicant_information">求职信息</option></select></label>
+            <label>内容状态<select name="status"><option value="">全部状态</option><option value="published">已发布</option><option value="pending_review">待审核</option><option value="changes_requested">已打回</option><option value="disabled">已下架</option></select></label>
+            <label>发布起始<input name="publishedFrom" type="datetime-local"></label>
+            <label>发布截止<input name="publishedTo" type="datetime-local"></label>
+            <button class="button primary" type="submit">筛选</button>
+          </form>
+          <p id="moderationState" class="queue-state" role="status"></p>
+          <div id="moderationList" class="admin-list"></div>
+        </section>
+        <dialog id="moderationDialog" class="decision-dialog" aria-labelledby="moderationDialogTitle">
+          <form id="moderationDecisionForm" method="dialog">
+            <div class="dialog-heading"><span class="eyebrow">内容审核</span><h2 id="moderationDialogTitle"></h2></div>
+            <p id="moderationDialogSummary" class="dialog-summary"></p>
+            <label id="moderationReasonLabel" for="moderationReason">处理原因 <span id="moderationReasonRequired" class="required">必填</span></label>
+            <textarea id="moderationReason" maxlength="1000" rows="4" placeholder="填写具体、可执行的处理原因"></textarea>
+            <div class="decision-actions"><button id="cancelModeration" class="button quiet" type="button">取消</button><button id="submitModeration" class="button secondary" type="submit">确认</button></div>
+          </form>
+        </dialog>
         <p id="globalError" class="alert error global-error" role="alert" hidden></p>
       </section>
     </main>
+    <script src="permissions.js"></script>
+    <script src="moderation.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

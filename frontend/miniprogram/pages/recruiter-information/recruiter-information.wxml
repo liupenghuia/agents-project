@@ -4,7 +4,7 @@
   <text class="muted">先获取位置，再补充精确到楼栋的详细地址。</text>
   <view wx:if="{{loading}}" class="loading">正在读取信息...</view>
   <view wx:if="{{!loading}}" class="panel form">
-    <label class="label">位置 <text>*</text><button class="location-button" bindtap="chooseLocation">{{form.locationText || '获取并选择招聘位置'}}</button></label>
+    <label class="label">位置 <text>*</text><button class="location-button" bindtap="chooseLocation">{{form.locationText || (form.latitude ? '位置已确认，可重新选择' : '获取并选择招聘位置')}}</button></label>
     <label class="label">详细地址 <text>*</text><input data-field="detailedAddress" value="{{form.detailedAddress}}" bindinput="input" placeholder="请填写到楼栋，例如：3 栋 502 室" maxlength="300" /></label>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}<button class="button-secondary" bindtap="retry">重试</button></view>

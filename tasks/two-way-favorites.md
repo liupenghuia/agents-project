@@ -110,6 +110,16 @@ Out of scope:
 - [ ] Disabled target behavior.
 - [ ] Favorites list and detail state synchronization.
 
+## Client Architecture Pre-Coding Check
+
+- Target/module: Mini Program favorites list state and destructive removal interaction.
+- Existing pattern and owner: Favorites page owns loading/error/confirmation state; API service owns direction-specific transport.
+- Responsibility and dependency decision: Keep domain direction selection in one page helper and make removal explicit rather than card-tap side effect.
+- Shared vs target-specific decision: UI confirmation is Mini Program-specific; favorite idempotency remains backend-owned.
+- State/contract/security impact: No contract change; improves duplicate-action prevention and recoverable error states.
+- Verification plan: JS syntax, API helper tests and task delivery runner.
+- Architecture review: Not required; existing data and navigation boundaries are unchanged.
+
 ## Handoff Log
 
 | Date | Actor | Target | From | To | Changed files | Evidence/commands | Issues | Next action |
@@ -117,3 +127,4 @@ Out of scope:
 | 2026-07-14 | Product Agent | Architect | Draft | Ready for Architecture | `docs/requirements.md`, task | Version-one favorite scope recorded | Depends on market browse | Architect defines direction-specific persistence and API |
 | 2026-07-14 | Architect Agent | Backend / Mini Program / Test | Ready for Architecture | Blocked | `docs/architecture/adr-003-two-sided-information-market.md`, `docs/database.md`, `docs/openapi.yaml`, task | Favorite persistence and API boundaries defined | Prior market tasks blocked | Unblock dependencies, then implement |
 | 2026-07-14 | Backend + Mini Program Agents | Test Agent | Blocked | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/miniprogram/services/api.js`, `frontend/miniprogram/pages/favorites/*`, `frontend/miniprogram/pages/market/*` | Market integration test covers add/list and API syntax checks pass | Unified favorite consistency verification pending | Run the unified validation batch. |
+| 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Approved-target favorite authorization, `isFavorited` projection, Mini Program toggle/confirmation flows | Backend `npm test`: 11 passed with both favorite directions; Mini Program tests passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260714-007/20260714-181440-90d6bd/report.md` | WeChat DevTools/real-device interaction checks pending | Verify add/remove/list consistency and repeated taps in WeChat DevTools/on device. |

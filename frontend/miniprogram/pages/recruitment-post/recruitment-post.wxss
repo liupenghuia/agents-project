@@ -1,6 +1,7 @@
 .form { margin-top: 36rpx; padding: 8rpx 32rpx 32rpx; }
 .label { display: block; padding-top: 28rpx; color: #45515a; font-size: 25rpx; }
 .label > text { color: #d94f45; }
+.label > .optional-label { color: #59666e; }
 input, .location-button, .upload-button { width: 100%; margin-top: 14rpx; min-height: 84rpx; padding: 0 20rpx; background: #f7f8fa; border: 1rpx solid #e3e7e9; border-radius: 4rpx; color: #17212b; line-height: 84rpx; text-align: left; }
 .location-button, .upload-button { color: #0d7c66; }
 .image-list { display: flex; flex-wrap: wrap; gap: 16rpx; margin-top: 18rpx; }
@@ -10,3 +11,12 @@ input, .location-button, .upload-button { width: 100%; margin-top: 14rpx; min-he
 .existing { display: flex; align-items: center; justify-content: center; padding: 16rpx; color: #0d7c66; text-align: center; }
 .existing text { font-size: 23rpx; }
 .success { margin-top: 24rpx; padding: 24rpx; background: #e9f4f0; color: #187049; }
+.publication-status { margin-top: 22rpx; padding: 18rpx 22rpx; font-size: 24rpx; }
+.publication-status text { display: block; }
+.publication-status .status-title { margin-bottom: 6rpx; font-weight: 700; }
+.publication-status .moderation-reason { margin-top: 12rpx; padding-top: 12rpx; border-top: 1rpx solid currentColor; }
+.status-published { background: #e9f4f0; color: #187049; }
+.status-disabled { background: #fff3e8; color: #9a552b; }
+.status-pending_review { background: #fff8db; color: #886813; }
+.status-changes_requested { background: #fff0ee; color: #a53f36; }
+.danger-action { width: 100%; margin-top: 16rpx; border: 1rpx solid #e8c5bf; background: #fff; color: #a53f36; }

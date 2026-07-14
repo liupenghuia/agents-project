@@ -1,11 +1,22 @@
-const { createIdentity, exchangePhone, resubmitIdentity } = require('../../services/api');
+const { createIdentity, exchangePhone, getIdentity, resubmitIdentity } = require('../../services/api');
 const { validateRegistration } = require('../../utils/registration');
 
 Page({
-  data: { role: 'recruiter', editingId: '', form: {}, submitting: false, phoneAuthorizing: false, agreed: false, error: '', fromChanges: false, organizationTypeLabel: '' },
+  data: { role: 'recruiter', editingId: '', form: {}, loading: false, submitting: false, phoneAuthorizing: false, agreed: false, error: '', fromChanges: false, organizationTypeLabel: '' },
   onLoad(options) {
     const role = options.role === 'applicant' ? 'applicant' : 'recruiter';
-    this.setData({ role, editingId: options.identityId || '', fromChanges: !!options.identityId });
+    const editingId = options.identityId || '';
+    this.setData({ role, editingId, fromChanges: Boolean(editingId) });
+    if (editingId) this.loadIdentity(editingId);
+  },
+  loadIdentity(identityId) {
+    this.setData({ loading: true, error: '' });
+    getApp().ensureSession().then(() => getIdentity(identityId)).then((identity) => {
+      if (identity.role !== this.data.role) throw new Error('身份类型与当前表单不一致');
+      const form = identity.profile || {};
+      const typeLabels = { company: '企业', individual: '个体', other: '个人/其他' };
+      this.setData({ loading: false, form, agreed: true, organizationTypeLabel: typeLabels[form.organizationType] || '' });
+    }).catch((error) => this.setData({ loading: false, error: error.message }));
   },
   input(event) { this.setData({ [`form.${event.currentTarget.dataset.field}`]: event.detail.value, error: '' }); },
   pickType(event) {
@@ -46,7 +57,7 @@ Page({
     return validateRegistration(this.data.role, this.data.form, this.data.agreed);
   },
   submit() {
-    if (this.data.submitting) return;
+    if (this.data.loading || this.data.submitting) return;
     const error = this.validate();
     if (error) { this.setData({ error }); return; }
     this.setData({ submitting: true, error: '' });

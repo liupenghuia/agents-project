@@ -3,7 +3,7 @@
 ## Load Before Work
 
 - Read `frontend/miniprogram/AGENTS.md` or `frontend/web/AGENTS.md` for the target, then root `AGENTS.md`.
-- Read `docs/delivery-workflow.md`, the task, requirements, OpenAPI, and linked frontend issues.
+- Read `docs/delivery-workflow.md`, `docs/client-architecture.md`, the task, requirements, OpenAPI, and linked frontend issues.
 - Run the common preflight; owned `P0`/`P1` issues and task blockers outrank new work.
 
 ## Scope Routing
@@ -26,6 +26,7 @@
 
 - Scan issues owned by `Frontend Agent`, `Frontend MiniProgram Agent`, or `Frontend Web Agent`.
 - Fix target-specific `P0`/`P1` issues before new feature work.
+- Complete the client architecture pre-coding check for every affected target; resolve Architect review triggers before implementation and record the result in the task.
 - Each handoff records target, changed files, exact commands/results, related issues, and next action in the task log and `frontend/HISTORY.md`.
 - Fix owners set issues to `Ready for Retest`; Test Agent closes them.
 

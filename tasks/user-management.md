@@ -133,6 +133,16 @@ Out of scope:
 
 - None
 
+## Client Architecture Pre-Coding Check
+
+- Target/module: Web user-management workspace.
+- Existing pattern and owner: Static Web app owns UI orchestration; the shared `request` boundary owns HTTP; backend remains the authorization and validation authority.
+- Responsibility and dependency decision: Add editable row state and explicit save/status actions without duplicating email/status business validation in presentation code.
+- Shared vs target-specific decision: Role capability mapping is shared across Web workspaces through a pure local module; DOM rendering stays Web-specific.
+- State/contract/security impact: Preserve `/users` contracts, show read-only or hidden controls for unauthorized roles, and handle independent loading/error states.
+- Verification plan: Pure permission tests, Web JS syntax, backend user integration tests, browser smoke and delivery runner.
+- Architecture review: Not required; no framework, contract, authentication or ownership change.
+
 ## Handoff Log
 
 | Date | Actor | Target | From | To | Changed files | Evidence/commands | Issues | Next action |
@@ -140,3 +150,4 @@ Out of scope:
 | 2026-07-01 | Product Agent | Coordinator | Draft | Ready for Architecture | Requirements/task | Initial feature scope created. | None | Architect review. |
 | 2026-07-01 | Architect Agent | Coordinator / Web | Ready for Architecture | Ready for Implementation | API/database contracts | Contracts documented. | None | Backend and Web implementation. |
 | 2026-07-14 | Backend + Web Agents | Test Agent | Ready for Implementation | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/web/index.html`, `frontend/web/app.js`, `frontend/web/styles.css` | `npm test`: 9 passed; Node syntax checks passed; Web user CRUD controls and API integration added; `ruby scripts/validate_workflow.rb`: Passed | Unified browser/admin verification pending | Test Agent runs the unified validation batch. |
+| 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Owner protection, admin/user session revocation, sanitized audit API/UI, Web role-target controls | Backend `npm test`: 11 passed; Web permission tests and HTTP smoke passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260701-001/20260714-181440-1f1b73/report.md` | In-app browser unavailable; responsive/keyboard/admin workflow smoke pending | Run owner/admin account and audit workflows in a real browser. |

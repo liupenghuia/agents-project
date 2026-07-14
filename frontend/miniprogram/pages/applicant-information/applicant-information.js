@@ -1,18 +1,19 @@
-const { getApplicantJobSeekingInformation, saveApplicantJobSeekingInformation } = require('../../services/api');
+const { disableApplicantJobSeekingInformation, getApplicantJobSeekingInformation, saveApplicantJobSeekingInformation } = require('../../services/api');
 const { validateApplicantInformation } = require('../../utils/information');
+const { ownerStatusView, savedMessage } = require('../../utils/market-status');
 
 const workMethods = ['monthly_settlement', 'indefinite_duration'];
 const workMethodLabels = { monthly_settlement: '月结', indefinite_duration: '不定时长' };
 
 Page({
-  data: { loading: true, saving: false, error: '', saved: false, form: {}, workMethods, workMethodLabels, workMethodLabel: '' },
+  data: { loading: true, saving: false, disabling: false, error: '', saved: false, savedMessage: '', form: {}, statusView: {}, workMethods, workMethodLabels, workMethodLabel: '' },
 
   onLoad() { this.load(); },
 
   load() {
     this.setData({ loading: true, error: '' });
     getApp().ensureSession().then(getApplicantJobSeekingInformation).then((information) => {
-      this.setData({ loading: false, form: information || {}, workMethodLabel: information ? workMethodLabels[information.workMethod] : '' });
+      this.setData({ loading: false, form: information || {}, statusView: ownerStatusView(information || {}, Boolean(information)), workMethodLabel: information ? workMethodLabels[information.workMethod] : '' });
     }).catch((error) => this.setData({ loading: false, error: error.message }));
   },
 
@@ -41,10 +42,23 @@ Page({
     if (this.data.saving) return;
     const error = this.validate();
     if (error) { this.setData({ error }); return; }
-    this.setData({ saving: true, error: '', saved: false });
+    this.setData({ saving: true, error: '', saved: false, savedMessage: '' });
     saveApplicantJobSeekingInformation({ ...this.data.form, age: Number(this.data.form.age) }).then((information) => {
-      this.setData({ saving: false, saved: true, form: information });
+      this.setData({ saving: false, saved: true, savedMessage: savedMessage(information.status), form: information, statusView: ownerStatusView(information, true) });
     }).catch((requestError) => this.setData({ saving: false, error: requestError.message }));
+  },
+
+  disable() {
+    if (this.data.disabling || this.data.saving || this.data.form.status !== 'published') return;
+    wx.showModal({ title: '下架求职信息', content: '下架后不会出现在公开列表和地图中，可以修改后重新提交。', success: (result) => {
+      if (!result.confirm) return;
+      this.setData({ disabling: true, error: '', saved: false });
+      disableApplicantJobSeekingInformation().then(() => {
+        const form = { ...this.data.form, status: 'disabled', disabledAt: new Date().toISOString(), moderationReason: '', moderatedAt: '' };
+        this.setData({ disabling: false, form, statusView: ownerStatusView(form, true) });
+        wx.showToast({ title: '已下架', icon: 'success' });
+      }).catch((error) => this.setData({ disabling: false, error: error.message }));
+    } });
   },
 
   retry() { this.load(); },

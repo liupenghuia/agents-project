@@ -12,6 +12,8 @@
     <label class="label">期望工作范围 <text class="optional">可选</text><input data-field="preferredWorkScope" value="{{form.preferredWorkScope}}" bindinput="input" placeholder="例如：浦东新区周边" maxlength="200" /></label>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}<button class="button-secondary" bindtap="retry">重试</button></view>
-  <view wx:if="{{saved}}" class="success">求职信息已保存</view>
-  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving}}" bindtap="submit">{{saving ? '正在保存...' : '提交求职信息'}}</button>
+  <view wx:if="{{saved}}" class="success">{{savedMessage}}</view>
+  <view wx:if="{{!loading && form.roleProfileId}}" class="publication-status status-{{form.status}}"><text class="status-title">{{statusView.label}}</text><text>{{statusView.message}}</text><text wx:if="{{form.moderationReason}}" class="moderation-reason">处理原因：{{form.moderationReason}}</text></view>
+  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving || disabling}}" bindtap="submit">{{saving ? '正在保存...' : form.roleProfileId ? statusView.submitLabel : '提交求职信息'}}</button>
+  <button wx:if="{{!loading && form.roleProfileId && form.status === 'published'}}" class="danger-action" loading="{{disabling}}" disabled="{{saving || disabling}}" bindtap="disable">下架求职信息</button>
 </view>

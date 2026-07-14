@@ -14,6 +14,7 @@
 | Idea, assumptions, MVP decision | `ideas/*.md` and `docs/product-discovery.md` |
 | Product behavior | `docs/requirements.md` and task acceptance criteria |
 | System boundaries | `docs/architecture.md` |
+| Client structure and pre-coding check | `docs/client-architecture.md` |
 | HTTP contract | `docs/openapi.yaml` |
 | Data model | `docs/database.md` |
 | Delivery state | YAML front matter in `tasks/*.md` and `issues/*.md` |
@@ -43,6 +44,7 @@ Short task names map to `tasks/<task>.md`. See `COMMANDS.md` for examples.
 ## Operating Contract
 
 - Perform the preflight, entry gate, work, verification, and exit gate defined in `docs/delivery-workflow.md`.
+- Client implementation roles must complete and record `docs/client-architecture.md` before editing code.
 - Update task/issue front matter and append a handoff row in the same change as each transition.
 - Use `P0`, `P1`, `P2`, `P3` priority order; retests outrank new feature work at equal priority.
 - An implementation owner may mark an issue `Ready for Retest`, but only Test Agent may mark it `Closed`.

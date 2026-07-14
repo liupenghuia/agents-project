@@ -127,16 +127,20 @@ One current record belongs to each applicant role profile. Updates replace the c
 | latitude | decimal | yes | User-confirmed latitude |
 | longitude | decimal | yes | User-confirmed longitude |
 | preferred_work_scope | string | no | Secondary optional preference |
-| visibility_status | string | yes | `published` or `disabled` |
+| visibility_status | string | yes | `published`, `pending_review`, `changes_requested`, or `disabled` |
 | published_at | datetime | yes | First publication time; returned as `publishedAt` |
 | disabled_at | datetime | no | Owner/admin disable time |
+| moderation_reason | string | no | Latest administrator return/disable reason; owner/admin only |
+| moderated_by | string | no | Latest administrator actor; foreign key to `admin_accounts.user_id` |
+| moderated_at | datetime | no | Latest administrator action time |
 | created_at | datetime | yes | First save time |
 | updated_at | datetime | yes | Last update time |
 
 Constraints:
 
 - Unique `role_profile_id`.
-- New submitted information starts as `published` and receives `published_at`; disabled information is excluded from market queries.
+- New submitted information starts as `published` and receives `published_at`; only `published` information is included in public market queries.
+- Editing `changes_requested` information transitions it to `pending_review`; editing an administrator-disabled row does not make it public.
 - The referenced role profile must belong to the authenticated user for API access.
 - Coordinates must be finite and within latitude `[-90, 90]` and longitude `[-180, 180]`.
 
@@ -172,9 +176,12 @@ One recruiter may own multiple recruitment posts. A successful submission create
 | location_text | string | yes | User-confirmed display location |
 | latitude | decimal | yes | Required submitted latitude |
 | longitude | decimal | yes | Required submitted longitude |
-| status | string | yes | `published` or `disabled` |
+| status | string | yes | `published`, `pending_review`, `changes_requested`, or `disabled` |
 | published_at | datetime | yes | Publication time; returned as `publishedAt` |
 | disabled_at | datetime | no | Owner/admin disable time |
+| moderation_reason | string | no | Latest administrator return/disable reason; owner/admin only |
+| moderated_by | string | no | Latest administrator actor; foreign key to `admin_accounts.user_id` |
+| moderated_at | datetime | no | Latest administrator action time |
 | created_at | datetime | yes | Creation time |
 | updated_at | datetime | yes | Last update time |
 
@@ -184,6 +191,7 @@ Constraints:
 - Only the owning recruiter may read or update the post through the MVP owner APIs.
 - Public precise-location responses are not defined by this task.
 - `published_at` is required for every published post and is the default list sort key.
+- Editing a `changes_requested` post transitions it to `pending_review`; editing an administrator-disabled post preserves `disabled` until an authorized restore.
 
 ## New Entity: recruitment_post_images
 
@@ -204,6 +212,8 @@ Constraints:
 - Maximum six rows per recruitment post.
 - Unique `(recruitment_post_id, sort_order)` and `(recruitment_post_id, object_key)`.
 - Upload references must be owned by the current user and unexpired at publish time.
+- Owner APIs may return `object_key`; market APIs return only random image `id`, content type, sort order, and `/market/media/{imageId}`.
+- Public media lookup succeeds only while the parent post is published and its recruiter identity is approved.
 
 ## New Entity: media_uploads
 
@@ -221,6 +231,7 @@ Constraints:
 
 - Only the owning authenticated user may complete an upload.
 - Expired or already-completed references cannot be reused.
+- Completion verifies the binary signature against `content_type` and replaces `byte_size` with the actual stored size.
 - Unclaimed references are eligible for cleanup after expiry.
 
 ## New Entity: applicant_favorites
@@ -277,13 +288,41 @@ Contact view logs are append-only and are rate-limit input; they are not returne
 
 Reports are immutable submissions; only resolution fields change through protected admin operations.
 
+## Market Moderation Projection
+
+The two source content tables store the current moderation projection. `admin_audit_logs` remains the append-only history source for administrator actions.
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| status / visibility_status | yes | Shared content state vocabulary |
+| moderation_reason | no | Required for `changes_requested`; cleared on approve/restore |
+| moderated_by | no | Administrator actor for the latest moderation action; null for owner-only disable |
+| moderated_at | no | Latest moderation action time |
+
+Allowed administrator transitions are `published -> changes_requested|disabled`, `pending_review -> published|changes_requested|disabled`, `changes_requested -> disabled`, and `disabled -> published`. Owner edits perform `changes_requested -> pending_review`; owner-disabled legacy/current rows may return to `published`, but rows with `moderated_by` remain disabled. Public list, detail, media, and map queries filter on `published` before projection or aggregation.
+
+## Market Map Projection
+
+The first version does not add a map-specific source table. Map results are generated from `recruitment_posts` and `applicant_job_seeking_information` after the same published/visibility, approved-counterpart, moderation, and viewer-blocklist predicates used by market lists.
+
+| Projection field | Source/derivation | Public |
+| --- | --- | --- |
+| id | Recruitment post ID or applicant role-profile ID | Single point only |
+| cluster | `true` when multiple eligible records share a grid cell | yes |
+| count | Number of eligible records in the grid cell | Cluster only |
+| latitude/longitude | Deterministic grid-cell center or approved regional display point | Approximate only |
+| published_at | Source record `published_at` | yes |
+| summary fields | Same safe fields as the direction-specific market list | yes |
+
+The stored source `latitude` and `longitude` are never returned by map endpoints to ordinary users. The grid precision is derived from the requested zoom and is not persisted. The backend must cap viewport span, zoom, cell count, and result count. If map query volume later requires a spatial index, a derived index can be introduced without changing the projection DTO or source publication records.
+
 ## New Entity: admin_accounts
 
 | Column | Type | Required | Notes |
 | --- | --- | --- | --- |
 | user_id | string | yes | Primary/foreign key to `users.id`; administrator identity |
 | login_name | string | yes | Unique administrator login identifier |
-| password_hash | string | yes | Argon2id/bcrypt hash; plaintext password is never stored |
+| password_hash | string | yes | Memory-hard password hash (`scrypt` in the current implementation); plaintext is never stored |
 | status | string | yes | `active` or `disabled` |
 | last_login_at | datetime | no | Last successful admin login |
 | created_by | string | no | Administrator user id that created this account |
@@ -331,6 +370,20 @@ Constraints:
 
 The effective permission set is defined by the role matrix in `docs/architecture.md`; it is not accepted from client input.
 
+## New Entity: admin_audit_logs
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| id | string | yes | Primary key |
+| admin_user_id | string | yes | Administrator who performed the action |
+| action | string | yes | Stable action identifier such as `admin.account.updated` |
+| target_type | string | yes | Audited resource type |
+| target_id | string | no | Audited resource identifier when available |
+| details_json | JSON text | yes | Sanitized metadata; never contains passwords, raw tokens, or secrets |
+| created_at | datetime | yes | Append-only action timestamp |
+
+Successful administrator login, account and role changes, user changes, review decisions, and report decisions write owner-readable audit rows.
+
 ## Indexes
 
 - Primary indexes on every `id`/`role_profile_id`.
@@ -343,14 +396,15 @@ The effective permission set is defined by the role matrix in `docs/architecture
 - Recruitment post index `(recruitment_posts.recruiter_role_profile_id, recruitment_posts.status, recruitment_posts.created_at)`.
 - Recruitment image index `(recruitment_post_images.recruitment_post_id, recruitment_post_images.sort_order)`.
 - Media upload cleanup index `(media_uploads.user_id, media_uploads.expires_at)`.
-- Market publication index `(recruitment_posts.status, recruitment_posts.published_at)`.
-- Applicant publication index `(applicant_job_seeking_information.visibility_status, applicant_job_seeking_information.published_at)`.
+- Market publication index `(recruitment_posts.status, recruitment_posts.published_at, recruitment_posts.id)`.
+- Applicant publication index `(applicant_job_seeking_information.visibility_status, applicant_job_seeking_information.published_at, applicant_job_seeking_information.role_profile_id)`.
 - Favorite lookup indexes on both viewer identity columns and target columns.
 - Contact view index `(market_contact_views.viewer_user_id, market_contact_views.created_at)`.
 - Report queue index `(market_reports.status, market_reports.created_at)`.
 - Unique `admin_accounts.login_name`.
 - Admin account index `(admin_accounts.status, admin_accounts.created_at)`.
 - Admin session index `(admin_sessions.user_id, admin_sessions.expires_at)`.
+- Admin audit indexes `(admin_audit_logs.created_at, admin_audit_logs.id)` and `(admin_audit_logs.admin_user_id, admin_audit_logs.created_at)`.
 
 ## Privacy And Security Rules
 
@@ -372,6 +426,7 @@ The effective permission set is defined by the role matrix in `docs/architecture
 - Add the new tables and indexes in one backward-compatible migration before backend implementation.
 - Add `applicant_job_seeking_information`, `recruiter_information`, `recruitment_posts`, and `recruitment_post_images` in a backward-compatible migration; existing role profile rows receive no child record until the user submits information.
 - Add publication status/timestamps to applicant and recruitment records, plus favorite, contact-view, and report tables in a backward-compatible migration.
+- Add `admin_audit_logs` and stable market pagination indexes in a backward-compatible migration before enabling the reviewed administrator and market endpoints.
 - Backfill `recruitment_posts.published_at` from `created_at` for existing published rows; existing applicant information receives `published_at = updated_at` and `visibility_status = published` only after the owner publication rule is confirmed.
 - Use a local filesystem/object-storage adapter in development and a managed object-storage provider in deployment; the API must keep the object key abstraction stable.
 - Existing user records receive no `auth_accounts` row unless explicitly linked through a supported provider flow.

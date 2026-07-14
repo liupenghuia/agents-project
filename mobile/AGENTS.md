@@ -2,8 +2,9 @@
 
 ## Load Before Work
 
-- Read root `AGENTS.md`, `docs/delivery-workflow.md`, the task, requirements, OpenAPI, and linked mobile issues.
+- Read root `AGENTS.md`, `docs/delivery-workflow.md`, `docs/client-architecture.md`, the task, requirements, OpenAPI, and linked mobile issues.
 - Run the common preflight; owned `P0`/`P1` issues and task blockers outrank new work.
+- Complete and record the client architecture pre-coding check before editing shared mobile code.
 
 ## Ownership
 

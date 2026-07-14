@@ -86,6 +86,14 @@ Out of scope:
 
 Use `None` with a reason when an area is not affected.
 
+## Client Architecture Pre-Coding Check
+
+Complete one row per selected Frontend, Mini Program, Web, shared Mobile, iOS, or Android target before implementation. Use `N/A` when the task has no client scope.
+
+| Target/module | Existing pattern and owner | Responsibility/dependency decision | Shared vs target-specific | State/contract/security impact | Verification plan | Architecture review |
+| --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  | Not required (reason) / Required (link) |
+
 ## Implementation Checklist
 
 ### Backend

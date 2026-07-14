@@ -38,6 +38,8 @@ The implementation follows `docs/openapi.yaml` and `docs/database.md`. Reviewer 
 
 Owner accounts can read recent sanitized administrator activity through `GET /admin/audit-logs`. Passwords, raw session tokens, and provider secrets are never written to those audit records.
 
+Market moderation is available to active `owner` and `operator` administrator roles through `GET /admin/market-content` and `POST /admin/market-content/{targetType}/{targetId}/decision`. Returned and pending content remains private until approval, and administrator-disabled content cannot be republished through an owner edit.
+
 The development server applies bounded in-memory rate limits to login exchange, administrator login, identity submission/resubmission, and review decisions. A multi-instance production deployment must enforce equivalent shared limits at the gateway or in shared storage.
 
 For local development, copy `.env.example` to `.env`, replace the bootstrap password with a local secret, and run `npm start`. The first start creates the owner account from the two bootstrap variables. Bootstrap is one-time for a database: changing the variables does not overwrite an existing account. No administrator password is committed to the repository.

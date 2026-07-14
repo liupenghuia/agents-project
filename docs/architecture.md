@@ -10,6 +10,7 @@ Use a modular monolith with a REST API:
 - `ideas/` owns Product Briefs and product decisions.
 - `docs/openapi.yaml` is the client/backend contract.
 - `docs/database.md` is the data model and migration contract.
+- `docs/client-architecture.md` defines client responsibility boundaries, dependency direction, and the mandatory pre-coding architecture check.
 - `docs/delivery-workflow.md` defines transitions, quality gates, blockers, and recovery.
 
 ## Product Flow
@@ -98,6 +99,16 @@ The same platform user may have one recruiter identity, one applicant identity, 
 - Authenticated users can report a market object; protected admin operations can disable reported content and resolve reports.
 - Contact-detail reads are append-only logged and rate-limited; this is an access safeguard, not a substitute for consent or platform policy.
 
+### Market Map Projection Module
+
+- Reuses the existing recruitment-post and applicant-information records; it does not create a second source of truth for locations.
+- Provides direction-specific map queries with viewport bounds, zoom level, filters, and capped result limits.
+- Applies a deterministic latitude/longitude grid based on zoom before building the response. At lower zoom levels, records in one grid cell become one cluster item with a count; at higher zoom levels, the cell size decreases and records can expand into separate point items.
+- Returns only a privacy projection: public display coordinates are cell centers or approved regional display points, never stored raw coordinates. Map responses contain no contact fields, detailed addresses, object keys, provider identifiers, or session data.
+- Uses the same publication and visibility predicate as card-list queries. Ordinary users can query only published information and cannot use map parameters to bypass identity, status, blocklist, report, or disable filters.
+- Marker taps navigate to existing direction-specific market detail endpoints; the map endpoint does not duplicate detail or contact data.
+- The Mini Program owns map rendering, marker art, cluster styling, zoom transitions, and loading/error/permission states. The backend owns bounds, privacy projection, aggregation, and authorization.
+
 ### Review Module
 
 - Belongs to the protected Admin Management Module and exposes the identity review queue and decisions.
@@ -140,8 +151,11 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - `/admin/identity-reviews` is the review area inside the management system, not a separate reviewer product.
 - Applicant endpoints use `/me/applicant/job-seeking-information`; recruiter location endpoints use `/me/recruiter/information`; recruitment posts use `/me/recruitment-posts`.
 - Recruitment image upload uses a backend-authorized upload-reference flow; clients submit only server-issued object keys, never arbitrary URLs.
+- Market image DTOs expose random image IDs and `/market/media/{imageId}` only; object keys remain inside owner/storage boundaries, and media becomes unavailable as soon as its parent post is not public.
 - Market endpoints use `/market/recruitment-posts` and `/market/job-seeking-information`; owner favorites use `/me/favorites/recruitment-posts` and `/me/favorites/job-seeking-information`.
-- Owner operations use `/me/market-reports` for reports and protected `/admin/market-reports` operations for resolution/disable actions.
+- Map endpoints use `/market/recruitment-posts/map` and `/market/job-seeking-information/map`; they return privacy-safe point/cluster projections and share the market list filters.
+- Owner operations use `/me/market-reports` for reports; protected `/admin/market-reports` and `/admin/market-content` operations share the market-operations permission boundary.
+- Owner-only `/admin/audit-logs` exposes sanitized, append-only administrator action history to the management system.
 - `docs/openapi.yaml` defines request/response shapes, error codes, and status enums.
 - Backend must reject undocumented fields where strict validation is available and must never return provider secrets.
 
@@ -153,8 +167,8 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 | Review action | `approved`, `changes_requested` | Append-only; a reason is required for changes. |
 | Session | active, expired, revoked | Expired/revoked sessions cannot access identity endpoints. |
 | Admin session | active, expired, revoked | Separate from WeChat sessions; disabled administrators lose access. |
-| Recruitment post | `published`, `disabled` | Owner may edit a published post or disable it; no review transition in MVP. |
-| Applicant market information | `published`, `disabled` | Submitted information is visible to approved recruiters only while published. |
+| Recruitment post | `published`, `pending_review`, `changes_requested`, `disabled` | Public only while published; an edit after changes are requested resubmits to pending review. |
+| Applicant market information | `published`, `pending_review`, `changes_requested`, `disabled` | Public only while published; owner reads include the latest moderation state and reason. |
 | Market report | `open`, `resolved`, `rejected` | Reports are immutable submissions; admin resolution is recorded separately. |
 
 ## Security And Privacy
@@ -169,7 +183,11 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - The backend must reject client-supplied image URLs and accept only server-issued upload references.
 - Market list endpoints must exclude disabled objects and contact fields; market detail endpoints must enforce approved counterpart identity and record contact access.
 - Admin disabling must immediately remove an object from market queries and revoke contact visibility.
+- Only `owner` and `operator` administrator roles may moderate market content or resolve reports; `admin` and `reviewer` remain outside this permission boundary.
+- Administrator-disabled content cannot be republished through an owner edit; request-changes resubmissions remain private until approved.
 - Rate-limit login-code exchange, registration submission, resubmission, and review decisions.
+- Validate map bounds and zoom limits, cap returned cells/items, and reject oversized or world-spanning requests that could enumerate the market.
+- Apply user blocklists and moderation visibility before aggregation so hidden records do not affect cluster counts.
 
 ## Revisit Triggers
 

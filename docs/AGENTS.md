@@ -20,6 +20,7 @@
 
 - Trigger: `架构 <task>` or architecture/API/database work.
 - Owns `architecture.md`, `openapi.yaml`, `database.md`, cross-boundary decisions, compatibility, migration, and rollback design.
+- For client scopes, applies `client-architecture.md` to resolve responsibility placement, dependency direction, shared/platform boundaries, and review triggers before implementation.
 - Resolves unclear defect ownership and contract disputes.
 - Does not implement feature code.
 - Exit only when the Architecture Gate passes; set architecture scope `Done`, task `Ready for Implementation`, and append a handoff.

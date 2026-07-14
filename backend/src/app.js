@@ -219,8 +219,8 @@ function assertMarketTarget(body) {
 function adminMarketContentQuery(url) {
   const targetType = text(url.searchParams.get('targetType'));
   const status = text(url.searchParams.get('status'));
-  const publishedFrom = text(url.searchParams.get('publishedFrom')) || null;
-  const publishedTo = text(url.searchParams.get('publishedTo')) || null;
+  const publishedFromValue = text(url.searchParams.get('publishedFrom'));
+  const publishedToValue = text(url.searchParams.get('publishedTo'));
   const limit = Number(url.searchParams.get('limit') || 100);
   if (targetType && !['recruitment_post', 'applicant_information'].includes(targetType)) {
     throw httpError(422, 'VALIDATION_ERROR', '市场内容类型无效');
@@ -228,12 +228,14 @@ function adminMarketContentQuery(url) {
   if (status && !['published', 'pending_review', 'changes_requested', 'disabled'].includes(status)) {
     throw httpError(422, 'VALIDATION_ERROR', '市场内容状态无效');
   }
-  if ((publishedFrom && Number.isNaN(Date.parse(publishedFrom)))
-    || (publishedTo && Number.isNaN(Date.parse(publishedTo)))
-    || (publishedFrom && publishedTo && publishedFrom > publishedTo)
+  if ((publishedFromValue && Number.isNaN(Date.parse(publishedFromValue)))
+    || (publishedToValue && Number.isNaN(Date.parse(publishedToValue)))
     || !Number.isInteger(limit) || limit < 1 || limit > 200) {
     throw httpError(422, 'VALIDATION_ERROR', '发布时间范围或数量限制无效');
   }
+  const publishedFrom = publishedFromValue ? new Date(publishedFromValue).toISOString() : null;
+  const publishedTo = publishedToValue ? new Date(publishedToValue).toISOString() : null;
+  if (publishedFrom && publishedTo && publishedFrom > publishedTo) throw httpError(422, 'VALIDATION_ERROR', '发布时间范围无效');
   return { targetType, status, publishedFrom, publishedTo, limit };
 }
 

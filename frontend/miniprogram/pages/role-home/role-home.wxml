@@ -7,8 +7,17 @@
   </block>
   <block wx:else>
     <button class="action-card" bindtap="openRecruiterInformation"><text class="action-title">填写招聘者信息</text><text class="muted">保存定位和精确到楼栋的招聘地址</text></button>
-    <button class="action-card" bindtap="openRecruitmentPost"><text class="action-title">发布招聘信息</text><text class="muted">填写工种、薪资、位置和最多六张图片</text></button>
+    <button class="action-card" bindtap="openRecruitmentPost"><text class="action-title">发布新的招聘信息</text><text class="muted">填写工种、薪资、位置和最多六张图片</text></button>
   </block>
+  <view class="publication-section">
+    <view class="section-row"><text class="section-title">我的发布</text><text wx:if="{{publicationsLoading}}" class="muted">正在读取...</text></view>
+    <view wx:if="{{!publicationsLoading && !publications.length && !publicationsError}}" class="panel publication-empty">暂无发布信息</view>
+    <button wx:for="{{publications}}" wx:key="publicationId" class="publication-row" data-id="{{role === 'recruiter' ? item.id : ''}}" bindtap="openPublication">
+      <view><text class="publication-title">{{item.jobType || item.jobTypeName}}</text><text class="muted">{{item.salaryRange || item.expectedSalary}} · {{item.publishedAt}}</text><text wx:if="{{item.moderationReason}}" class="publication-reason">处理原因：{{item.moderationReason}}</text></view>
+      <text class="publication-state state-{{item.status}}">{{item.statusLabel}}</text>
+    </button>
+    <view wx:if="{{publicationsError}}" class="error"><text>{{publicationsError}}</text><button class="button-secondary" bindtap="loadPublications">重试</button></view>
+  </view>
   <button class="action-card" bindtap="openMarket"><text class="action-title">浏览{{role === 'applicant' ? '招聘' : '求职'}}信息</text><text class="muted">按发布时间查看最新公开信息，并进入详情联系</text></button>
   <view class="panel placeholder"><text class="section-title">更多服务</text><text class="muted">搜索、匹配、投递和沟通将在后续版本开放。</text></view>
   <button class="button-secondary" bindtap="backHome">切换身份</button>

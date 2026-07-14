@@ -143,6 +143,21 @@ Out of scope:
 - Public job search, resumes, matching, applications, chat, interviews, hiring, payments, and recommendations.
 - iOS App and Android App delivery in phase one.
 
+### Map Location Tags And Workspaces
+
+第一版在现有双向信息市场上增加微信小程序地图、卡片列表和“我的”三个 Tab。
+
+- 求职者在地图上查看招聘信息；招聘者在地图上查看求职信息。
+- 地图标记支持点击详情、缩放和按区域聚合；聚合标记显示区域内信息数量。
+- 地图和卡片列表使用同一套发布时间、发布状态、打回状态和筛选条件。
+- 详情支持电话联系、收藏、举报和仅对当前用户生效的拉黑。
+- “我的”包含个人资料、身份状态、我的发布、收藏、拉黑、隐私协议和基础设置。
+- 管理员可以查看、打回、下架和处理信息；打回原因和状态在发布者地图/卡片中明显展示，并进入筛选条件。
+
+地图隐私规则：普通用户只接收区域级坐标或聚合中心点，不接收原始经纬度；招聘者的楼栋级详细地址不公开。地图、列表和详情接口必须继续遵守已审核身份和联系方式访问规则。
+
+第一版不包含路线规划、实时位置、自动匹配、推荐算法、聊天、投递、通知、iOS、Android 或普通用户 Web 端。
+
 ## Non-Functional Requirements
 
 ### Security

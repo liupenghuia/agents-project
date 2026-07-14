@@ -1,1 +1,4 @@
-{"usingComponents":{}}
+{
+  "usingComponents": {},
+  "onReachBottomDistance": 120
+}

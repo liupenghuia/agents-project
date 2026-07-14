@@ -21,6 +21,7 @@ Follow `docs/product-discovery.md`. Product Agent must distinguish facts, assump
 3. Pick work by `P0` to `P3`, then oldest `created` date. `Ready for Retest` comes before new work at equal priority.
 4. Do not start a new feature when the role owns a `P0`/`P1` issue or the task has an unresolved blocking issue.
 5. Confirm dependencies are `Done`; otherwise set the task to `Blocked` and document the unblock condition.
+6. Before editing Frontend, Mini Program, Web, shared Mobile, iOS, or Android code, complete and record the check in `docs/client-architecture.md`. Unresolved review triggers return to Architect before implementation.
 
 ## Frontend Target State
 
@@ -86,11 +87,13 @@ Severity is `P0` production/security/data-loss impact, `P1` core flow blocked, `
 
 - Architecture, API, database, security, migration, compatibility, and rollback impacts are documented or explicitly `None`.
 - Ownership boundaries, error behavior, and external dependencies are resolved.
+- Required client targets have responsibility placement, dependency direction, and shared-versus-platform decisions documented at a level proportional to the change.
 - Breaking contract changes include a versioning and consumer migration decision.
 
 ### Implementation Gate
 
 - Every required scope is `Done`; code, tests, documentation, and generated contracts agree.
+- Every client scope records its pre-coding architecture check; the implementation follows that decision or includes a completed Architect impact review for deviations.
 - Changed files and exact verification commands/results are recorded in the task.
 - Every required frontend target is `Done` with a matching history entry.
 - No required check is skipped without a blocker.

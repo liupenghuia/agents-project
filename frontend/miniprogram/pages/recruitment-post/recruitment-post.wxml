@@ -8,10 +8,12 @@
     <label class="label">薪资范围 <text>*</text><input data-field="salaryRange" value="{{form.salaryRange}}" bindinput="input" placeholder="例如：5K-8K、面议" maxlength="100" /></label>
     <label class="label">结算方式 <text>*</text><input data-field="settlementMethod" value="{{form.settlementMethod}}" bindinput="input" placeholder="例如：月结、日结" maxlength="100" /></label>
     <label class="label">位置信息 <text>*</text><button class="location-button" bindtap="chooseLocation">{{form.locationText || '获取并选择招聘位置'}}</button></label>
-    <view class="label"><text>图片</text><button class="upload-button" bindtap="chooseImages">选择图片（{{imageCount}}/6）</button></view>
-    <view class="image-list"><view wx:for="{{imagePaths}}" wx:key="*this" class="image-item"><image src="{{item}}" mode="aspectFill" /><button data-index="{{index}}" bindtap="removeImage">删除</button></view><view wx:for="{{form.images}}" wx:key="id" class="image-item existing"><text>已上传图片 {{index + 1}}</text><button data-index="{{index}}" bindtap="removeImage">删除</button></view></view>
+    <view class="label"><text class="optional-label">图片（可选）</text><button class="upload-button" bindtap="chooseImages">选择图片（{{imageCount}}/6）</button></view>
+    <view class="image-list"><view wx:for="{{existingImages}}" wx:key="id" class="image-item existing"><text>已上传图片 {{index + 1}}</text><button data-kind="existing" data-index="{{index}}" bindtap="removeImage">删除</button></view><view wx:for="{{imagePaths}}" wx:key="*this" class="image-item"><image src="{{item}}" mode="aspectFill" /><button data-kind="new" data-index="{{index}}" bindtap="removeImage">删除</button></view></view>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}<button class="button-secondary" bindtap="retry">重试</button></view>
-  <view wx:if="{{saved}}" class="success">招聘信息已保存</view>
-  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving}}" bindtap="submit">{{saving ? '正在上传并发布...' : postId ? '保存修改' : '发布招聘信息'}}</button>
+  <view wx:if="{{saved}}" class="success">{{savedMessage}}</view>
+  <view wx:if="{{!loading && postId}}" class="publication-status status-{{form.status}}"><text class="status-title">{{statusView.label}}</text><text>{{statusView.message}}</text><text wx:if="{{form.moderationReason}}" class="moderation-reason">处理原因：{{form.moderationReason}}</text></view>
+  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving || disabling}}" bindtap="submit">{{saving ? '正在上传并保存...' : postId ? statusView.submitLabel : '发布招聘信息'}}</button>
+  <button wx:if="{{!loading && postId && form.status === 'published'}}" class="danger-action" loading="{{disabling}}" disabled="{{saving || disabling}}" bindtap="disable">下架招聘信息</button>
 </view>

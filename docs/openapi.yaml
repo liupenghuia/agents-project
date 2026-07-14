@@ -604,6 +604,39 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+  /me/identities/{identityId}/profile:
+    patch:
+      tags:
+        - Identities
+      summary: Update fields on an identity profile owned by the current user
+      operationId: updateOwnedIdentityProfile
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/IdentityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: true
+              description: Must match the existing role-specific profile schema; role and review state are not accepted
+      responses:
+        "200":
+          description: Owned profile updated without changing role or review state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Identity"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "429":
           $ref: "#/components/responses/TooManyRequests"
   /me/applicant/job-seeking-information:
@@ -1368,6 +1401,62 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+  /me/market-user-blocks:
+    get:
+      tags: [Market]
+      summary: List private market-user blocks owned by the current user
+      operationId: listMarketUserBlocks
+      security: [{ PlatformSession: [] }]
+      responses:
+        "200":
+          description: Private blocklist
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/MarketUserBlock" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Market]
+      summary: Block the owner resolved from a visible market target
+      operationId: createMarketUserBlock
+      security: [{ PlatformSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMarketUserBlockRequest" }
+      responses:
+        "201":
+          description: User blocked idempotently
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/MarketUserBlock" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+  /me/market-user-blocks/{blockId}:
+    delete:
+      tags: [Market]
+      summary: Remove one private block owned by the current user
+      operationId: deleteMarketUserBlock
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: blockId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Block removed or already absent }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /admin/market-content:
     get:
       tags:
@@ -2048,6 +2137,24 @@ components:
           type: string
         expectedSalary:
           type: string
+    CreateMarketUserBlockRequest:
+      type: object
+      required: [targetType, targetId]
+      properties:
+        targetType:
+          type: string
+          enum: [recruitment_post, applicant_information]
+        targetId: { type: string }
+    MarketUserBlock:
+      type: object
+      required: [blockId, targetRole, displayName, blockedAt]
+      properties:
+        blockId: { type: string }
+        targetRole:
+          type: string
+          enum: [recruiter, applicant]
+        displayName: { type: string }
+        blockedAt: { type: string, format: date-time }
     MarketContentStatus:
       type: string
       enum:

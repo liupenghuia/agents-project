@@ -301,6 +301,18 @@ The two source content tables store the current moderation projection. `admin_au
 
 Allowed administrator transitions are `published -> changes_requested|disabled`, `pending_review -> published|changes_requested|disabled`, `changes_requested -> disabled`, and `disabled -> published`. Owner edits perform `changes_requested -> pending_review`; owner-disabled legacy/current rows may return to `published`, but rows with `moderated_by` remain disabled. Public list, detail, media, and map queries filter on `published` before projection or aggregation.
 
+## New Entity: market_user_blocks
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| id | string | yes | Random opaque block identifier exposed only to the blocker |
+| blocker_user_id | string | yes | Authenticated user who owns the relation |
+| blocked_user_id | string | yes | Resolved market owner; never exposed to clients |
+| target_role | string | yes | `recruiter` or `applicant`, used for safe list display |
+| created_at | datetime | yes | Block creation time |
+
+Constraints: unique `(blocker_user_id, blocked_user_id)`, blocker and blocked user must differ, and delete operations match both `id` and current `blocker_user_id`. Market list, detail, map and favorite queries exclude owners in this table before returning data or computing clusters.
+
 ## Market Map Projection
 
 The first version does not add a map-specific source table. Map results are generated from `recruitment_posts` and `applicant_job_seeking_information` after the same published/visibility, approved-counterpart, moderation, and viewer-blocklist predicates used by market lists.

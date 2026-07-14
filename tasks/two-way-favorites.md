@@ -1,7 +1,7 @@
 ---
 id: TASK-20260714-007
 title: 双向收藏模块
-status: Blocked
+status: Done
 priority: P1
 owner: Architect Agent
 created: "2026-07-14"
@@ -33,13 +33,13 @@ scope_status:
   mobile: N/A
   ios: N/A
   android: N/A
-  test: Blocked
+  test: Done
   release: N/A
 release_required: false
-blocked_reason: 双向收藏后端与小程序实现已完成，等待统一执行收藏一致性和失效对象验证。
-blocked_since: "2026-07-14"
-unblock_owner: Test Agent
-unblock_condition: 统一验证双方收藏、幂等、取消、我的收藏和下架后失效提示。
+blocked_reason: null
+blocked_since: null
+unblock_owner: null
+unblock_condition: null
 ---
 
 # 任务：双向收藏模块
@@ -69,14 +69,14 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] 求职者可以在招聘详情收藏和取消收藏。
-- [ ] 招聘者可以在求职详情收藏和取消收藏。
-- [ ] 重复点击收藏不会生成重复记录。
-- [ ] 收藏状态在列表、详情和“我的收藏”之间一致。
-- [ ] 收藏列表展示 `publishedAt` 和对象当前状态。
-- [ ] 下架、删除或不可用对象显示失效提示，不能查看联系方式。
-- [ ] 用户只能访问和修改自己的收藏。
-- [ ] 未登录或身份不匹配时收藏操作被拒绝。
+- [x] 求职者可以在招聘详情收藏和取消收藏。
+- [x] 招聘者可以在求职详情收藏和取消收藏。
+- [x] 重复点击收藏不会生成重复记录。
+- [x] 收藏状态在列表、详情和“我的收藏”之间一致。
+- [x] 收藏列表展示 `publishedAt` 和对象当前状态。
+- [x] 下架、删除或不可用对象显示失效提示，不能查看联系方式。
+- [x] 用户只能访问和修改自己的收藏。
+- [x] 未登录或身份不匹配时收藏操作被拒绝。
 
 ## Architecture Impact
 
@@ -88,27 +88,27 @@ Out of scope:
 
 ### Backend
 
-- [ ] Implement two favorite list APIs and four idempotent add/remove APIs.
-- [ ] Add unique constraints and unavailable-object behavior.
-- [ ] Add ownership and authorization tests.
+- [x] Implement two favorite list APIs and four idempotent add/remove APIs.
+- [x] Add unique constraints and unavailable-object behavior.
+- [x] Add ownership and authorization tests.
 
 ### WeChat Mini Program
 
-- [ ] Add favorite/unfavorite controls to both detail screens.
-- [ ] Add two role-specific “我的收藏” screens.
-- [ ] Add empty, loading, error, retry, and unavailable states.
-- [ ] Add Mini Program flow tests.
+- [x] Add favorite/unfavorite controls to both detail screens.
+- [x] Add two role-specific “我的收藏” screens.
+- [x] Add empty, loading, error, retry, and unavailable states.
+- [x] Add Mini Program flow tests.
 
 ### Web / Mobile / iOS / Android
 
-- [ ] `N/A`: Web is not a public user client; mobile clients are deferred.
+- [x] `N/A`: Web is not a public user client; mobile clients are deferred.
 
 ## Test Plan
 
-- [ ] Add/remove/idempotency for both directions.
-- [ ] Cross-user and cross-role access rejection.
-- [ ] Disabled target behavior.
-- [ ] Favorites list and detail state synchronization.
+- [x] Add/remove/idempotency for both directions.
+- [x] Cross-user and cross-role access rejection.
+- [x] Disabled target behavior.
+- [x] Favorites list and detail state synchronization.
 
 ## Client Architecture Pre-Coding Check
 
@@ -128,3 +128,4 @@ Out of scope:
 | 2026-07-14 | Architect Agent | Backend / Mini Program / Test | Ready for Architecture | Blocked | `docs/architecture/adr-003-two-sided-information-market.md`, `docs/database.md`, `docs/openapi.yaml`, task | Favorite persistence and API boundaries defined | Prior market tasks blocked | Unblock dependencies, then implement |
 | 2026-07-14 | Backend + Mini Program Agents | Test Agent | Blocked | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/miniprogram/services/api.js`, `frontend/miniprogram/pages/favorites/*`, `frontend/miniprogram/pages/market/*` | Market integration test covers add/list and API syntax checks pass | Unified favorite consistency verification pending | Run the unified validation batch. |
 | 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Approved-target favorite authorization, `isFavorited` projection, Mini Program toggle/confirmation flows | Backend `npm test`: 11 passed with both favorite directions; Mini Program tests passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260714-007/20260714-181440-90d6bd/report.md` | WeChat DevTools/real-device interaction checks pending | Verify add/remove/list consistency and repeated taps in WeChat DevTools/on device. |
+| 2026-07-14 | Test Agent | Coordinator | Blocked | Done | Automated and DevTools favorite evidence; task metadata | User-provided pass report `/tmp/ppfiles-learn-delivery/TASK-20260714-007/20260714-120515-9981e4/report.md`; task-specific DevTools script passed both detail toggles, repeated PUT idempotency, both favorite-list confirmation removals, cross-user isolation and unapproved 403; disabled favorite behavior passed in earlier dependency flow | None | Dependency accepted; begin TASK-010 architecture. |

@@ -155,6 +155,7 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - Market endpoints use `/market/recruitment-posts` and `/market/job-seeking-information`; owner favorites use `/me/favorites/recruitment-posts` and `/me/favorites/job-seeking-information`.
 - Map endpoints use `/market/recruitment-posts/map` and `/market/job-seeking-information/map`; they return privacy-safe point/cluster projections and share the market list filters.
 - Owner operations use `/me/market-reports` for reports; protected `/admin/market-reports` and `/admin/market-content` operations share the market-operations permission boundary.
+- Private owner operations use `/me/market-user-blocks`; creation resolves a market target server-side and deletion uses an owner-scoped opaque block ID.
 - Owner-only `/admin/audit-logs` exposes sanitized, append-only administrator action history to the management system.
 - `docs/openapi.yaml` defines request/response shapes, error codes, and status enums.
 - Backend must reject undocumented fields where strict validation is available and must never return provider secrets.
@@ -188,6 +189,7 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - Rate-limit login-code exchange, registration submission, resubmission, and review decisions.
 - Validate map bounds and zoom limits, cap returned cells/items, and reject oversized or world-spanning requests that could enumerate the market.
 - Apply user blocklists and moderation visibility before aggregation so hidden records do not affect cluster counts.
+- Identity profile edits are owner-only and cannot change role or review state; My Center composes existing owner APIs rather than creating a second profile source.
 
 ## Revisit Triggers
 

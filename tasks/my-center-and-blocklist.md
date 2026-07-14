@@ -1,9 +1,9 @@
 ---
 id: TASK-20260714-010
 title: 小程序三 Tab 我的中心与拉黑
-status: Ready for Architecture
+status: Ready for Implementation
 priority: P1
-owner: Product Agent
+owner: Architect Agent
 created: "2026-07-14"
 updated: "2026-07-14"
 source_idea: IDEA-20260714-009
@@ -24,7 +24,7 @@ frontend_target_status:
   web: N/A
 scope_status:
   product: Done
-  architecture: Pending
+  architecture: Done
   backend: Pending
   frontend: Pending
   mobile: N/A
@@ -70,12 +70,45 @@ Out of scope:
 
 ## Architecture Impact
 
-- API/Database: 需要用户黑名单、我的聚合接口或明确的分页接口。
-- Security/privacy: 黑名单是用户私有数据；禁止通过列表、收藏或地图侧信道泄露拉黑关系。
-- Rollback: Tab 入口和拉黑入口可通过配置关闭，保留原市场列表。
+- API/Database: ADR-006 defines opaque user-level blocks, owner profile updates and composition of existing owner APIs; `market_user_blocks` is the only new source table.
+- Security/privacy: Clients submit market target IDs and never receive internal user IDs; list, map, detail and favorites filter before projection/aggregation.
+- Client: Map/list remain modes of the existing market page with persisted role-scoped workspace state; My Center composes identity, publication, favorite and blocklist APIs.
+- Rollback: Navigation and block actions can be hidden while retaining private block rows; source market data is unchanged.
+
+## Implementation Checklist
+
+### Backend
+
+- [ ] Add private block persistence, create/list/delete APIs and owner profile update.
+- [ ] Apply one shared block predicate to lists, maps, details and favorites.
+- [ ] Test self/other-user isolation, unblock recovery and profile ownership.
+
+### Mini Program
+
+- [ ] Add stable map/list/my navigation with role-scoped state restoration.
+- [ ] Add My Center profile, status, publication, favorite, blocklist and legal entries.
+- [ ] Add detail block confirmation and blocklist unblock flow.
+- [ ] Add loading, empty, error, retry and expired-session states.
+
+## Test Plan
+
+- [ ] Backend block lifecycle, all market projections, favorites, isolation and profile authorization.
+- [ ] Mini Program navigation/state, My Center, legal pages and block/unblock rendering.
+- [ ] DevTools two-role map/list/my, block disappearance, unblock recovery and profile edit.
+
+## Client Architecture Pre-Coding Check
+
+- Target/module: Existing market page, new My Center/blocklist/legal pages, registration profile editor and shared main-tab utility.
+- Existing pattern and owner: Page modules own UI state, `services/api.js` owns transport, backend owns authorization/filter semantics, and `app.globalData` owns session-scoped workspace state.
+- Responsibility and dependency decision: Preserve one market state owner for map/list and add role-scoped snapshots only for return semantics; My Center composes existing endpoints and does not duplicate source records.
+- Shared vs target-specific decision: OpenAPI owns block/profile semantics; navigation rendering, WeChat lifecycle and static legal copy are Mini Program-specific.
+- State/contract/security impact: Block IDs are opaque and private; session expiry continues through the API client's existing 401 clearing path.
+- Verification plan: Backend integration tests, utility tests, all Mini Program syntax/tests, delivery runner and DevTools navigation/block/profile flows.
+- Architecture review: Completed in ADR-006; no new client framework or external dependency.
 
 ## Handoff Log
 
 | Date | Actor | Target | From | To | Changed files | Evidence/commands | Issues | Next action |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-14 | Product Agent | Architect | Draft | Ready for Architecture | `ideas/map-location-tags.md`, `docs/requirements.md`, task | 三 Tab、我的中心和拉黑 MVP 已定义，依赖双向收藏任务 | 设置和账号注销范围待后续确认 | Architect defines blacklist persistence and navigation/API contract |
+| 2026-07-14 | Architect Agent | Backend / Mini Program / Test | Ready for Architecture | Ready for Implementation | ADR-006, architecture/database/OpenAPI and task pre-coding check | Opaque block IDs, shared query filtering, owner profile update and one market state owner defined; OpenAPI parsing/workflow validation required before implementation | None | Implement backend contract, then Mini Program pages. |

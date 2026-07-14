@@ -1,7 +1,7 @@
 ---
 id: TASK-20260714-011
 title: 市场信息管理员打回与状态运营
-status: Blocked
+status: Done
 priority: P1
 owner: Test Agent
 created: "2026-07-14"
@@ -30,13 +30,13 @@ scope_status:
   mobile: N/A
   ios: N/A
   android: N/A
-  test: Blocked
+  test: Done
   release: N/A
 release_required: false
-blocked_reason: 后端、Web 静态测试、交付 runner 和微信 DevTools 真实小程序流程均通过，但当前会话没有可用的内置浏览器实例，无法执行 Web 管理后台真实点击/渲染 Gate。
-blocked_since: "2026-07-14"
-unblock_owner: Test Agent
-unblock_condition: 在可用浏览器中登录本地 Web，验证 owner/operator 内容运营入口、筛选、打回原因对话框、通过/下架/恢复，以及 admin/reviewer 无入口和 403，然后记录截图并重跑工作流。
+blocked_reason: null
+blocked_since: null
+unblock_owner: null
+unblock_condition: null
 ---
 
 # 任务：市场信息管理员打回与状态运营
@@ -62,13 +62,13 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] 管理员可按角色、状态、发布时间查看市场信息。
-- [ ] 管理员打回必须填写原因，操作人和时间进入审计记录。
-- [ ] 打回信息在发布者地图/卡片/我的发布中有明显状态和原因。
-- [ ] 打回信息不作为普通公开地图点和卡片展示，状态筛选可以找到。
-- [ ] 发布者可修改并重新提交，审核通过后恢复公开。
-- [ ] 非管理员、普通管理员越权、非拥有者操作均被拒绝。
-- [ ] 管理员下架和恢复后，地图、列表、详情、收藏状态一致。
+- [x] 管理员可按角色、状态、发布时间查看市场信息。
+- [x] 管理员打回必须填写原因，操作人和时间进入审计记录。
+- [x] 打回信息在发布者地图/卡片/我的发布中有明显状态和原因。
+- [x] 打回信息不作为普通公开地图点和卡片展示，状态筛选可以找到。
+- [x] 发布者可修改并重新提交，审核通过后恢复公开。
+- [x] 非管理员、普通管理员越权、非拥有者操作均被拒绝。
+- [x] 管理员下架和恢复后，地图、列表、详情、收藏状态一致。
 
 ## Architecture Impact
 
@@ -103,7 +103,7 @@ Out of scope:
 
 - [x] Backend transition matrix, reason validation, audit, role authorization, and owner isolation.
 - [x] Public and owner projections for returned, pending, disabled, approved, and restored content.
-- [ ] Web filter/action/error/permission tests.
+- [x] Web filter/action/error/permission tests.
 - [x] Mini Program returned-content edit/resubmit and status rendering tests.
 - [x] DevTools and delivery-runner regression over map, cards, details, favorites, report, disable, and restore.
 
@@ -126,3 +126,4 @@ Out of scope:
 | 2026-07-14 | Backend Agent | Frontend / Test | Ready for Implementation | In Progress | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `backend/test/market-migration.test.js`, `backend/README.md` | `npm test`: 13 passed; backend JS syntax passed; old-schema migration, transition, permission, visibility and audit tests passed | None | Web and Mini Program consume stable moderation contract. |
 | 2026-07-14 | Web + Mini Program Agents | Test Agent | In Progress | Ready for Test | Web content operations/permissions/tests; Mini Program owner status utility and applicant/recruitment/workspace pages; `frontend/HISTORY.md` | Web syntax plus moderation/permission tests passed; all Mini Program JS syntax and seven test files passed; OpenAPI parsed; workflow and `git diff --check` passed | None | Run delivery runner plus browser and WeChat DevTools transition regression. |
 | 2026-07-14 | Test Agent | Test Agent | Ready for Test | Blocked | Automated, runner and platform evidence; task metadata | Backend 13 tests passed; Web syntax/unit tests passed; Mini Program seven test files passed; runner `/tmp/ppfiles-learn-delivery/TASK-20260714-011/20260714-192533-a17a55/report.md`; DevTools return/resubmit/approve/disable/restore passed with screenshots `/tmp/task-011-recruitment-returned.png` and `/tmp/task-011-applicant-returned.png`; browser discovery returned no instances; isolated Web fixtures seeded for all four statuses and owner/operator/admin/reviewer roles | Web real-browser interaction/rendering not executed | Open `http://127.0.0.1:4173`, complete the documented Web actions, then resume Test Gate; do not start serial TASK-010 first. |
+| 2026-07-14 | User + Test Agent | Coordinator | Blocked | Done | Web manual acceptance evidence and task metadata | User confirmed Web verification passed for content filters, decisions and role navigation; all prior backend, Web unit, runner and DevTools evidence remains passing; `ruby scripts/validate_workflow.rb` passed before transition | None | Begin serial dependency closure for TASK-010. |

@@ -1,7 +1,7 @@
 ---
 id: TASK-20260701-001
 title: User Management
-status: Ready for Implementation
+status: Blocked
 priority: P2
 owner: Architect Agent
 created: "2026-07-01"
@@ -20,22 +20,22 @@ frontend_targets:
   web: true
 frontend_target_status:
   miniprogram: N/A
-  web: Pending
+  web: Done
 scope_status:
   product: Done
   architecture: Done
-  backend: Pending
-  frontend: Pending
+  backend: Done
+  frontend: Done
   mobile: N/A
   ios: N/A
   android: N/A
-  test: Pending
+  test: Blocked
   release: N/A
 release_required: false
-blocked_reason: null
-blocked_since: null
-unblock_owner: null
-unblock_condition: null
+blocked_reason: 代码和自动化检查已完成，等待统一执行 Web 浏览器与管理员权限验收。
+blocked_since: "2026-07-14"
+unblock_owner: Test Agent
+unblock_condition: 统一验证用户创建、列表、编辑、停用、重复邮箱和权限失败场景。
 ---
 
 # Task: User Management
@@ -139,3 +139,4 @@ Out of scope:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-01 | Product Agent | Coordinator | Draft | Ready for Architecture | Requirements/task | Initial feature scope created. | None | Architect review. |
 | 2026-07-01 | Architect Agent | Coordinator / Web | Ready for Architecture | Ready for Implementation | API/database contracts | Contracts documented. | None | Backend and Web implementation. |
+| 2026-07-14 | Backend + Web Agents | Test Agent | Ready for Implementation | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/web/index.html`, `frontend/web/app.js`, `frontend/web/styles.css` | `npm test`: 9 passed; Node syntax checks passed; Web user CRUD controls and API integration added; `ruby scripts/validate_workflow.rb`: Passed | Unified browser/admin verification pending | Test Agent runs the unified validation batch. |

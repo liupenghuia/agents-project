@@ -1,7 +1,7 @@
 ---
 id: TASK-20260713-002
 title: 招聘平台角色选择与注册审核
-status: In Progress
+status: Blocked
 priority: P1
 owner: Architect Agent
 created: "2026-07-13"
@@ -20,22 +20,22 @@ frontend_targets:
   web: true
 frontend_target_status:
   miniprogram: Done
-  web: In Progress
+  web: Done
 scope_status:
   product: Done
   architecture: Done
   backend: Done
-  frontend: Pending
+  frontend: Done
   mobile: N/A
   ios: N/A
   android: N/A
-  test: Pending
+  test: Blocked
   release: N/A
 release_required: false
-blocked_reason: null
-blocked_since: null
-unblock_owner: null
-unblock_condition: null
+blocked_reason: 代码已完成，等待统一执行 Web 管理端审核、权限和小程序真实流程验证。
+blocked_since: "2026-07-14"
+unblock_owner: Test Agent
+unblock_condition: 统一验证管理员登录、审核、账号管理、双身份和小程序授权流程。
 ---
 
 # 任务：招聘平台角色选择与注册审核
@@ -203,3 +203,4 @@ unblock_condition: null
 | 2026-07-13 | Backend Agent | Web / Test Agent | In Progress | In Progress | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `backend/.env.example`, `backend/README.md`, `docs/database.md` | `npm test`: 6 passed; backend JS syntax: Passed; HTTP smoke test on port 3010: `/health` 200 and bootstrap owner login returned token; `ruby scripts/validate_workflow.rb`: Passed | Admin account update UI/API remains outside this bootstrap/login change | Configure local `.env`, run Web against backend, then Test Agent verifies browser review flow |
 | 2026-07-14 | Backend Agent | Web / Test Agent | In Progress | In Progress | `backend/src/app.js` | `npm test`: 6 passed; backend JS syntax: Passed; `ruby scripts/validate_workflow.rb`: Passed | Fixed legacy `review_actions.reviewer_user_id` NOT NULL compatibility during admin decisions | Restart backend and retest approve/request-changes in Web platform |
 | 2026-07-14 | Frontend MiniProgram Agent | Test Agent | In Progress | In Progress | `frontend/miniprogram/pages/home/home.*`, `frontend/miniprogram/pages/role-home/*`, `frontend/miniprogram/app.json` | Mini Program JS syntax: Passed; `node frontend/miniprogram/tests/registration.test.js`: Passed; `ruby scripts/validate_workflow.rb`: Passed | None | Test approved-identity entry, pending/changes states, and session restoration in WeChat DevTools |
+| 2026-07-14 | Backend + Web Agents | Test Agent | In Progress | Blocked | `backend/src/app.js`, `backend/src/db.js`, `frontend/web/index.html`, `frontend/web/app.js`, `frontend/web/styles.css` | `npm test`: 9 passed; Web admin review, account/RBAC, user management and report controls implemented; frontend JS syntax passed; workflow validation passed | Unified Web browser and Mini Program verification pending | Test Agent runs the unified validation batch. |

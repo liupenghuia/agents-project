@@ -3,7 +3,12 @@
     "pages/home/home",
     "pages/register/register",
     "pages/identities/identities",
-    "pages/role-home/role-home"
+    "pages/role-home/role-home",
+    "pages/applicant-information/applicant-information",
+    "pages/recruiter-information/recruiter-information",
+    "pages/recruitment-post/recruitment-post",
+    "pages/market/market",
+    "pages/favorites/favorites"
   ],
   "window": {
     "navigationBarTitleText": "寻职",

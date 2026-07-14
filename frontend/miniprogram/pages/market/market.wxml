@@ -1,0 +1,11 @@
+<view class="page">
+  <view class="eyebrow">{{role === 'applicant' ? '招聘信息' : '求职信息'}}</view>
+  <text class="title">最新发布</text>
+  <view class="search-row"><input value="{{keyword}}" bindinput="input" placeholder="搜索工种" /><button bindtap="load">搜索</button></view>
+  <view wx:if="{{loading}}" class="muted">正在加载...</view>
+  <view wx:elif="{{!items.length}}" class="panel empty">暂时没有符合条件的信息</view>
+  <block wx:else><button wx:for="{{items}}" wx:key="id" class="action-card" data-id="{{item.id}}" bindtap="open"><text class="action-title">{{role === 'applicant' ? item.jobType : item.jobTypeName}}</text><text class="muted">{{role === 'applicant' ? item.salaryRange : item.expectedSalary}} · {{item.locationText}}</text><text class="published">发布时间：{{item.publishedAt}}</text></button></block>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <button class="button-secondary" bindtap="openFavorites">我的收藏</button>
+  <view wx:if="{{selected}}" class="detail panel"><view class="detail-head"><text class="section-title">详情</text><button bindtap="closeDetail">关闭</button></view><text class="detail-line">工种：{{selected.jobType || selected.jobTypeName}}</text><text class="detail-line">薪资：{{selected.salaryRange || selected.expectedSalary}}</text><text class="detail-line">结算：{{selected.settlementMethod || selected.workMethod}}</text><text class="detail-line">位置：{{selected.locationText}}</text><text class="detail-line">联系方式：{{selected.contactPhone}}</text><text class="detail-line">发布时间：{{selected.publishedAt}}</text><view class="detail-actions"><button bindtap="favorite">收藏</button><button bindtap="report">举报</button></view></view>
+</view>

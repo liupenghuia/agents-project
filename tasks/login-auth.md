@@ -1,7 +1,7 @@
 ---
 id: TASK-20260701-002
 title: Login Authentication
-status: Ready for Architecture
+status: Cancelled
 priority: P1
 owner: Product Agent
 created: "2026-07-01"
@@ -152,3 +152,4 @@ Out of scope:
 | Date | Actor | Target | From | To | Changed files | Evidence/commands | Issues | Next action |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-01 | Product Agent | Coordinator / Web | Draft | Ready for Architecture | Requirements/task | Acceptance criteria cover the authentication lifecycle. | None | Architect defines security and contracts. |
+| 2026-07-14 | Product / Architect Agent | Coordinator | Ready for Architecture | Cancelled | Product decision and current architecture | Phase one uses WeChat session authentication for the Mini Program; Web is limited to the protected admin system, so end-user email/password authentication is superseded. | None | Reopen only if end-user Web authentication is explicitly approved. |

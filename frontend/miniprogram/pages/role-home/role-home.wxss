@@ -3,3 +3,5 @@
 .signed-title { display: block; margin-bottom: 8rpx; font-weight: 700; }
 .placeholder { margin-top: 20rpx; }
 .placeholder .section-title { margin: 0 0 12rpx; }
+.action-card { width: 100%; margin-top: 20rpx; padding: 28rpx 32rpx; background: #fff; border: 1rpx solid #d9e6e2; border-radius: 8rpx; text-align: left; }
+.action-title { display: block; margin-bottom: 8rpx; color: #0d7c66; font-size: 32rpx; font-weight: 700; }

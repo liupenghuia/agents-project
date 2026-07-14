@@ -55,6 +55,25 @@
             </div>
           </section>
         </div>
+        <nav class="admin-nav" aria-label="管理模块">
+          <button id="usersTab" class="button secondary" type="button">用户管理</button>
+          <button id="reportsTab" class="button secondary" type="button">举报处理</button>
+          <button id="adminsTab" class="button secondary" type="button">管理员账号</button>
+        </nav>
+        <section id="usersPanel" class="admin-panel" hidden aria-labelledby="usersTitle">
+          <div class="panel-heading"><div><span class="eyebrow">账号数据</span><h2 id="usersTitle">用户管理</h2></div><button id="usersRefresh" class="icon-button" type="button" title="刷新用户" aria-label="刷新用户">↻</button></div>
+          <form id="userForm" class="inline-form"><input name="name" placeholder="姓名" required maxlength="120"><input name="email" type="email" placeholder="邮箱" required maxlength="160"><button class="button primary" type="submit">创建用户</button></form>
+          <p id="usersState" class="queue-state" role="status"></p><div id="usersList" class="admin-list"></div>
+        </section>
+        <section id="adminsPanel" class="admin-panel" hidden aria-labelledby="adminsTitle">
+          <div class="panel-heading"><div><span class="eyebrow">权限控制</span><h2 id="adminsTitle">管理员账号</h2></div><button id="adminsRefresh" class="icon-button" type="button" title="刷新管理员" aria-label="刷新管理员">↻</button></div>
+          <form id="adminForm" class="inline-form"><input name="loginName" placeholder="登录账号" required maxlength="120"><input name="password" type="password" placeholder="至少 12 位密码" required minlength="12"><select name="role"><option value="reviewer">审核员</option><option value="operator">运营员</option><option value="admin">管理员</option></select><button class="button primary" type="submit">创建管理员</button></form>
+          <p id="adminsState" class="queue-state" role="status"></p><div id="adminsList" class="admin-list"></div>
+        </section>
+        <section id="reportsPanel" class="admin-panel" hidden aria-labelledby="reportsTitle">
+          <div class="panel-heading"><div><span class="eyebrow">风险处理</span><h2 id="reportsTitle">举报处理</h2></div><button id="reportsRefresh" class="icon-button" type="button" title="刷新举报" aria-label="刷新举报">↻</button></div>
+          <p id="reportsState" class="queue-state" role="status"></p><div id="reportsList" class="admin-list"></div>
+        </section>
         <p id="globalError" class="alert error global-error" role="alert" hidden></p>
       </section>
     </main>

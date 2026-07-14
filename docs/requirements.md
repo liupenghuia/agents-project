@@ -55,6 +55,65 @@ Minimum scope:
 - Show `待审核`, `通过`, and `拒绝/需修改` states with actionable feedback.
 - Do not perform real-name verification, identity document collection, or enterprise certification in phase one.
 
+### Applicant Job-Seeking Information
+
+After an applicant identity is available, the applicant can maintain a minimum personal job-seeking information page.
+
+Minimum scope:
+
+- Show a personal information page for the authenticated applicant identity.
+- Collect job type name, expected salary, work method, location, and preferred work scope.
+- Collect applicant age as a required field.
+- Treat job type name, expected salary, work method, and location as required; preferred work scope is optional and secondary.
+- Save the information only after the applicant submits the form.
+- Allow an applicant to view and edit their own submitted information.
+- Show loading, validation, success, network failure, and retry states.
+
+The first version does not include job search, matching, applications, chat, interviews, hiring, salary payments, or recommendation. This submission does not add a new manual-review workflow unless a later product decision explicitly requires it.
+
+### Recruiter Information And Job Posting
+
+After a recruiter identity is available, the recruiter can maintain a hiring location and publish a minimum recruitment information record.
+
+Minimum scope:
+
+- Recruiter information entry for location obtained through device geolocation and a detailed address accurate to the building.
+- Recruitment information entry for job type, salary range, settlement method, location, latitude/longitude, and images.
+- Allow no more than six images per recruitment information record.
+- Preserve latitude and longitude with the submitted location for later location-based features.
+- Support loading, location permission denied, invalid input, upload progress, success, failure, retry, and duplicate-submit prevention.
+
+The first version does not define job matching, applicant applications, chat, interviews, hiring, or a new manual-review workflow for recruitment information. Exact salary format, settlement options, location provider, address privacy display, image type/size, and whether publishing requires review are Architect/Product follow-ups.
+
+### First-Version Two-Sided Information Market
+
+The first market version lets authenticated users browse the other side's published information in the WeChat Mini Program.
+
+Minimum scope:
+
+- Applicants can browse recruiter-published recruitment information.
+- Recruiters can browse applicant-published job-seeking information.
+- Both directions provide list cards, filters, cursor pagination, detail pages, and empty/loading/error/retry states.
+- Every published card and detail includes `publishedAt`; lists default to newest first.
+- Contact information is required on detail responses and detail pages, but is not shown in list cards.
+- Contact details are available only to authenticated users with the corresponding approved identity; contact views are logged and rate-limited.
+- Applicants can favorite and unfavorite recruitment information and view a dedicated “我的收藏” module.
+- Recruiters can favorite and unfavorite job-seeking information and view a dedicated “我的收藏” module.
+- Owners can disable their own published information; disabled information leaves public lists and cannot expose contact details.
+- Users can report inappropriate recruitment or job-seeking information; administrators can disable reported content through protected backend operations.
+- Precise building addresses remain private in the first version; public details show only an allowed location summary.
+
+First-version non-goals:
+
+- Automatic matching, recommendation, ranking algorithms, chat, applications, interviews, hiring, push notifications, favorite notes, and multi-device mobile clients.
+
+Second-version candidates, not part of the current delivery:
+
+- Intelligent matching and recommendations.
+- Contact exchange workflow, chat, and application status.
+- Notifications, saved filters, favorite notes, and personalized ranking.
+- Public map browsing and precise location rules.
+
 ### Web Management System
 
 The Web client is an administrator management system, not a general end-user client in phase one.
@@ -81,7 +140,7 @@ The last active `owner` cannot be disabled, deleted, or demoted. Administrator s
 
 Out of scope:
 
-- Job posting, resumes, search, matching, applications, chat, interviews, hiring, payments, and recommendations.
+- Public job search, resumes, matching, applications, chat, interviews, hiring, payments, and recommendations.
 - iOS App and Android App delivery in phase one.
 
 ## Non-Functional Requirements

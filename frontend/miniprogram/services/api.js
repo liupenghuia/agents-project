@@ -33,10 +33,61 @@ function request(path, options = {}) {
   });
 }
 
+function uploadFile(path, filePath, name = 'file', formData = {}) {
+  const app = getApp();
+  const session = app && app.globalData.session;
+  return new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url: `${BASE_URL}${path}`,
+      filePath,
+      name,
+      formData,
+      header: session && session.sessionToken ? { Authorization: `Bearer ${session.sessionToken}` } : {},
+      timeout: 30000,
+      success: ({ statusCode, data }) => {
+        let payload = {};
+        try { payload = JSON.parse(data || '{}'); } catch (error) { reject(new Error('上传响应格式无效')); return; }
+        if (statusCode >= 200 && statusCode < 300) { resolve(payload.data); return; }
+        reject(new Error(payload.error && payload.error.message ? payload.error.message : '图片上传失败，请重试'));
+      },
+      fail: () => reject(new Error('图片上传失败，请检查网络后重试')),
+    });
+  });
+}
+
 const createSession = (code) => request('/auth/wechat/session', { method: 'POST', data: { code } });
 const exchangePhone = (code) => request('/auth/wechat/phone', { method: 'POST', data: { code } });
 const listIdentities = () => request('/me/identities');
 const createIdentity = (role, data) => request(`/me/identities/${role}`, { method: 'POST', data });
 const resubmitIdentity = (id, profile) => request(`/me/identities/${id}/resubmit`, { method: 'POST', data: { profile } });
+const getApplicantJobSeekingInformation = () => request('/me/applicant/job-seeking-information');
+const saveApplicantJobSeekingInformation = (data) => request('/me/applicant/job-seeking-information', { method: 'PUT', data });
+const getRecruiterInformation = () => request('/me/recruiter/information');
+const saveRecruiterInformation = (data) => request('/me/recruiter/information', { method: 'PUT', data });
+const createImageUploadUrl = (data) => request('/me/recruitment-posts/image-upload-url', { method: 'POST', data });
+const uploadRecruitmentImage = (uploadUrl, filePath) => uploadFile(uploadUrl, filePath);
+const listRecruitmentPosts = () => request('/me/recruitment-posts');
+const createRecruitmentPost = (data) => request('/me/recruitment-posts', { method: 'POST', data });
+const getRecruitmentPost = (id) => request(`/me/recruitment-posts/${id}`);
+const updateRecruitmentPost = (id, data) => request(`/me/recruitment-posts/${id}`, { method: 'PATCH', data });
+const listMarketRecruitmentPosts = (query = {}) => request(`/market/recruitment-posts?${query.keyword ? `keyword=${encodeURIComponent(query.keyword)}` : ''}`);
+const getMarketRecruitmentPost = (id) => request(`/market/recruitment-posts/${id}`);
+const listMarketJobSeekingInformation = (query = {}) => request(`/market/job-seeking-information?${query.keyword ? `keyword=${encodeURIComponent(query.keyword)}` : ''}`);
+const getMarketJobSeekingInformation = (id) => request(`/market/job-seeking-information/${id}`);
+const listRecruitmentFavorites = () => request('/me/favorites/recruitment-posts');
+const favoriteRecruitmentPost = (id) => request(`/me/favorites/recruitment-posts/${id}`, { method: 'PUT' });
+const unfavoriteRecruitmentPost = (id) => request(`/me/favorites/recruitment-posts/${id}`, { method: 'DELETE' });
+const listJobSeekingFavorites = () => request('/me/favorites/job-seeking-information');
+const favoriteJobSeekingInformation = (id) => request(`/me/favorites/job-seeking-information/${id}`, { method: 'PUT' });
+const unfavoriteJobSeekingInformation = (id) => request(`/me/favorites/job-seeking-information/${id}`, { method: 'DELETE' });
+const createMarketReport = (data) => request('/me/market-reports', { method: 'POST', data });
 
-module.exports = { createSession, exchangePhone, listIdentities, createIdentity, resubmitIdentity };
+module.exports = {
+  createSession, exchangePhone, listIdentities, createIdentity, resubmitIdentity,
+  getApplicantJobSeekingInformation, saveApplicantJobSeekingInformation,
+  getRecruiterInformation, saveRecruiterInformation, createImageUploadUrl, uploadRecruitmentImage,
+  listRecruitmentPosts, createRecruitmentPost, getRecruitmentPost, updateRecruitmentPost,
+  listMarketRecruitmentPosts, getMarketRecruitmentPost, listMarketJobSeekingInformation, getMarketJobSeekingInformation,
+  listRecruitmentFavorites, favoriteRecruitmentPost, unfavoriteRecruitmentPost, listJobSeekingFavorites,
+  favoriteJobSeekingInformation, unfavoriteJobSeekingInformation, createMarketReport,
+};

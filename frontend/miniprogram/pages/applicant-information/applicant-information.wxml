@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="eyebrow">应聘方 · 个人信息</view>
+  <text class="title">完善求职信息</text>
+  <text class="muted">提交后可以随时修改，位置信息用于后续求职服务。</text>
+  <view wx:if="{{loading}}" class="loading">正在读取信息...</view>
+  <view wx:if="{{!loading}}" class="panel form">
+    <label class="label">工种名 <text>*</text><input data-field="jobTypeName" value="{{form.jobTypeName}}" bindinput="input" placeholder="例如：服务员、前端开发" maxlength="120" /></label>
+    <label class="label">年龄 <text>*</text><input data-field="age" value="{{form.age}}" bindinput="input" type="number" placeholder="请输入年龄" maxlength="3" /></label>
+    <label class="label">期望薪资 <text>*</text><input data-field="expectedSalary" value="{{form.expectedSalary}}" bindinput="input" placeholder="例如：5K-8K、面议" maxlength="100" /></label>
+    <label class="label">工作方式 <text>*</text><picker range="{{['月结','不定时长']}}" bindchange="pickWorkMethod"><view class="picker">{{workMethodLabel || '请选择工作方式'}}</view></picker></label>
+    <label class="label">位置信息 <text>*</text><button class="location-button" bindtap="chooseLocation">{{form.locationText || '获取并选择工作位置'}}</button></label>
+    <label class="label">期望工作范围 <text class="optional">可选</text><input data-field="preferredWorkScope" value="{{form.preferredWorkScope}}" bindinput="input" placeholder="例如：浦东新区周边" maxlength="200" /></label>
+  </view>
+  <view wx:if="{{error}}" class="error">{{error}}<button class="button-secondary" bindtap="retry">重试</button></view>
+  <view wx:if="{{saved}}" class="success">求职信息已保存</view>
+  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving}}" bindtap="submit">{{saving ? '正在保存...' : '提交求职信息'}}</button>
+</view>

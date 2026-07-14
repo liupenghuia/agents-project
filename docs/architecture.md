@@ -55,6 +55,49 @@ The same platform user may have one recruiter identity, one applicant identity, 
 - Creates a profile in `pending_review` in one transaction.
 - Allows resubmission only for `changes_requested`, preserving prior review actions.
 
+### Applicant Job-Seeking Information Module
+
+- Belongs to the authenticated applicant identity and stores one current job-seeking information record per applicant identity.
+- Requires `job_type_name`, `age`, `expected_salary`, `work_method`, and `location`; `preferred_work_scope` is optional.
+- `work_method` is the fixed enum `monthly_settlement` or `indefinite_duration`.
+- Applicant information is owner-readable and owner-writable only; it is not publicly exposed by these MVP endpoints.
+- Submission saves the current record immediately and does not enter the identity manual-review state machine.
+- A submitted applicant record receives `published_at` and is market-visible while its visibility status is `published`; the market module owns public DTO and contact access rules.
+
+### Recruiter Information Module
+
+- Belongs to the authenticated recruiter identity and stores one current hiring-location record per recruiter identity.
+- The Mini Program may request device location permission and must send user-confirmed coordinates plus a detailed address accurate to the building.
+- Precise coordinates and detailed addresses are sensitive owner data and must not be exposed to unrelated users.
+
+### Recruitment Posting Module
+
+- Allows one recruiter identity to own multiple recruitment posts.
+- A post is saved atomically with its job, salary, settlement, location, and image references and becomes `published` after a successful submit with a required `published_at`; it can later be `disabled` by its owner or an authorized administrator.
+- A post location stores user-confirmed display text plus latitude and longitude. Public exposure of the precise address is deferred until a separate product decision.
+- Images use object-storage references, not database blobs. Uploads are authorized by the backend, limited to six per post, and validated for type and size before publishing.
+- No manual review, matching, application, or public search is introduced by these MVP tasks.
+
+### Two-Sided Information Market Module
+
+- Provides two authenticated read directions: applicants browse published recruitment posts; recruiters browse published applicant job-seeking information.
+- Lists return safe summary cards only, use cursor pagination, default to newest `published_at`, and support explicit filters rather than recommendation scoring.
+- Detail endpoints return the required contact information only after the viewer has an authenticated, approved counterpart identity. Contact information is not returned by list endpoints.
+- Public responses use dedicated market DTOs and never expose precise building addresses, provider subjects, session data, or internal account identifiers.
+- `published_at` is required for both market object types and is immutable for the current publication unless a future republish rule is defined.
+
+### Favorites Module
+
+- Applicants may favorite recruitment posts; recruiters may favorite applicant job-seeking information.
+- Favorite relationships are idempotent and unique per viewer identity/target; removal is explicit and synchronized across devices.
+- Disabled or unavailable targets remain labeled as unavailable in the owner's favorites list and cannot reveal contact information.
+
+### Market Safety And Operations Module
+
+- Owners can disable their own published information.
+- Authenticated users can report a market object; protected admin operations can disable reported content and resolve reports.
+- Contact-detail reads are append-only logged and rate-limited; this is an access safeguard, not a substitute for consent or platform policy.
+
 ### Review Module
 
 - Belongs to the protected Admin Management Module and exposes the identity review queue and decisions.
@@ -83,6 +126,11 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - Normalized role tables over one polymorphic JSON profile: role-specific validation, reviewer queries, and future migrations need typed fields.
 - Provider-linked account over password registration: the requested client is a WeChat Mini Program and the product excludes self-managed passwords in phase one.
 - One protected Web management system for permissions and review: these operations share administrator identity, authorization, and audit requirements.
+- Current-user information boundaries over generic user IDs: ownership checks are simpler and prevent cross-account reads and writes.
+- Object-storage image references over database blobs: image payloads do not inflate transactional database records and can move to a managed provider later.
+- Explicit list/filter/detail over recommendation logic: the first market version needs predictable retrieval and can add ranking after usage evidence.
+- Separate favorite relation tables over a polymorphic favorite table: database foreign keys and direction-specific permissions remain explicit.
+- Authenticated detail contact access over list-level contact exposure: contact is required by product, while list scraping risk is reduced.
 
 ## API Boundaries
 
@@ -90,6 +138,10 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - Admin endpoints use `/admin` and require an administrator session plus the permission required by each operation.
 - Administrator authentication uses a separate password-backed admin session; WeChat users cannot access admin endpoints merely by being authenticated in the Mini Program.
 - `/admin/identity-reviews` is the review area inside the management system, not a separate reviewer product.
+- Applicant endpoints use `/me/applicant/job-seeking-information`; recruiter location endpoints use `/me/recruiter/information`; recruitment posts use `/me/recruitment-posts`.
+- Recruitment image upload uses a backend-authorized upload-reference flow; clients submit only server-issued object keys, never arbitrary URLs.
+- Market endpoints use `/market/recruitment-posts` and `/market/job-seeking-information`; owner favorites use `/me/favorites/recruitment-posts` and `/me/favorites/job-seeking-information`.
+- Owner operations use `/me/market-reports` for reports and protected `/admin/market-reports` operations for resolution/disable actions.
 - `docs/openapi.yaml` defines request/response shapes, error codes, and status enums.
 - Backend must reject undocumented fields where strict validation is available and must never return provider secrets.
 
@@ -101,6 +153,9 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 | Review action | `approved`, `changes_requested` | Append-only; a reason is required for changes. |
 | Session | active, expired, revoked | Expired/revoked sessions cannot access identity endpoints. |
 | Admin session | active, expired, revoked | Separate from WeChat sessions; disabled administrators lose access. |
+| Recruitment post | `published`, `disabled` | Owner may edit a published post or disable it; no review transition in MVP. |
+| Applicant market information | `published`, `disabled` | Submitted information is visible to approved recruiters only while published. |
+| Market report | `open`, `resolved`, `rejected` | Reports are immutable submissions; admin resolution is recorded separately. |
 
 ## Security And Privacy
 
@@ -110,6 +165,10 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - Consent screens and privacy policy links must follow current WeChat Mini Program rules.
 - Admin login, account/permission changes, user management, and review decisions require explicit authorization and must be audit logged.
 - The initial maximum-permission account is the user-provided `owner` account created during secure bootstrap; no default password is allowed.
+- Location coordinates, detailed addresses, and image object keys are validated and access-controlled; precise location is not public by default.
+- The backend must reject client-supplied image URLs and accept only server-issued upload references.
+- Market list endpoints must exclude disabled objects and contact fields; market detail endpoints must enforce approved counterpart identity and record contact access.
+- Admin disabling must immediately remove an object from market queries and revoke contact visibility.
 - Rate-limit login-code exchange, registration submission, resubmission, and review decisions.
 
 ## Revisit Triggers

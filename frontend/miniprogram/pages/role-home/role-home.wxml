@@ -2,6 +2,14 @@
   <view class="eyebrow">{{role === 'recruiter' ? '招人方' : '应聘方'}}工作区</view>
   <text class="title">{{role === 'recruiter' ? '开始招人' : '开始应聘'}}</text>
   <view class="signed-in panel"><text class="check">✓</text><view><text class="signed-title">已登录，身份审核通过</text><text class="muted">当前身份已确认，可以进入对应服务。</text></view></view>
-  <view class="panel placeholder"><text class="section-title">第一阶段已完成</text><text class="muted">{{role === 'recruiter' ? '职位发布和候选人管理将在后续版本开放。' : '职位浏览和投递将在后续版本开放。'}}</text></view>
+  <block wx:if="{{role === 'applicant'}}">
+    <button class="action-card" bindtap="openApplicantInformation"><text class="action-title">完善求职信息</text><text class="muted">填写工种、年龄、期望薪资和工作位置</text></button>
+  </block>
+  <block wx:else>
+    <button class="action-card" bindtap="openRecruiterInformation"><text class="action-title">填写招聘者信息</text><text class="muted">保存定位和精确到楼栋的招聘地址</text></button>
+    <button class="action-card" bindtap="openRecruitmentPost"><text class="action-title">发布招聘信息</text><text class="muted">填写工种、薪资、位置和最多六张图片</text></button>
+  </block>
+  <button class="action-card" bindtap="openMarket"><text class="action-title">浏览{{role === 'applicant' ? '招聘' : '求职'}}信息</text><text class="muted">按发布时间查看最新公开信息，并进入详情联系</text></button>
+  <view class="panel placeholder"><text class="section-title">更多服务</text><text class="muted">搜索、匹配、投递和沟通将在后续版本开放。</text></view>
   <button class="button-secondary" bindtap="backHome">切换身份</button>
 </view>

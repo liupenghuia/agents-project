@@ -1,6 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import {
   bootstrapAdmin,
+  completeMediaUpload,
+  createMediaUpload,
+  createRecruitmentPost,
   createAdminAccount,
   createAdminSession,
   createDatabase,
@@ -8,11 +13,36 @@ import {
   createUserForProvider,
   findAdminByLogin,
   findAdminSession,
+  findRoleProfileForUser,
   findSessionUser,
+  getApplicantJobSeekingInformation,
+  getRecruiterInformation,
+  getRecruitmentPost,
   grantReviewer,
+  listRecruitmentPosts,
   listAdminAccounts,
+  listUsers,
+  getUser,
+  createManagedUser,
+  updateManagedUser,
+  disableUser,
+  listMarketRecruitmentPosts,
+  getMarketRecruitmentPost,
+  listMarketJobSeekingInformation,
+  getMarketJobSeekingInformation,
+  setMarketVisibility,
+  setFavorite,
+  listFavorites,
+  createMarketReport,
+  listMarketReports,
+  resolveMarketReport,
+  recordContactView,
   revokeAdminSession,
   touchAdminLogin,
+  updateRecruitmentPost,
+  updateAdminLogin,
+  upsertApplicantJobSeekingInformation,
+  upsertRecruiterInformation,
   verifyPassword,
 } from './db.js';
 import { createWeChatExchange, createWeChatPhoneExchange } from './wechat.js';
@@ -22,6 +52,8 @@ const MAX_BODY_BYTES = 1024 * 1024;
 const roles = new Set(['recruiter', 'applicant']);
 const statusValues = new Set(['pending_review', 'approved', 'changes_requested']);
 const adminRoles = new Set(['owner', 'admin', 'reviewer', 'operator']);
+const imageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const maxImageBytes = 10 * 1024 * 1024;
 
 const tokenHash = (token) => createHash('sha256').update(token).digest('hex');
 const isoAfter = (milliseconds) => new Date(Date.now() + milliseconds).toISOString();
@@ -69,6 +101,92 @@ function assertRequired(body, fields) {
 
 function assertPhone(phone) {
   if (!/^\+?[0-9 -]{5,32}$/.test(text(phone))) throw httpError(422, 'VALIDATION_ERROR', '手机号格式无效');
+}
+
+function assertCoordinates(latitude, longitude) {
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90
+    || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    throw httpError(422, 'VALIDATION_ERROR', '位置坐标无效');
+  }
+}
+
+function assertJobSeekingInformation(body) {
+  assertRequired(body, ['jobTypeName', 'expectedSalary', 'workMethod', 'locationText']);
+  const age = Number(body.age);
+  if (!Number.isInteger(age) || age < 1 || age > 120) throw httpError(422, 'VALIDATION_ERROR', '年龄必须是 1 到 120 的整数');
+  if (!['monthly_settlement', 'indefinite_duration'].includes(text(body.workMethod))) {
+    throw httpError(422, 'VALIDATION_ERROR', '工作方式无效');
+  }
+  const latitude = Number(body.latitude);
+  const longitude = Number(body.longitude);
+  assertCoordinates(latitude, longitude);
+  return {
+    jobTypeName: text(body.jobTypeName), age, expectedSalary: text(body.expectedSalary),
+    workMethod: text(body.workMethod), locationText: text(body.locationText), latitude, longitude,
+    preferredWorkScope: text(body.preferredWorkScope),
+  };
+}
+
+function assertRecruiterInformation(body) {
+  assertRequired(body, ['detailedAddress']);
+  const latitude = Number(body.latitude);
+  const longitude = Number(body.longitude);
+  assertCoordinates(latitude, longitude);
+  return { latitude, longitude, detailedAddress: text(body.detailedAddress) };
+}
+
+function assertImageKeys(imageKeys) {
+  if (!Array.isArray(imageKeys) || imageKeys.length > 6 || imageKeys.some((key) => !text(key))) {
+    throw httpError(422, 'VALIDATION_ERROR', '图片最多上传 6 张');
+  }
+  return imageKeys.map(text);
+}
+
+function assertRecruitmentPost(body) {
+  assertRequired(body, ['jobType', 'salaryRange', 'settlementMethod', 'locationText']);
+  const latitude = Number(body.latitude);
+  const longitude = Number(body.longitude);
+  assertCoordinates(latitude, longitude);
+  return {
+    jobType: text(body.jobType), salaryRange: text(body.salaryRange), settlementMethod: text(body.settlementMethod),
+    locationText: text(body.locationText), latitude, longitude, imageKeys: assertImageKeys(body.imageKeys || []),
+  };
+}
+
+function assertManagedUser(body, partial = false) {
+  if (!partial) assertRequired(body, ['email', 'name']);
+  if (body.email !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text(body.email))) throw httpError(422, 'VALIDATION_ERROR', '邮箱格式无效');
+  if (body.name !== undefined && !text(body.name)) throw httpError(422, 'VALIDATION_ERROR', '姓名不能为空');
+  if (body.status !== undefined && !['active', 'disabled'].includes(text(body.status))) throw httpError(422, 'VALIDATION_ERROR', '用户状态无效');
+  return { ...(body.email !== undefined ? { email: text(body.email) } : {}), ...(body.name !== undefined ? { name: text(body.name) } : {}), ...(body.status !== undefined ? { status: text(body.status) } : {}) };
+}
+
+function assertMarketTarget(body) {
+  if (!['recruitment_post', 'applicant_information'].includes(text(body.targetType))) throw httpError(422, 'VALIDATION_ERROR', '举报对象类型无效');
+  assertRequired(body, ['targetId', 'reason']);
+  return { targetType: text(body.targetType), targetId: text(body.targetId), reason: text(body.reason) };
+}
+
+async function readBuffer(request) {
+  let size = 0;
+  const chunks = [];
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxImageBytes + 1024 * 1024) throw httpError(413, 'PAYLOAD_TOO_LARGE', '图片内容过大');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+function multipartFile(buffer, contentType) {
+  const match = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType || '');
+  if (!match) throw httpError(400, 'INVALID_MULTIPART', '图片上传格式无效');
+  const boundary = Buffer.from(`--${match[1] || match[2]}`);
+  const headerEnd = buffer.indexOf(Buffer.from('\r\n\r\n'));
+  const closing = buffer.lastIndexOf(boundary);
+  if (headerEnd < 0 || closing <= headerEnd) throw httpError(400, 'INVALID_MULTIPART', '图片内容无效');
+  const dataEnd = buffer.lastIndexOf(Buffer.from('\r\n'), closing);
+  return buffer.subarray(headerEnd + 4, dataEnd >= headerEnd + 4 ? dataEnd : closing);
 }
 
 function validateProfile(role, body) {
@@ -131,6 +249,33 @@ function identityFromRow(row) {
     ...(row.review_reason ? { reviewReason: row.review_reason } : {}),
     profile: profileFromRow(row),
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapApplicantJobSeekingInformation(row) {
+  return {
+    roleProfileId: row.role_profile_id,
+    jobTypeName: row.job_type_name,
+    age: row.age,
+    expectedSalary: row.expected_salary,
+    workMethod: row.work_method,
+    locationText: row.location_text,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    ...(row.preferred_work_scope ? { preferredWorkScope: row.preferred_work_scope } : {}),
+    status: row.visibility_status || 'published',
+    publishedAt: row.published_at || row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapRecruiterInformation(row) {
+  return {
+    roleProfileId: row.role_profile_id,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    detailedAddress: row.detailed_address,
     updatedAt: row.updated_at,
   };
 }
@@ -347,12 +492,13 @@ export function createApp(options = {}) {
   const handler = async (request, response) => {
     response.setHeader('access-control-allow-origin', '*');
     response.setHeader('access-control-allow-headers', 'content-type, authorization');
-    response.setHeader('access-control-allow-methods', 'GET,POST,OPTIONS');
+    response.setHeader('access-control-allow-methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     if (request.method === 'OPTIONS') return send(response, 204, {});
     try {
       const url = new URL(request.url, 'http://localhost');
       const path = url.pathname;
-      const body = request.method === 'POST' ? await readJson(request) : {};
+      const uploadPath = /^\/me\/recruitment-posts\/image-upload\/([^/]+)$/u.exec(path);
+      const body = ['POST', 'PUT', 'PATCH'].includes(request.method) && !uploadPath ? await readJson(request) : {};
 
       if (request.method === 'GET' && path === '/health') {
         return send(response, 200, { data: { status: 'ok', service: 'recruitment-backend' } });
@@ -371,6 +517,33 @@ export function createApp(options = {}) {
         authenticate(request, db);
         assertRequired(body, ['code']);
         return send(response, 200, { data: await exchangePhone(text(body.code)) });
+      }
+
+      if (request.method === 'POST' && path === '/me/recruitment-posts/image-upload-url') {
+        const user = authenticate(request, db);
+        if (!findRoleProfileForUser(db, user.id, 'recruiter')) throw httpError(403, 'IDENTITY_REQUIRED', '需要先创建招人身份');
+        assertRequired(body, ['fileName', 'contentType', 'byteSize']);
+        const contentType = text(body.contentType);
+        const byteSize = Number(body.byteSize);
+        if (!imageTypes.has(contentType) || !Number.isInteger(byteSize) || byteSize < 1 || byteSize > maxImageBytes) {
+          throw httpError(422, 'VALIDATION_ERROR', '图片类型或大小无效');
+        }
+        const objectKey = `${user.id}-${randomBytes(16).toString('hex')}`;
+        const expiresAt = isoAfter(15 * 60 * 1000);
+        createMediaUpload(db, user.id, { objectKey, contentType, byteSize, expiresAt });
+        return send(response, 200, { data: { objectKey, uploadUrl: `/me/recruitment-posts/image-upload/${objectKey}`, expiresAt } });
+      }
+
+      if (request.method === 'POST' && uploadPath) {
+        const user = authenticate(request, db);
+        const contentType = text(request.headers['content-type']);
+        const file = multipartFile(await readBuffer(request), contentType);
+        const upload = completeMediaUpload(db, user.id, uploadPath[1], file.length);
+        if (!upload) throw httpError(422, 'INVALID_UPLOAD', '上传引用无效、已过期或图片过大');
+        const mediaRoot = process.env.MEDIA_ROOT || join(process.cwd(), 'media');
+        await mkdir(mediaRoot, { recursive: true });
+        await writeFile(join(mediaRoot, upload.object_key), file);
+        return send(response, 200, { data: { objectKey: upload.object_key, contentType: upload.content_type, byteSize: file.length } });
       }
 
       if (request.method === 'POST' && path === '/admin/auth/login') {
@@ -416,9 +589,124 @@ export function createApp(options = {}) {
         }
       }
 
+      const adminAccountPath = /^\/admin\/accounts\/([^/]+)$/u.exec(path);
+      if (request.method === 'PATCH' && adminAccountPath) {
+        const admin = authenticateAdmin(request, db);
+        requireAdminRole(admin, ['owner', 'admin']);
+        if (body.status && !['active', 'disabled'].includes(text(body.status))) throw httpError(422, 'VALIDATION_ERROR', '管理员状态无效');
+        if (body.role && !adminRoles.has(text(body.role))) throw httpError(422, 'VALIDATION_ERROR', '管理员角色无效');
+        if (body.password && text(body.password).length < 12) throw httpError(422, 'VALIDATION_ERROR', '管理员密码至少需要 12 位');
+        const updated = updateAdminLogin(db, adminAccountPath[1], { password: body.password && text(body.password), status: body.status && text(body.status), role: body.role && text(body.role) });
+        if (!updated) throw httpError(404, 'ADMIN_NOT_FOUND', '管理员不存在');
+        return send(response, 200, { data: updated });
+      }
+
+      const userPath = /^\/users\/([^/]+)$/u.exec(path);
+      if (request.method === 'GET' && path === '/users') {
+        requireAdminRole(authenticateAdmin(request, db), ['owner', 'admin', 'operator']);
+        return send(response, 200, { data: listUsers(db) });
+      }
+      if (request.method === 'POST' && path === '/users') {
+        requireAdminRole(authenticateAdmin(request, db), ['owner', 'admin']);
+        try { return send(response, 201, { data: createManagedUser(db, assertManagedUser(body)) }); }
+        catch (error) { if (String(error.message).includes('UNIQUE constraint failed')) throw httpError(409, 'EMAIL_EXISTS', '邮箱已存在'); throw error; }
+      }
+      if (request.method === 'GET' && userPath) {
+        requireAdminRole(authenticateAdmin(request, db), ['owner', 'admin', 'operator']);
+        const user = getUser(db, userPath[1]); if (!user) throw httpError(404, 'USER_NOT_FOUND', '用户不存在');
+        return send(response, 200, { data: user });
+      }
+      if (request.method === 'PATCH' && userPath) {
+        requireAdminRole(authenticateAdmin(request, db), ['owner', 'admin']);
+        try { const user = updateManagedUser(db, userPath[1], assertManagedUser(body, true)); if (!user) throw httpError(404, 'USER_NOT_FOUND', '用户不存在'); return send(response, 200, { data: user }); }
+        catch (error) { if (String(error.message).includes('UNIQUE constraint failed')) throw httpError(409, 'EMAIL_EXISTS', '邮箱已存在'); throw error; }
+      }
+      if (request.method === 'DELETE' && userPath) {
+        requireAdminRole(authenticateAdmin(request, db), ['owner', 'admin']);
+        const user = disableUser(db, userPath[1]); if (!user) throw httpError(404, 'USER_NOT_FOUND', '用户不存在');
+        return send(response, 200, { data: user });
+      }
+
       const identityPath = /^\/me\/identities\/([^/]+)$/u.exec(path);
       const resubmitPath = /^\/me\/identities\/([^/]+)\/resubmit$/u.exec(path);
       const reviewDecisionPath = /^\/admin\/identity-reviews\/([^/]+)\/decision$/u.exec(path);
+      const recruitmentPostPath = /^\/me\/recruitment-posts\/([^/]+)$/u.exec(path);
+      const marketRecruitmentPath = /^\/market\/recruitment-posts\/([^/]+)$/u.exec(path);
+      const marketApplicantPath = /^\/market\/job-seeking-information\/([^/]+)$/u.exec(path);
+      const favoriteRecruitmentPath = /^\/me\/favorites\/recruitment-posts\/([^/]+)$/u.exec(path);
+      const favoriteApplicantPath = /^\/me\/favorites\/job-seeking-information\/([^/]+)$/u.exec(path);
+      const disablePostPath = /^\/me\/recruitment-posts\/([^/]+)\/disable$/u.exec(path);
+
+      if (request.method === 'GET' && path === '/me/applicant/job-seeking-information') {
+        const user = authenticate(request, db);
+        return send(response, 200, { data: getApplicantJobSeekingInformation(db, user.id) && mapApplicantJobSeekingInformation(getApplicantJobSeekingInformation(db, user.id)) });
+      }
+      if (request.method === 'PUT' && path === '/me/applicant/job-seeking-information') {
+        const user = authenticate(request, db);
+        return send(response, 200, { data: mapApplicantJobSeekingInformation(upsertApplicantJobSeekingInformation(db, user.id, assertJobSeekingInformation(body))) });
+      }
+      if (request.method === 'GET' && path === '/me/recruiter/information') {
+        const user = authenticate(request, db);
+        return send(response, 200, { data: getRecruiterInformation(db, user.id) && mapRecruiterInformation(getRecruiterInformation(db, user.id)) });
+      }
+      if (request.method === 'PUT' && path === '/me/recruiter/information') {
+        const user = authenticate(request, db);
+        return send(response, 200, { data: mapRecruiterInformation(upsertRecruiterInformation(db, user.id, assertRecruiterInformation(body))) });
+      }
+      if (request.method === 'GET' && path === '/me/recruitment-posts') {
+        const user = authenticate(request, db);
+        return send(response, 200, { data: listRecruitmentPosts(db, user.id) });
+      }
+      if (request.method === 'POST' && path === '/me/recruitment-posts') {
+        const user = authenticate(request, db);
+        return send(response, 201, { data: createRecruitmentPost(db, user.id, assertRecruitmentPost(body)) });
+      }
+      if (request.method === 'GET' && recruitmentPostPath) {
+        const user = authenticate(request, db);
+        const post = getRecruitmentPost(db, user.id, recruitmentPostPath[1]);
+        if (!post) throw httpError(404, 'POST_NOT_FOUND', '招聘信息不存在');
+        return send(response, 200, { data: post });
+      }
+      if (request.method === 'PATCH' && recruitmentPostPath) {
+        const user = authenticate(request, db);
+        const current = getRecruitmentPost(db, user.id, recruitmentPostPath[1]);
+        if (!current) throw httpError(404, 'POST_NOT_FOUND', '招聘信息不存在');
+        const next = assertRecruitmentPost({
+          ...current,
+          ...body,
+          imageKeys: body.imageKeys || current.images.map((image) => image.objectKey),
+        });
+        return send(response, 200, { data: updateRecruitmentPost(db, user.id, recruitmentPostPath[1], next) });
+      }
+
+      if (request.method === 'POST' && disablePostPath) {
+        const user = authenticate(request, db); if (!setMarketVisibility(db, user.id, 'recruitment_post', disablePostPath[1], false)) throw httpError(404, 'POST_NOT_FOUND', '招聘信息不存在'); return send(response, 204, null);
+      }
+      if (request.method === 'POST' && path === '/me/applicant/job-seeking-information/disable') {
+        const user = authenticate(request, db); if (!setMarketVisibility(db, user.id, 'applicant_information', '', false)) throw httpError(404, 'INFORMATION_NOT_FOUND', '求职信息不存在'); return send(response, 204, null);
+      }
+      if (request.method === 'GET' && path === '/market/recruitment-posts') {
+        const user = authenticate(request, db); return send(response, 200, { data: listMarketRecruitmentPosts(db, user.id, { cursor: url.searchParams.get('cursor'), limit: Number(url.searchParams.get('limit') || 20), keyword: text(url.searchParams.get('keyword')) }) });
+      }
+      if (request.method === 'GET' && marketRecruitmentPath) {
+        const user = authenticate(request, db); const item = getMarketRecruitmentPost(db, user.id, marketRecruitmentPath[1]); if (!item) throw httpError(404, 'POST_NOT_FOUND', '招聘信息不存在'); if (!recordContactView(db, user.id, 'recruitment_post', marketRecruitmentPath[1])) throw httpError(429, 'CONTACT_RATE_LIMITED', '联系方式查看次数过多，请稍后再试'); return send(response, 200, { data: item });
+      }
+      if (request.method === 'GET' && path === '/market/job-seeking-information') {
+        const user = authenticate(request, db); return send(response, 200, { data: listMarketJobSeekingInformation(db, user.id, { cursor: url.searchParams.get('cursor'), limit: Number(url.searchParams.get('limit') || 20), keyword: text(url.searchParams.get('keyword')) }) });
+      }
+      if (request.method === 'GET' && marketApplicantPath) {
+        const user = authenticate(request, db); const item = getMarketJobSeekingInformation(db, user.id, marketApplicantPath[1]); if (!item) throw httpError(404, 'INFORMATION_NOT_FOUND', '求职信息不存在'); if (!recordContactView(db, user.id, 'applicant_information', marketApplicantPath[1])) throw httpError(429, 'CONTACT_RATE_LIMITED', '联系方式查看次数过多，请稍后再试'); return send(response, 200, { data: item });
+      }
+      if (request.method === 'GET' && path === '/me/favorites/recruitment-posts') { const user = authenticate(request, db); return send(response, 200, { data: listFavorites(db, user.id, 'recruitment') }); }
+      if (request.method === 'PUT' && favoriteRecruitmentPath) { const user = authenticate(request, db); if (!setFavorite(db, user.id, 'recruitment', favoriteRecruitmentPath[1], true)) throw httpError(404, 'POST_NOT_FOUND', '招聘信息不存在'); return send(response, 204, null); }
+      if (request.method === 'DELETE' && favoriteRecruitmentPath) { const user = authenticate(request, db); setFavorite(db, user.id, 'recruitment', favoriteRecruitmentPath[1], false); return send(response, 204, null); }
+      if (request.method === 'GET' && path === '/me/favorites/job-seeking-information') { const user = authenticate(request, db); return send(response, 200, { data: listFavorites(db, user.id, 'applicant') }); }
+      if (request.method === 'PUT' && favoriteApplicantPath) { const user = authenticate(request, db); if (!setFavorite(db, user.id, 'applicant', favoriteApplicantPath[1], true)) throw httpError(404, 'INFORMATION_NOT_FOUND', '求职信息不存在'); return send(response, 204, null); }
+      if (request.method === 'DELETE' && favoriteApplicantPath) { const user = authenticate(request, db); setFavorite(db, user.id, 'applicant', favoriteApplicantPath[1], false); return send(response, 204, null); }
+      if (request.method === 'POST' && path === '/me/market-reports') { const user = authenticate(request, db); const report = createMarketReport(db, user.id, assertMarketTarget(body)); if (!report) throw httpError(404, 'MARKET_NOT_FOUND', '举报对象不存在'); return send(response, 201, { data: report }); }
+      if (request.method === 'GET' && path === '/admin/market-reports') { const admin = authenticateAdmin(request, db); requireAdminRole(admin, ['owner', 'admin', 'operator']); return send(response, 200, { data: listMarketReports(db, url.searchParams.get('status')) }); }
+      const marketReportDecisionPath = /^\/admin\/market-reports\/([^/]+)\/decision$/u.exec(path);
+      if (request.method === 'POST' && marketReportDecisionPath) { const admin = authenticateAdmin(request, db); requireAdminRole(admin, ['owner', 'admin', 'operator']); if (!['resolved', 'rejected'].includes(text(body.decision))) throw httpError(422, 'VALIDATION_ERROR', '处理决定无效'); const report = resolveMarketReport(db, admin.user_id, marketReportDecisionPath[1], text(body.decision)); if (!report) throw httpError(404, 'REPORT_NOT_FOUND', '举报不存在'); return send(response, 200, { data: report }); }
 
       if (request.method === 'GET' && path === '/me/identities') {
         const user = authenticate(request, db);
@@ -456,6 +744,11 @@ export function createApp(options = {}) {
       }
       throw httpError(404, 'NOT_FOUND', '请求地址不存在');
     } catch (error) {
+      if (error.message === 'INVALID_IMAGE_REFERENCES') {
+        error.status = 422;
+        error.code = 'INVALID_IMAGE_REFERENCES';
+        error.message = '图片上传引用无效或已过期，请重新上传';
+      }
       sendError(response, error);
     }
   };

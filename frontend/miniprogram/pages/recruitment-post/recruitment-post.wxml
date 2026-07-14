@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="eyebrow">招人方 · 招聘信息</view>
+  <text class="title">发布招聘信息</text>
+  <text class="muted">先获取位置，发布时会提交经纬度。图片最多 6 张。</text>
+  <view wx:if="{{loading}}" class="loading">正在读取招聘信息...</view>
+  <view wx:if="{{!loading}}" class="panel form">
+    <label class="label">工种 <text>*</text><input data-field="jobType" value="{{form.jobType}}" bindinput="input" placeholder="例如：服务员、搬运工" maxlength="120" /></label>
+    <label class="label">薪资范围 <text>*</text><input data-field="salaryRange" value="{{form.salaryRange}}" bindinput="input" placeholder="例如：5K-8K、面议" maxlength="100" /></label>
+    <label class="label">结算方式 <text>*</text><input data-field="settlementMethod" value="{{form.settlementMethod}}" bindinput="input" placeholder="例如：月结、日结" maxlength="100" /></label>
+    <label class="label">位置信息 <text>*</text><button class="location-button" bindtap="chooseLocation">{{form.locationText || '获取并选择招聘位置'}}</button></label>
+    <view class="label"><text>图片</text><button class="upload-button" bindtap="chooseImages">选择图片（{{imageCount}}/6）</button></view>
+    <view class="image-list"><view wx:for="{{imagePaths}}" wx:key="*this" class="image-item"><image src="{{item}}" mode="aspectFill" /><button data-index="{{index}}" bindtap="removeImage">删除</button></view><view wx:for="{{form.images}}" wx:key="id" class="image-item existing"><text>已上传图片 {{index + 1}}</text><button data-index="{{index}}" bindtap="removeImage">删除</button></view></view>
+  </view>
+  <view wx:if="{{error}}" class="error">{{error}}<button class="button-secondary" bindtap="retry">重试</button></view>
+  <view wx:if="{{saved}}" class="success">招聘信息已保存</view>
+  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving}}" bindtap="submit">{{saving ? '正在上传并发布...' : postId ? '保存修改' : '发布招聘信息'}}</button>
+</view>

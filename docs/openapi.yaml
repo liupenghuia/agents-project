@@ -13,6 +13,18 @@ tags:
     description: User management
   - name: Identities
     description: Recruiter and applicant identity profiles
+  - name: Applicant Information
+    description: Authenticated applicant job-seeking information
+  - name: Recruiter Information
+    description: Authenticated recruiter location information
+  - name: Recruitment Posts
+    description: Authenticated recruiter recruitment information
+  - name: Market
+    description: Authenticated two-sided published information browsing
+  - name: Favorites
+    description: Direction-specific persistent favorites
+  - name: Market Reports
+    description: User reports and protected administrator resolution
   - name: Identity Reviews
     description: Manual review operations inside the protected admin system
   - name: Admin Auth
@@ -543,6 +555,666 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+  /me/applicant/job-seeking-information:
+    get:
+      tags:
+        - Applicant Information
+      summary: Get the current applicant's job-seeking information
+      operationId: getMyJobSeekingInformation
+      security:
+        - PlatformSession: []
+      responses:
+        "200":
+          description: Applicant job-seeking information; data is null when not submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    anyOf:
+                      - $ref: "#/components/schemas/ApplicantJobSeekingInformation"
+                      - type: "null"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - Applicant Information
+      summary: Create or replace the current applicant's job-seeking information
+      operationId: upsertMyJobSeekingInformation
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicantJobSeekingInformationRequest"
+      responses:
+        "200":
+          description: Applicant information saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ApplicantJobSeekingInformation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/recruiter/information:
+    get:
+      tags:
+        - Recruiter Information
+      summary: Get the current recruiter's saved location information
+      operationId: getMyRecruiterInformation
+      security:
+        - PlatformSession: []
+      responses:
+        "200":
+          description: Recruiter information; data is null when not submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    anyOf:
+                      - $ref: "#/components/schemas/RecruiterInformation"
+                      - type: "null"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - Recruiter Information
+      summary: Create or replace the current recruiter's location information
+      operationId: upsertMyRecruiterInformation
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecruiterInformationRequest"
+      responses:
+        "200":
+          description: Recruiter information saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RecruiterInformation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/recruitment-posts/image-upload-url:
+    post:
+      tags:
+        - Recruitment Posts
+      summary: Create a backend-authorized image upload reference
+      operationId: createRecruitmentPostImageUploadUrl
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageUploadRequest"
+      responses:
+        "200":
+          description: Upload reference; client uploads the binary to uploadUrl and submits objectKey with the post
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ImageUploadReference"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/recruitment-posts/image-upload/{objectKey}:
+    post:
+      tags:
+        - Recruitment Posts
+      summary: Complete a previously authorized image upload
+      operationId: completeRecruitmentPostImageUpload
+      security:
+        - PlatformSession: []
+      parameters:
+        - name: objectKey
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Server-issued upload object key
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Image uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RecruitmentPostImageUpload"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/recruitment-posts:
+    get:
+      tags:
+        - Recruitment Posts
+      summary: List the current recruiter's recruitment posts
+      operationId: listMyRecruitmentPosts
+      security:
+        - PlatformSession: []
+      responses:
+        "200":
+          description: Current recruiter's posts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RecruitmentPost"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - Recruitment Posts
+      summary: Publish a recruitment post for the current recruiter
+      operationId: createRecruitmentPost
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecruitmentPostRequest"
+      responses:
+        "201":
+          description: Recruitment post published
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RecruitmentPost"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/recruitment-posts/{postId}:
+    get:
+      tags:
+        - Recruitment Posts
+      summary: Get one of the current recruiter's recruitment posts
+      operationId: getMyRecruitmentPost
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Recruitment post
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RecruitmentPost"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags:
+        - Recruitment Posts
+      summary: Update one of the current recruiter's recruitment posts
+      operationId: updateMyRecruitmentPost
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRecruitmentPostRequest"
+      responses:
+        "200":
+          description: Recruitment post updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RecruitmentPost"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/applicant/job-seeking-information/disable:
+    post:
+      tags:
+        - Applicant Information
+      summary: Disable the current applicant's published job-seeking information
+      operationId: disableMyJobSeekingInformation
+      security:
+        - PlatformSession: []
+      responses:
+        "204":
+          description: Applicant information disabled
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/recruitment-posts/{postId}/disable:
+    post:
+      tags:
+        - Recruitment Posts
+      summary: Disable one of the current recruiter's published posts
+      operationId: disableMyRecruitmentPost
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "204":
+          description: Recruitment post disabled
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /market/recruitment-posts:
+    get:
+      tags:
+        - Market
+      summary: List published recruitment posts for approved applicants
+      operationId: listMarketRecruitmentPosts
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/MarketCursor"
+        - $ref: "#/components/parameters/MarketLimit"
+        - name: jobType
+          in: query
+          schema:
+            type: string
+        - name: salaryRange
+          in: query
+          schema:
+            type: string
+        - name: settlementMethod
+          in: query
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - newest
+              - nearest
+            default: newest
+      responses:
+        "200":
+          description: Published recruitment summary cards without contact information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketRecruitmentPostListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /market/recruitment-posts/{postId}:
+    get:
+      tags:
+        - Market
+      summary: Get a published recruitment post detail with contact information
+      operationId: getMarketRecruitmentPost
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Recruitment detail; contact access is logged
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MarketRecruitmentPostDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /market/job-seeking-information:
+    get:
+      tags:
+        - Market
+      summary: List published applicant information for approved recruiters
+      operationId: listMarketJobSeekingInformation
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/MarketCursor"
+        - $ref: "#/components/parameters/MarketLimit"
+        - name: jobTypeName
+          in: query
+          schema:
+            type: string
+        - name: expectedSalary
+          in: query
+          schema:
+            type: string
+        - name: workMethod
+          in: query
+          schema:
+            type: string
+            enum:
+              - monthly_settlement
+              - indefinite_duration
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - newest
+              - nearest
+            default: newest
+      responses:
+        "200":
+          description: Published applicant summary cards without contact information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketJobSeekingListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /market/job-seeking-information/{informationId}:
+    get:
+      tags:
+        - Market
+      summary: Get published applicant information detail with contact information
+      operationId: getMarketJobSeekingInformation
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/InformationId"
+      responses:
+        "200":
+          description: Applicant detail; contact access is logged
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MarketJobSeekingDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/favorites/recruitment-posts:
+    get:
+      tags:
+        - Favorites
+      summary: List the current applicant's recruitment favorites
+      operationId: listRecruitmentFavorites
+      security:
+        - PlatformSession: []
+      responses:
+        "200":
+          description: Recruitment favorites, including unavailable labels
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /me/favorites/recruitment-posts/{postId}:
+    put:
+      tags:
+        - Favorites
+      summary: Favorite a recruitment post
+      operationId: favoriteRecruitmentPost
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "204":
+          description: Favorite created or already existed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - Favorites
+      summary: Unfavorite a recruitment post
+      operationId: unfavoriteRecruitmentPost
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "204":
+          description: Favorite removed or did not exist
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /me/favorites/job-seeking-information:
+    get:
+      tags:
+        - Favorites
+      summary: List the current recruiter's applicant favorites
+      operationId: listJobSeekingFavorites
+      security:
+        - PlatformSession: []
+      responses:
+        "200":
+          description: Applicant favorites, including unavailable labels
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /me/favorites/job-seeking-information/{informationId}:
+    put:
+      tags:
+        - Favorites
+      summary: Favorite applicant job-seeking information
+      operationId: favoriteJobSeekingInformation
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/InformationId"
+      responses:
+        "204":
+          description: Favorite created or already existed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - Favorites
+      summary: Unfavorite applicant job-seeking information
+      operationId: unfavoriteJobSeekingInformation
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/InformationId"
+      responses:
+        "204":
+          description: Favorite removed or did not exist
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /me/market-reports:
+    post:
+      tags:
+        - Market Reports
+      summary: Report published market information
+      operationId: createMarketReport
+      security:
+        - PlatformSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMarketReportRequest"
+      responses:
+        "201":
+          description: Market report submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MarketReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /admin/market-reports:
+    get:
+      tags:
+        - Market Reports
+      summary: List market reports for administrators
+      operationId: listMarketReports
+      security:
+        - AdminSession: []
+      responses:
+        "200":
+          description: Market report queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /admin/identity-reviews:
     get:
       tags:
@@ -649,6 +1321,37 @@ components:
       schema:
         type: string
       description: Administrator user identifier
+    PostId:
+      name: postId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Recruitment post identifier
+    InformationId:
+      name: informationId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Applicant job-seeking information identifier
+    MarketCursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Opaque cursor returned by the previous list response
+    MarketLimit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+      description: Number of cards to return
   responses:
     BadRequest:
       description: Invalid request
@@ -687,6 +1390,479 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
   schemas:
+    MarketRecruitmentPostListResponse:
+      type: object
+      required:
+        - data
+        - nextCursor
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketRecruitmentPostSummary"
+        nextCursor:
+          anyOf:
+            - type: string
+            - type: "null"
+    MarketRecruitmentPostSummary:
+      type: object
+      required:
+        - id
+        - jobType
+        - salaryRange
+        - settlementMethod
+        - locationText
+        - publishedAt
+        - status
+        - isFavorited
+      properties:
+        id:
+          type: string
+        jobType:
+          type: string
+        salaryRange:
+          type: string
+        settlementMethod:
+          type: string
+        locationText:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - published
+            - disabled
+        isFavorited:
+          type: boolean
+        coverImage:
+          type: string
+    MarketRecruitmentPostDetail:
+      allOf:
+        - $ref: "#/components/schemas/MarketRecruitmentPostSummary"
+        - type: object
+          required:
+            - images
+            - contactName
+            - contactPhone
+          properties:
+            images:
+              type: array
+              maxItems: 6
+              items:
+                $ref: "#/components/schemas/RecruitmentPostImage"
+            contactName:
+              type: string
+            contactPhone:
+              type: string
+    MarketJobSeekingListResponse:
+      type: object
+      required:
+        - data
+        - nextCursor
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketJobSeekingSummary"
+        nextCursor:
+          anyOf:
+            - type: string
+            - type: "null"
+    MarketJobSeekingSummary:
+      type: object
+      required:
+        - informationId
+        - jobTypeName
+        - expectedSalary
+        - workMethod
+        - locationText
+        - publishedAt
+        - status
+        - isFavorited
+      properties:
+        informationId:
+          type: string
+        jobTypeName:
+          type: string
+        age:
+          type: integer
+        expectedSalary:
+          type: string
+        workMethod:
+          type: string
+          enum:
+            - monthly_settlement
+            - indefinite_duration
+        locationText:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - published
+            - disabled
+        isFavorited:
+          type: boolean
+    MarketJobSeekingDetail:
+      allOf:
+        - $ref: "#/components/schemas/MarketJobSeekingSummary"
+        - type: object
+          required:
+            - contactName
+            - contactPhone
+          properties:
+            preferredWorkScope:
+              type: string
+            contactName:
+              type: string
+            contactPhone:
+              type: string
+    FavoriteListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/MarketRecruitmentPostSummary"
+              - $ref: "#/components/schemas/MarketJobSeekingSummary"
+    CreateMarketReportRequest:
+      type: object
+      required:
+        - targetType
+        - targetId
+        - reason
+      properties:
+        targetType:
+          type: string
+          enum:
+            - recruitment_post
+            - applicant_information
+        targetId:
+          type: string
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    MarketReport:
+      type: object
+      required:
+        - id
+        - targetType
+        - targetId
+        - reason
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+        targetType:
+          type: string
+          enum:
+            - recruitment_post
+            - applicant_information
+        targetId:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+          enum:
+            - open
+            - resolved
+            - rejected
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+    ApplicantJobSeekingInformationRequest:
+      type: object
+      required:
+        - jobTypeName
+        - age
+        - expectedSalary
+        - workMethod
+        - locationText
+        - latitude
+        - longitude
+      properties:
+        jobTypeName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        age:
+          type: integer
+          minimum: 1
+          maximum: 120
+        expectedSalary:
+          type: string
+          minLength: 1
+          maxLength: 100
+        workMethod:
+          type: string
+          enum:
+            - monthly_settlement
+            - indefinite_duration
+        locationText:
+          type: string
+          minLength: 1
+          maxLength: 200
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        preferredWorkScope:
+          type: string
+          maxLength: 200
+    ApplicantJobSeekingInformation:
+      allOf:
+        - $ref: "#/components/schemas/ApplicantJobSeekingInformationRequest"
+        - type: object
+          required:
+            - roleProfileId
+            - visibilityStatus
+            - publishedAt
+            - updatedAt
+          properties:
+            roleProfileId:
+              type: string
+            visibilityStatus:
+              type: string
+              enum:
+                - published
+                - disabled
+            publishedAt:
+              type: string
+              format: date-time
+            disabledAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    RecruiterInformationRequest:
+      type: object
+      required:
+        - latitude
+        - longitude
+        - detailedAddress
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        detailedAddress:
+          type: string
+          minLength: 1
+          maxLength: 300
+    RecruiterInformation:
+      allOf:
+        - $ref: "#/components/schemas/RecruiterInformationRequest"
+        - type: object
+          required:
+            - roleProfileId
+            - updatedAt
+          properties:
+            roleProfileId:
+              type: string
+            updatedAt:
+              type: string
+              format: date-time
+    ImageUploadRequest:
+      type: object
+      required:
+        - fileName
+        - contentType
+        - byteSize
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        contentType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+        byteSize:
+          type: integer
+          minimum: 1
+    ImageUploadReference:
+      type: object
+      required:
+        - objectKey
+        - uploadUrl
+        - expiresAt
+      properties:
+        objectKey:
+          type: string
+        uploadUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+    RecruitmentPostImageUpload:
+      type: object
+      required:
+        - objectKey
+        - contentType
+        - byteSize
+      properties:
+        objectKey:
+          type: string
+        contentType:
+          type: string
+        byteSize:
+          type: integer
+    RecruitmentPostRequest:
+      type: object
+      required:
+        - jobType
+        - salaryRange
+        - settlementMethod
+        - locationText
+        - latitude
+        - longitude
+        - imageKeys
+      properties:
+        jobType:
+          type: string
+          minLength: 1
+          maxLength: 120
+        salaryRange:
+          type: string
+          minLength: 1
+          maxLength: 100
+        settlementMethod:
+          type: string
+          minLength: 1
+          maxLength: 100
+        locationText:
+          type: string
+          minLength: 1
+          maxLength: 200
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        imageKeys:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+    RecruitmentPost:
+      allOf:
+        - $ref: "#/components/schemas/RecruitmentPostRequest"
+        - type: object
+          required:
+            - id
+            - recruiterRoleProfileId
+            - status
+            - publishedAt
+            - images
+            - createdAt
+            - updatedAt
+          properties:
+            id:
+              type: string
+            recruiterRoleProfileId:
+              type: string
+            status:
+              type: string
+              enum:
+                - published
+                - disabled
+            publishedAt:
+              type: string
+              format: date-time
+            disabledAt:
+              type: string
+              format: date-time
+            images:
+              type: array
+              maxItems: 6
+              items:
+                $ref: "#/components/schemas/RecruitmentPostImage"
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    RecruitmentPostImage:
+      type: object
+      required:
+        - id
+        - objectKey
+        - contentType
+        - byteSize
+        - sortOrder
+      properties:
+        id:
+          type: string
+        objectKey:
+          type: string
+        contentType:
+          type: string
+        byteSize:
+          type: integer
+        sortOrder:
+          type: integer
+    UpdateRecruitmentPostRequest:
+      type: object
+      minProperties: 1
+      properties:
+        jobType:
+          type: string
+          minLength: 1
+          maxLength: 120
+        salaryRange:
+          type: string
+          minLength: 1
+          maxLength: 100
+        settlementMethod:
+          type: string
+          minLength: 1
+          maxLength: 100
+        locationText:
+          type: string
+          minLength: 1
+          maxLength: 200
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        imageKeys:
+          type: array
+          maxItems: 6
+          items:
+            type: string
     AdminLoginRequest:
       type: object
       required:

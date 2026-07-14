@@ -1,0 +1,12 @@
+.form { margin-top: 36rpx; padding: 8rpx 32rpx 32rpx; }
+.label { display: block; padding-top: 28rpx; color: #45515a; font-size: 25rpx; }
+.label > text { color: #d94f45; }
+input, .location-button, .upload-button { width: 100%; margin-top: 14rpx; min-height: 84rpx; padding: 0 20rpx; background: #f7f8fa; border: 1rpx solid #e3e7e9; border-radius: 4rpx; color: #17212b; line-height: 84rpx; text-align: left; }
+.location-button, .upload-button { color: #0d7c66; }
+.image-list { display: flex; flex-wrap: wrap; gap: 16rpx; margin-top: 18rpx; }
+.image-item { position: relative; width: 190rpx; height: 190rpx; overflow: hidden; background: #edf5f2; border-radius: 6rpx; }
+.image-item image { width: 100%; height: 100%; }
+.image-item button { position: absolute; right: 6rpx; bottom: 6rpx; padding: 0 10rpx; background: rgba(0, 0, 0, .65); color: #fff; font-size: 21rpx; line-height: 46rpx; }
+.existing { display: flex; align-items: center; justify-content: center; padding: 16rpx; color: #0d7c66; text-align: center; }
+.existing text { font-size: 23rpx; }
+.success { margin-top: 24rpx; padding: 24rpx; background: #e9f4f0; color: #187049; }

@@ -8,7 +8,7 @@ const fieldLabels = {
 };
 const organizationLabels = { company: '企业', individual: '个体', other: '个人/其他' };
 
-const state = { token: '', admin: null, status: 'pending_review', queue: [], selected: null, loading: false };
+const state = { token: '', admin: null, status: 'pending_review', queue: [], selected: null, loading: false, users: [], reports: [], admins: [] };
 const $ = (selector) => document.querySelector(selector);
 
 function setHidden(selector, hidden) { $(selector).hidden = hidden; }
@@ -100,6 +100,45 @@ async function decide(decision, reason = '') {
   finally { state.loading = false; $('#approveButton').disabled = false; $('#submitDecision').disabled = false; }
 }
 
+function renderUsers() {
+  const list = $('#usersList'); list.replaceChildren();
+  $('#usersState').textContent = state.users.length ? `${state.users.length} 个用户` : '暂无用户';
+  state.users.forEach((user) => {
+    const row = document.createElement('div'); row.className = 'admin-row';
+    row.innerHTML = `<span><strong></strong><small></small></span><span class="admin-row-actions"><span class="status status-${user.status}">${user.status === 'active' ? '正常' : '已停用'}</span><button class="button quiet" type="button">${user.status === 'active' ? '停用' : '启用'}</button></span>`;
+    row.querySelector('strong').textContent = user.name; row.querySelector('small').textContent = `${user.email || '无邮箱'} · ${formatDate(user.createdAt)}`;
+    row.querySelector('button').addEventListener('click', async () => {
+      try { await request(`/users/${encodeURIComponent(user.id)}`, { method: 'PATCH', body: JSON.stringify({ status: user.status === 'active' ? 'disabled' : 'active' }) }); await loadUsers(); }
+      catch (error) { showError('#globalError', error.message); }
+    }); list.append(row);
+  });
+}
+
+async function loadUsers() {
+  try { state.users = await request('/users') || []; renderUsers(); } catch (error) { showError('#globalError', error.message); }
+}
+
+function renderReports() {
+  const list = $('#reportsList'); list.replaceChildren();
+  $('#reportsState').textContent = state.reports.length ? `${state.reports.length} 条举报` : '暂无举报';
+  state.reports.forEach((report) => {
+    const row = document.createElement('div'); row.className = 'admin-row';
+    row.innerHTML = `<span><strong></strong><small></small></span><span class="admin-row-actions"><span class="status">${report.status}</span><button class="button quiet" type="button">下架</button></span>`;
+    row.querySelector('strong').textContent = `${report.targetType} · ${report.targetId}`; row.querySelector('small').textContent = `${report.reason} · ${formatDate(report.createdAt)}`;
+    row.querySelector('button').disabled = report.status !== 'open';
+    row.querySelector('button').addEventListener('click', async () => { try { await request(`/admin/market-reports/${encodeURIComponent(report.id)}/decision`, { method: 'POST', body: JSON.stringify({ decision: 'resolved' }) }); await loadReports(); } catch (error) { showError('#globalError', error.message); } });
+    list.append(row);
+  });
+}
+
+async function loadReports() { try { state.reports = await request('/admin/market-reports?status=open') || []; renderReports(); } catch (error) { showError('#globalError', error.message); } }
+
+function renderAdmins() {
+  const list = $('#adminsList'); list.replaceChildren(); $('#adminsState').textContent = state.admins.length ? `${state.admins.length} 个管理员` : '暂无管理员';
+  state.admins.forEach((admin) => { const row = document.createElement('div'); row.className = 'admin-row'; row.innerHTML = `<span><strong></strong><small></small></span><span class="admin-row-actions"><span class="status">${admin.role}</span><button class="button quiet" type="button">${admin.status === 'active' ? '停用' : '启用'}</button></span>`; row.querySelector('strong').textContent = admin.loginName; row.querySelector('small').textContent = admin.status; row.querySelector('button').addEventListener('click', async () => { try { await request(`/admin/accounts/${encodeURIComponent(admin.id)}`, { method: 'PATCH', body: JSON.stringify({ status: admin.status === 'active' ? 'disabled' : 'active' }) }); await loadAdmins(); } catch (error) { showError('#globalError', error.message); } }); list.append(row); });
+}
+async function loadAdmins() { try { state.admins = await request('/admin/accounts') || []; renderAdmins(); } catch (error) { showError('#globalError', error.message); } }
+
 function selectStatus(event) {
   document.querySelectorAll('.tab').forEach((tab) => { const active = tab === event.currentTarget; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); });
   state.status = event.currentTarget.dataset.status; loadQueue();
@@ -113,3 +152,11 @@ $('#approveButton').addEventListener('click', () => decide('approved'));
 $('#changesButton').addEventListener('click', () => { setHidden('#reviewActions', true); setHidden('#decisionForm', false); $('#reason').focus(); });
 $('#cancelDecision').addEventListener('click', () => { setHidden('#reviewActions', false); setHidden('#decisionForm', true); });
 $('#submitDecision').addEventListener('click', () => { const reason = $('#reason').value.trim(); if (!reason) { $('#reason').focus(); return; } decide('changes_requested', reason); });
+$('#usersTab').addEventListener('click', () => { $('#usersPanel').hidden = false; $('#reportsPanel').hidden = true; $('#adminsPanel').hidden = true; loadUsers(); });
+$('#reportsTab').addEventListener('click', () => { $('#reportsPanel').hidden = false; $('#usersPanel').hidden = true; $('#adminsPanel').hidden = true; loadReports(); });
+$('#usersRefresh').addEventListener('click', loadUsers);
+$('#reportsRefresh').addEventListener('click', loadReports);
+$('#userForm').addEventListener('submit', async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { await request('/users', { method: 'POST', body: JSON.stringify({ name: form.get('name'), email: form.get('email') }) }); event.currentTarget.reset(); await loadUsers(); } catch (error) { showError('#globalError', error.message); } });
+$('#adminsTab').addEventListener('click', () => { $('#adminsPanel').hidden = false; $('#usersPanel').hidden = true; $('#reportsPanel').hidden = true; loadAdmins(); });
+$('#adminsRefresh').addEventListener('click', loadAdmins);
+$('#adminForm').addEventListener('submit', async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { await request('/admin/accounts', { method: 'POST', body: JSON.stringify({ loginName: form.get('loginName'), password: form.get('password'), role: form.get('role') }) }); event.currentTarget.reset(); await loadAdmins(); } catch (error) { showError('#globalError', error.message); } });

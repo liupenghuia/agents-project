@@ -3,7 +3,7 @@ const { listIdentities } = require('../../services/api');
 const statusText = { pending_review: '待人工审核', approved: '审核通过', changes_requested: '需修改资料' };
 
 Page({
-  data: { loading: true, error: '', identities: [], statusText },
+  data: { loading: true, error: '', identities: [], approvedIdentities: [], statusText },
 
   onLoad() { this.load(); },
   onShow() { if (!this.data.loading) this.load(); },
@@ -12,17 +12,22 @@ Page({
     this.setData({ loading: true, error: '' });
     getApp().ensureSession().then(() => listIdentities()).then((identities) => {
       getApp().globalData.identities = identities || [];
-      this.setData({ identities: identities || [], loading: false });
+      const list = identities || [];
+      this.setData({ identities: list, approvedIdentities: list.filter((identity) => identity.reviewStatus === 'approved'), loading: false });
     }).catch((error) => this.setData({ loading: false, error: error.message }));
   },
 
   chooseRole(event) {
     const role = event.currentTarget.dataset.role;
-    const exists = this.data.identities.some((identity) => identity.role === role);
-    if (exists) {
-      wx.navigateTo({ url: `/pages/identities/identities?role=${role}` });
-      return;
-    }
+    wx.navigateTo({ url: `/pages/register/register?role=${role}` });
+  },
+
+  enterRole(event) {
+    wx.navigateTo({ url: `/pages/role-home/role-home?role=${event.currentTarget.dataset.role}&identityId=${event.currentTarget.dataset.id}` });
+  },
+
+  createOtherRole() {
+    const role = this.data.identities.some((identity) => identity.role === 'recruiter') ? 'applicant' : 'recruiter';
     wx.navigateTo({ url: `/pages/register/register?role=${role}` });
   },
 

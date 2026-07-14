@@ -311,9 +311,16 @@ function decideReview(db, reviewerId, identityId, decision, reason) {
   try {
     db.prepare(`UPDATE role_profiles SET review_status = ?, review_reason = ?, reviewed_at = ?, updated_at = ? WHERE id = ?`)
       .run(decision, decision === 'changes_requested' ? text(reason) : null, timestamp, timestamp, identityId);
-    db.prepare(`INSERT INTO review_actions(id, role_profile_id, admin_user_id, decision, reason, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)`)
-      .run(randomBytes(16).toString('hex'), identityId, reviewerId, decision, text(reason) || null, timestamp);
+    const reviewColumns = db.prepare('PRAGMA table_info(review_actions)').all().map((column) => column.name);
+    if (reviewColumns.includes('reviewer_user_id')) {
+      db.prepare(`INSERT INTO review_actions(id, role_profile_id, admin_user_id, reviewer_user_id, decision, reason, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`)
+        .run(randomBytes(16).toString('hex'), identityId, reviewerId, reviewerId, decision, text(reason) || null, timestamp);
+    } else {
+      db.prepare(`INSERT INTO review_actions(id, role_profile_id, admin_user_id, decision, reason, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)`)
+        .run(randomBytes(16).toString('hex'), identityId, reviewerId, decision, text(reason) || null, timestamp);
+    }
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');

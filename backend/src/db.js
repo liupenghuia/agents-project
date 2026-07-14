@@ -111,7 +111,16 @@ export function createDatabase(path = process.env.DATABASE_PATH || ':memory:') {
     CREATE INDEX IF NOT EXISTS review_queue_idx ON role_profiles(review_status, submitted_at);
     CREATE INDEX IF NOT EXISTS review_history_idx ON review_actions(role_profile_id, created_at);
   `);
+  migrateReviewActions(db);
   return db;
+}
+
+function migrateReviewActions(db) {
+  const columns = db.prepare('PRAGMA table_info(review_actions)').all().map((column) => column.name);
+  if (columns.includes('reviewer_user_id') && !columns.includes('admin_user_id')) {
+    // Preserve historical WeChat-review records while moving new decisions to admin sessions.
+    db.exec('ALTER TABLE review_actions ADD COLUMN admin_user_id TEXT REFERENCES admin_accounts(user_id)');
+  }
 }
 
 export function grantReviewer(db, userId) {

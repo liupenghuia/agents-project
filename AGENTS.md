@@ -49,9 +49,21 @@ Short task names map to `tasks/<task>.md`. See `COMMANDS.md` for examples.
 - Do not mark a task `Done` unless the validator and all applicable quality gates pass.
 - Record exact commands and results. If a required check cannot run, use `Blocked`; never report an assumed pass.
 
+## Closed-Loop Delivery Rules
+
+- `交付 <task>` / `deliver <task>` must use `ruby scripts/deliver.rb <task>` as the local execution entry point after implementation and after every fix round.
+- The delivery runner must execute all required backend, frontend target, service health, and applicable integration checks selected by task front matter.
+- A failed runner check is actionable failure evidence. Route it to the owning scope, create or update the linked issue, and run the repair/retest loop; do not manually mark the check as passed.
+- The repair/retest loop is bounded by the runner's configured maximum rounds. When no repair command, tool, credential, or platform environment is available, record the exact blocker and stop at `Blocked` or the appropriate failed gate.
+- A runner pass is necessary evidence, but it does not by itself close issues or mark a task `Done`; Test Agent still owns acceptance-criterion evidence, independent retest, and final test status.
+- Preserve runner reports and log paths in the task verification evidence or handoff. The default evidence root is `/tmp/ppfiles-learn-delivery/<task-id>/`.
+- Never bypass production deployment approval, secret access, destructive changes, real WeChat authorization, or unavailable platform-specific checks through the runner.
+
 ## Autonomous Delivery
 
 `交付 <task>` runs the full loop: Product -> Architect -> required implementation scopes -> Test -> issue fix/retest -> release gate -> Done.
+
+The executable local loop is `ruby scripts/deliver.rb <task>`. The command is an orchestrator aid, not a replacement for role ownership or Test Agent closure.
 
 - If the task is missing, Product may promote a matching `Approved` idea; otherwise stop at the product decision required.
 - Continue through reversible repository edits and local verification without asking between phases.

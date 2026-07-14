@@ -1,0 +1,5 @@
+.signed-in { display: flex; align-items: flex-start; gap: 20rpx; margin-top: 40rpx; background: #e9f4f0; border-color: #c9e7dd; }
+.check { display: grid; width: 44rpx; height: 44rpx; place-items: center; border-radius: 50%; background: #0d7c66; color: #fff; font-weight: 700; }
+.signed-title { display: block; margin-bottom: 8rpx; font-weight: 700; }
+.placeholder { margin-top: 20rpx; }
+.placeholder .section-title { margin: 0 0 12rpx; }

@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="eyebrow">{{role === 'recruiter' ? '招人方' : '应聘方'}}工作区</view>
+  <text class="title">{{role === 'recruiter' ? '开始招人' : '开始应聘'}}</text>
+  <view class="signed-in panel"><text class="check">✓</text><view><text class="signed-title">已登录，身份审核通过</text><text class="muted">当前身份已确认，可以进入对应服务。</text></view></view>
+  <view class="panel placeholder"><text class="section-title">第一阶段已完成</text><text class="muted">{{role === 'recruiter' ? '职位发布和候选人管理将在后续版本开放。' : '职位浏览和投递将在后续版本开放。'}}</text></view>
+  <button class="button-secondary" bindtap="backHome">切换身份</button>
+</view>

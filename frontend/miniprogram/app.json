@@ -2,7 +2,8 @@
   "pages": [
     "pages/home/home",
     "pages/register/register",
-    "pages/identities/identities"
+    "pages/identities/identities",
+    "pages/role-home/role-home"
   ],
   "window": {
     "navigationBarTitleText": "寻职",

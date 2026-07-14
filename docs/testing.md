@@ -91,6 +91,16 @@ Validate:
 - A missing tool, environment, fixture, or credential is a blocker, not a passing result.
 - Run `ruby scripts/validate_workflow.rb` before the final task transition.
 
+## Automated Delivery Verification
+
+The Test Agent and Orchestrator use `ruby scripts/deliver.rb <task>` to run the repeatable local verification loop. The runner reads `required_scopes` and `frontend_targets`, runs the applicable module checks, starts local backend/Web services for health checks, and writes command output and service logs under `/tmp/ppfiles-learn-delivery/<task-id>/`.
+
+- A runner failure is a test failure with evidence, not an environment-independent assumption of failure or success.
+- When `DELIVERY_REPAIR_COMMAND` is configured, the runner may invoke the repair owner and repeat checks for a bounded number of rounds.
+- When repair cannot run, the missing tool, credential, fixture, or platform environment is recorded as a blocker.
+- A passing runner does not close issues or replace independent Test Agent acceptance-criterion verification.
+- WeChat DevTools authorization, real Mini Program rendering, production deployment, and other explicitly manual gates remain separate evidence items.
+
 ## Definition of Done
 
 A task is done only when:

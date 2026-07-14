@@ -17,3 +17,11 @@
 .status-pending_review { background: #fff5d6; color: #8e6811; }
 .status-approved { background: #e6f6ee; color: #187049; }
 .status-changes_requested { background: #fff0ee; color: #a53b34; }
+.approved-section { margin-top: 36rpx; }
+.signed-in { display: block; color: #187049; font-size: 24rpx; font-weight: 600; }
+.entry-card { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 16rpx; padding: 28rpx 24rpx; background: #e9f4f0; border: 1rpx solid #c9e7dd; border-radius: 8rpx; color: #0d5e50; text-align: left; }
+.entry-title, .entry-desc { display: block; }
+.entry-title { font-size: 32rpx; font-weight: 700; }
+.entry-desc { margin-top: 8rpx; color: #4c8175; font-size: 23rpx; }
+.entry-arrow { font-weight: 700; }
+.other-role { margin-top: 20rpx; }

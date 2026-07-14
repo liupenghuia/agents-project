@@ -142,4 +142,6 @@ Severity is `P0` production/security/data-loss impact, `P1` core flow blocked, `
 6. When `DELIVERY_REPAIR_COMMAND` is configured, run the repair command with `DELIVERY_TASK`, `DELIVERY_ROUND`, and `DELIVERY_RUN_DIR`, then repeat checks.
 7. Stop after the configured maximum rounds; never report a passing task from an assumed or skipped check.
 
+Runner failure handling follows the issue state machine: Test Agent records an actionable failure under `issues/`, the owning role fixes it and marks it `Ready for Retest`, and Test Agent independently retests it. The runner may provide failure evidence and invoke the configured repair command, but it does not close issues or bypass task status gates.
+
 The runner does not bypass human approval for production deployment, secrets, destructive changes, or real WeChat authorization. Platform-specific Mini Program checks remain explicit manual or DevTools gates.

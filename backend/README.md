@@ -30,6 +30,17 @@ Environment variables for a real WeChat integration:
 - `ADMIN_BOOTSTRAP_PASSWORD`: local-only initial owner password, minimum 12 characters; ignored/forbidden in production.
 - `MEDIA_ROOT`: local image-storage directory; defaults to `media` under the backend process working directory.
 
+For production, initialize the first owner before starting the server:
+
+```bash
+NODE_ENV=production DATABASE_PATH=/var/lib/agents-project/recruitment.sqlite \
+ADMIN_BOOTSTRAP_LOGIN_NAME=owner \
+ADMIN_BOOTSTRAP_PASSWORD='use-a-random-12-plus-character-secret' \
+npm run admin:bootstrap
+```
+
+The command refuses to run when any administrator already exists and does not expose the password through the application server. Do not set `ADMIN_BOOTSTRAP_PASSWORD` in the production server environment after initialization.
+
 Without WeChat credentials, the session and phone endpoints return `WECHAT_NOT_CONFIGURED` unless development mock mode is enabled. Tests inject provider adapters and never call WeChat.
 
 The phone endpoint is `POST /auth/wechat/phone` with a platform session bearer token and the one-time `code` returned by `wx.getPhoneNumber`. The backend exchanges the code with WeChat; the AppSecret is never sent to the Mini Program.

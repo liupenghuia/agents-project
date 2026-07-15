@@ -1,13 +1,16 @@
 const {
   createImageUploadUrl, createRecruitmentPost, disableRecruitmentPost, getRecruitmentPost,
-  updateRecruitmentPost, uploadRecruitmentImage,
+  renewRecruitmentPost, updateRecruitmentPost, uploadRecruitmentImage,
 } = require('../../services/api');
-const { validateRecruitmentPost } = require('../../utils/information');
+const { sensitiveContentHints, validateRecruitmentPost } = require('../../utils/information');
 const { getFileInfo, imageContentType } = require('../../utils/media');
 const { ownerStatusView, savedMessage } = require('../../utils/market-status');
 
 Page({
-  data: { loading: true, saving: false, disabling: false, error: '', saved: false, savedMessage: '', postId: '', form: { imageKeys: [] }, statusView: {}, existingImages: [], imagePaths: [], imageCount: 0 },
+  data: {
+    loading: true, saving: false, disabling: false, renewing: false, error: '', saved: false, savedMessage: '',
+    postId: '', form: { imageKeys: [] }, statusView: {}, existingImages: [], imagePaths: [], imageCount: 0, hints: [],
+  },
 
   onLoad(options) {
     this.setData({ postId: options.postId || '' });
@@ -18,17 +21,41 @@ Page({
     this.setData({ loading: true, error: '' });
     getApp().ensureSession().then(() => postId ? getRecruitmentPost(postId) : null)
       .then((post) => {
-        if (!post) { this.setData({ loading: false, statusView: ownerStatusView({}, false) }); return; }
+        if (!post) {
+          const draft = wx.getStorageSync('recruitmentPostDraft') || {};
+          this.setData({ loading: false, form: draft, imageCount: (draft.imageKeys || []).length, statusView: ownerStatusView({}, false) });
+          return;
+        }
         const imageKeys = (post.images || []).map((image) => image.objectKey);
         this.setData({ loading: false, form: { ...post, imageKeys }, statusView: ownerStatusView(post, true), existingImages: post.images || [], imageCount: imageKeys.length });
       }).catch((error) => this.setData({ loading: false, error: error.message }));
   },
 
-  input(event) { this.setData({ [`form.${event.currentTarget.dataset.field}`]: event.detail.value, error: '', saved: false }); },
+  input(event) {
+    this.setData({ [`form.${event.currentTarget.dataset.field}`]: event.detail.value, error: '', saved: false }, () => {
+      this.saveDraft();
+      this.setData({ hints: sensitiveContentHints(this.data.form) });
+    });
+  },
+  saveDraft() { if (!this.data.postId) wx.setStorageSync('recruitmentPostDraft', this.data.form); },
+  clearDraft() {
+    wx.removeStorageSync('recruitmentPostDraft');
+    this.setData({ form: { imageKeys: [] }, imagePaths: [], imageCount: 0, hints: [], error: '', saved: false });
+    wx.showToast({ title: '草稿已删除', icon: 'success' });
+  },
+  preview() {
+    const form = this.data.form;
+    this.saveDraft();
+    wx.showModal({
+      title: '发布预览',
+      content: `${form.jobType || '未填写工种'}\n${form.salaryRange || '未填写薪资'}\n${form.locationText || '未选择位置'}${this.data.hints.length ? `\n提示：${this.data.hints.join('；')}` : ''}`,
+      showCancel: false,
+    });
+  },
 
   chooseLocation() {
     wx.chooseLocation({
-      success: (location) => this.setData({ 'form.locationText': location.name || location.address, 'form.latitude': location.latitude, 'form.longitude': location.longitude, error: '', saved: false }),
+      success: (location) => this.setData({ 'form.locationText': location.name || location.address, 'form.latitude': location.latitude, 'form.longitude': location.longitude, error: '', saved: false }, () => this.saveDraft()),
       fail: () => this.setData({ error: '定位未完成，请允许定位权限后重试' }),
     });
   },
@@ -38,7 +65,7 @@ Page({
     if (remaining <= 0) { this.setData({ error: '最多上传 6 张图片' }); return; }
     wx.chooseMedia({ count: remaining, mediaType: ['image'], sourceType: ['album', 'camera'], success: ({ tempFiles }) => {
       const paths = (tempFiles || []).map((file) => file.tempFilePath);
-      this.setData({ imagePaths: this.data.imagePaths.concat(paths), imageCount: this.data.imageCount + paths.length, error: '', saved: false });
+      this.setData({ imagePaths: this.data.imagePaths.concat(paths), imageCount: this.data.imageCount + paths.length, error: '', saved: false }, () => this.saveDraft());
     }, fail: () => this.setData({ error: '未选择图片，请重试' }) });
   },
 
@@ -50,7 +77,7 @@ Page({
     const imagePaths = this.data.imagePaths.slice();
     if (kind === 'existing') { imageKeys.splice(index, 1); existingImages.splice(index, 1); }
     else imagePaths.splice(index, 1);
-    this.setData({ 'form.imageKeys': imageKeys, existingImages, imagePaths, imageCount: imageKeys.length + imagePaths.length, error: '', saved: false });
+    this.setData({ 'form.imageKeys': imageKeys, existingImages, imagePaths, imageCount: imageKeys.length + imagePaths.length, error: '', saved: false }, () => this.saveDraft());
   },
 
   validate() {
@@ -77,6 +104,7 @@ Page({
     }).then((post) => {
       const imageKeys = (post.images || []).map((image) => image.objectKey);
       this.setData({ saving: false, saved: true, savedMessage: savedMessage(post.status), postId: post.id, form: { ...post, imageKeys }, statusView: ownerStatusView(post, true), existingImages: post.images || [], imagePaths: [], imageCount: imageKeys.length });
+      wx.removeStorageSync('recruitmentPostDraft');
     }).catch((requestError) => this.setData({ saving: false, error: requestError.message }));
   },
 
@@ -91,6 +119,19 @@ Page({
         wx.showToast({ title: '已下架', icon: 'success' });
       }).catch((error) => this.setData({ disabling: false, error: error.message }));
     } });
+  },
+
+  renew() {
+    if (!this.data.postId || this.data.renewing || this.data.saving) return;
+    this.setData({ renewing: true, error: '' });
+    renewRecruitmentPost(this.data.postId).then((post) => {
+      const imageKeys = (post.images || []).map((image) => image.objectKey);
+      this.setData({
+        renewing: false, form: { ...post, imageKeys }, statusView: ownerStatusView(post, true),
+        existingImages: post.images || [], imageCount: imageKeys.length, saved: true, savedMessage: '已续期，信息继续公开',
+      });
+      wx.showToast({ title: '已续期', icon: 'success' });
+    }).catch((error) => this.setData({ renewing: false, error: error.message }));
   },
 
   retry() { this.load(this.data.postId); },

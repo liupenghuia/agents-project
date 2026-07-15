@@ -49,11 +49,20 @@ Minimum scope:
 - Show new users two entry choices: `招人` and `应聘`.
 - Provide separate minimum registration flows for each identity.
 - Follow WeChat Mini Program authorization, privacy, and user agreement requirements.
-- Allow one WeChat user to own both a recruiter identity and an applicant identity.
-- Keep each created identity type immutable; creating the other identity uses a separate registration flow.
+- Bind the authorized phone number to exactly one role: `招人` or `应聘`.
+- Keep the role immutable after phone authorization; the same phone number cannot register or switch to the other role.
+- On later launches, restore the existing WeChat session and enter the bound role workspace directly when the session is valid.
 - Submit registration profiles for manual review.
 - Show `待审核`, `通过`, and `拒绝/需修改` states with actionable feedback.
 - Do not perform real-name verification, identity document collection, or enterprise certification in phase one.
+
+Mini Program entry and navigation:
+
+- After role selection, show a short registration flow and complete phone-number authorization before submitting the role profile.
+- The first launch may show a minimal startup page with only the product name and one or two short status lines; it must transition automatically after session restoration.
+- A returning user with a valid session must not repeat role selection, phone authorization, or registration. Expired sessions may request WeChat login again, then restore the bound role.
+- An authorized phone number already bound to the other role must be rejected with a clear explanation and a recovery path; it must not create a second identity.
+- Every approved role workspace has three persistent bottom tabs: `地图`, `列表`, and `我的`. Tab switching preserves role and relevant map/list filters and does not route through the role-selection home page.
 
 ### Applicant Job-Seeking Information
 
@@ -94,6 +103,8 @@ Minimum scope:
 - Applicants can browse recruiter-published recruitment information.
 - Recruiters can browse applicant-published job-seeking information.
 - Both directions provide list cards, filters, cursor pagination, detail pages, and empty/loading/error/retry states.
+- Filters open in a dedicated, readable filter sheet/page with explicit selected values, reset, cancel, and apply actions; applying filters resets pagination and updates both map and list consistently.
+- List cards use a consistent compact hierarchy: title, key salary/work method, area summary, publication time, and status where applicable; contact details, precise addresses, internal IDs, and long unbounded text are excluded.
 - Every published card and detail includes `publishedAt`; lists default to newest first.
 - Contact information is required on detail responses and detail pages, but is not shown in list cards.
 - Contact details are available only to authenticated users with the corresponding approved identity; contact views are logged and rate-limited.
@@ -101,6 +112,9 @@ Minimum scope:
 - Recruiters can favorite and unfavorite job-seeking information and view a dedicated “我的收藏” module.
 - Owners can disable their own published information; disabled information leaves public lists and cannot expose contact details.
 - Users can report inappropriate recruitment or job-seeking information; administrators can disable reported content through protected backend operations.
+- Reporting requires a selectable or text reason, prevents duplicate submission while pending, confirms successful submission, and exposes retry/error states without losing the entered reason.
+- Favorite actions provide immediate pending/success/failure feedback, prevent duplicate taps, confirm destructive unfavorite actions where needed, and keep list, detail, and `我的收藏` state synchronized.
+- The favorites module supports loading, empty, unavailable/removed item, retry, and return-to-detail states; unavailable items cannot expose contact details.
 - Precise building addresses remain private in the first version; public details show only an allowed location summary.
 
 First-version non-goals:
@@ -158,6 +172,10 @@ Out of scope:
 
 第一版不包含路线规划、实时位置、自动匹配、推荐算法、聊天、投递、通知、iOS、Android 或普通用户 Web 端。
 
+### 第一阶段核心闭环完善
+
+第一阶段优先完善现有产品闭环：身份自动承接、地图/列表/我的工作区、资料和发布管理、市场筛选与详情、收藏举报拉黑，以及微信 DevTools/真机和生产上线验收。聊天、推荐、投递、通知、支付和商业化不纳入本阶段。
+
 ## Non-Functional Requirements
 
 ### Security
@@ -195,3 +213,17 @@ Out of scope:
 - Issues must be fixed by the owning agent and retested by the Test Agent.
 - Login authentication is not complete until registration, login, logout, current-user lookup, protected route behavior, and invalid-session behavior are all testable.
 - Mobile-authored flows are not complete until iOS and Android behavior is testable where mobile delivery is in scope.
+
+### Prioritized Extension Roadmap
+
+After the first core-closure phase, the next product priority is search and quality: richer filters, explainable rule-based matching, drafts, preview, media/text validation and publication expiry. These items must complete before communication or application flows.
+
+The following priority adds in-product communication, job-seeking interest/application, recruiter candidate handling and interview states. It remains product-design pending until search and quality work has passed its test gate. AI recommendations, payments, enterprise verification and commercialization remain out of scope for both priorities.
+
+The complete priority definitions are recorded in:
+
+- `tasks/phase-one-product-completion.md`: identity restoration, workspaces, profile/publication management, market usability and safety. Status: Done.
+- `tasks/phase-two-discovery-and-quality.md`: advanced search/filter, explainable matching, drafts, preview, validation and expiry. Status: Done.
+- `tasks/phase-three-communication-and-recruitment.md`: messaging, applications, invitations and interviews. Status: Done.
+
+Any future priority decision must update the relevant task file, acceptance criteria, state/error requirements and handoff log in the same change; conversational planning alone is not considered recorded product scope.

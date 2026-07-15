@@ -28,5 +28,6 @@ Page({
       }).catch((error) => this.setData({ removingId: '', error: error.message }));
     } });
   },
+  open(event) { wx.navigateTo({ url: `/pages/market-detail/market-detail?role=${this.data.role}&id=${event.currentTarget.dataset.id}` }); },
   retry() { this.load(); },
 });

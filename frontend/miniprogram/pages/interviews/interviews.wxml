@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="eyebrow">招聘协作</view>
+  <text class="title">面试安排</text>
+  <view wx:if="{{role === 'recruiter' && applicantUserId}}" class="panel form">
+    <label>面试时间<input data-field="scheduledAt" value="{{form.scheduledAt}}" bindinput="input" placeholder="例如 2026-07-20T10:00:00.000Z" /></label>
+    <label>地点摘要<input data-field="locationText" value="{{form.locationText}}" bindinput="input" placeholder="例如 线上面试 / 办公室摘要" /></label>
+    <button class="button-primary" loading="{{creating}}" disabled="{{creating}}" bindtap="create">发出邀请</button>
+  </view>
+  <view wx:if="{{loading}}" class="loading">正在读取面试...</view>
+  <view wx:elif="{{!items.length && !error}}" class="panel empty">暂无面试安排</view>
+  <view wx:for="{{items}}" wx:key="id" class="panel interview-card">
+    <text class="action-title">{{item.locationText}}</text>
+    <text class="muted">时间：{{item.scheduledAt}}</text>
+    <text class="muted">状态：{{item.status}}</text>
+    <text wx:if="{{item.cancelReason}}" class="muted">取消原因：{{item.cancelReason}}</text>
+    <view class="actions">
+      <button wx:if="{{item.mineAsApplicant && item.status === 'invited'}}" data-id="{{item.id}}" data-decision="accept" bindtap="respond">接受</button>
+      <button wx:if="{{item.mineAsApplicant && item.status === 'invited'}}" data-id="{{item.id}}" data-decision="decline" bindtap="respond">拒绝</button>
+      <button wx:if="{{(item.mineAsApplicant || item.mineAsRecruiter) && (item.status === 'invited' || item.status === 'accepted')}}" data-id="{{item.id}}" bindtap="cancel">取消</button>
+    </view>
+  </view>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+</view>

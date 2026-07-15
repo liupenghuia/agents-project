@@ -4,8 +4,26 @@
 
 - Before editing, read the nearest role `AGENTS.md`, then this file.
 - Read `docs/delivery-workflow.md` and the target idea/task before work.
+- For repeated iterations or follow-up optimization, also follow `docs/iterative-implementation-guidelines.md` to keep context and change scope bounded.
+- For product requests from a non-technical owner, use `docs/product-request-template.md`; the owner describes only the requirement and desired user outcome, then `顺序完成` starts the role-separated delivery loop.
 - Role instructions may tighten, but never weaken, this contract.
 - Preserve unrelated user changes; never discard work to resolve a conflict silently.
+
+## Iteration Contract
+
+- Treat the user's latest explicit intent and the task acceptance criteria as the current source of truth.
+- Establish a short current-state baseline before editing; do not repeatedly reload unrelated modules or re-infer already recorded decisions.
+- Make the smallest change that produces observable acceptance evidence. Record adjacent improvements as follow-up work instead of silently expanding the current request.
+- Separate confirmed requirements from visual or structural preferences that are still being optimized.
+- End each implementation round with exact verification evidence, a diff-scope check, and one clearly prioritized next action.
+
+## Product Owner Entry Point
+
+- Treat the product owner's latest requirement and desired user outcome as the primary intent.
+- Before implementation, Product Agent owns scope and acceptance criteria; Architect owns technical boundaries; Backend and Frontend own implementation; Test owns independent acceptance evidence.
+- When the product owner says `顺序完成`, continue through the documented delivery phases without asking for confirmation between reversible repository steps.
+- Pause only for product tradeoffs, production release, real user data, secrets, paid external actions, irreversible changes, or unavailable required platform access.
+- Keep the final report non-technical and state whether the product is ready to experience.
 
 ## Sources of Truth
 

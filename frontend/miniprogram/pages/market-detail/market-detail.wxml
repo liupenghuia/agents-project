@@ -1,0 +1,18 @@
+<view class="page detail-page">
+  <view wx:if="{{loading}}" class="loading">正在读取详情...</view>
+  <view wx:elif="{{item}}">
+    <view class="detail-intro"><text class="eyebrow">{{role === 'applicant' ? '招聘信息' : '求职信息'}}</text><text class="title">{{item.jobType || item.jobTypeName}}</text><text class="published">发布时间：{{item.publishedAt}}</text></view>
+    <view class="info-section"><view class="info-row"><text>薪资</text><text>{{item.salaryRange || item.expectedSalary}}</text></view><view class="info-row"><text>方式</text><text>{{item.settlementMethod || item.workMethod}}</text></view><view class="info-row"><text>位置</text><text>{{item.locationText}}</text></view><view wx:if="{{item.preferredWorkScope}}" class="info-row"><text>工作范围</text><text>{{item.preferredWorkScope}}</text></view></view>
+    <scroll-view wx:if="{{item.images.length}}" class="detail-images" scroll-x><image wx:for="{{item.images}}" wx:key="id" src="{{item.url}}" mode="aspectFill" /></scroll-view>
+    <view class="contact-box"><view><text class="contact-label">{{item.contactName || '联系方式'}}</text><text class="contact-phone">{{item.contactPhone}}</text></view><button bindtap="call">拨打电话</button></view>
+    <view class="primary-actions">
+      <button class="favorite" loading="{{actionLoading}}" bindtap="message">站内沟通</button>
+      <button wx:if="{{role === 'applicant'}}" loading="{{actionLoading}}" bindtap="apply">表达兴趣</button>
+      <button class="favorite" loading="{{actionLoading}}" bindtap="favorite">{{item.isFavorited ? '取消收藏' : '收藏'}}</button>
+      <button bindtap="report">举报</button>
+      <button bindtap="block">拉黑</button>
+    </view>
+  </view>
+  <view wx:if="{{reporting}}" class="report-sheet"><text class="report-title">举报原因</text><textarea value="{{reportReason}}" bindinput="inputReport" placeholder="请描述问题" maxlength="1000" /><view><button bindtap="cancelReport">取消</button><button class="favorite" loading="{{actionLoading}}" bindtap="submitReport">提交举报</button></view></view>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+</view>

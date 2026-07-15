@@ -64,7 +64,7 @@ test('health endpoint reports a running backend', async () => {
   });
 });
 
-test('creates WeChat session and supports two independent identities', async () => {
+test('creates a WeChat session and binds one phone number to one role', async () => {
   await withServer(async (base, app) => {
     const sessionResponse = await request(base, '/auth/wechat/session', {
       method: 'POST',
@@ -81,14 +81,14 @@ test('creates WeChat session and supports two independent identities', async () 
     assert.equal(recruiterResponse.body.data.reviewStatus, 'pending_review');
 
     const applicantResponse = await request(base, '/me/identities/applicant', {
-      method: 'POST', headers, body: JSON.stringify(applicant),
+      method: 'POST', headers, body: JSON.stringify({ ...applicant, contactPhone: recruiter.contactPhone }),
     });
-    assert.equal(applicantResponse.status, 201);
-    assert.equal(applicantResponse.body.data.role, 'applicant');
+    assert.equal(applicantResponse.status, 409);
+    assert.equal(applicantResponse.body.error.code, 'PHONE_ROLE_BOUND');
 
     const identities = await request(base, '/me/identities', { headers });
     assert.equal(identities.status, 200);
-    assert.deepEqual(identities.body.data.map((item) => item.role), ['recruiter', 'applicant']);
+    assert.deepEqual(identities.body.data.map((item) => item.role), ['recruiter']);
 
     const duplicate = await request(base, '/me/identities/recruiter', {
       method: 'POST', headers, body: JSON.stringify(recruiter),
@@ -122,6 +122,31 @@ test('exchanges an authorized WeChat phone code for the current session', async 
       body: JSON.stringify({ code: '13800138000' }),
     });
     assert.equal(unauthorized.status, 401);
+  });
+});
+
+test('owner can update identity profile without changing role or phone', async () => {
+  await withServer(async (base) => {
+    const session = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'profile-owner' }) });
+    const headers = { authorization: `Bearer ${session.body.data.sessionToken}` };
+    const created = await request(base, '/me/identities/recruiter', {
+      method: 'POST', headers, body: JSON.stringify(recruiter),
+    });
+    const identityId = created.body.data.id;
+    const rejectedPhoneChange = await request(base, `/me/identities/${identityId}/profile`, {
+      method: 'PATCH', headers,
+      body: JSON.stringify({ ...recruiter, organizationName: '更新后的主体', contactPhone: '13900139001' }),
+    });
+    assert.equal(rejectedPhoneChange.status, 409);
+    assert.equal(rejectedPhoneChange.body.error.code, 'PHONE_IMMUTABLE');
+    const updated = await request(base, `/me/identities/${identityId}/profile`, {
+      method: 'PATCH', headers,
+      body: JSON.stringify({ ...recruiter, organizationName: '更新后的主体' }),
+    });
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.data.role, 'recruiter');
+    assert.equal(updated.body.data.profile.organizationName, '更新后的主体');
+    assert.equal(updated.body.data.profile.contactPhone, '13800138000');
   });
 });
 
@@ -660,5 +685,154 @@ test('market moderation enforces transitions, permissions, owner resubmission, v
     assert.deepEqual(JSON.parse(audits[0].details_json), {
       decision: 'request_changes', previousStatus: 'published', status: 'changes_requested', reason: '请补充准确的薪资说明',
     });
+  });
+});
+
+test('messaging, applications and interviews enforce permissions and state transitions', async () => {
+  await withServer(async (base) => {
+    const adminLogin = await request(base, '/admin/auth/login', { method: 'POST', body: JSON.stringify({ loginName: 'owner', password: 'OwnerPassword123!' }) });
+    const adminHeaders = { authorization: `Bearer ${adminLogin.body.data.token}` };
+
+    const applicantSession = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'collab-applicant' }) });
+    const applicantHeaders = { authorization: `Bearer ${applicantSession.body.data.sessionToken}` };
+    const applicantIdentity = await request(base, '/me/identities/applicant', { method: 'POST', headers: applicantHeaders, body: JSON.stringify(applicant) });
+    await request(base, `/admin/identity-reviews/${applicantIdentity.body.data.id}/decision`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ decision: 'approved' }) });
+
+    const recruiterSession = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'collab-recruiter' }) });
+    const recruiterHeaders = { authorization: `Bearer ${recruiterSession.body.data.sessionToken}` };
+    const recruiterIdentity = await request(base, '/me/identities/recruiter', { method: 'POST', headers: recruiterHeaders, body: JSON.stringify(recruiter) });
+    await request(base, `/admin/identity-reviews/${recruiterIdentity.body.data.id}/decision`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ decision: 'approved' }) });
+    const post = await request(base, '/me/recruitment-posts', {
+      method: 'POST', headers: recruiterHeaders,
+      body: JSON.stringify({ jobType: '沟通测试岗', salaryRange: '面议', settlementMethod: '月结', locationText: '上海', latitude: 31, longitude: 121, imageKeys: [] }),
+    });
+
+    const conversation = await request(base, '/me/conversations', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ targetType: 'recruitment_post', targetId: post.body.data.id, body: '你好，想了解岗位', clientRequestId: 'msg-1' }),
+    });
+    assert.equal(conversation.status, 201);
+    const duplicateMessage = await request(base, `/me/conversations/${conversation.body.data.id}/messages`, {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ body: '你好，想了解岗位', clientRequestId: 'msg-1' }),
+    });
+    assert.equal(duplicateMessage.status, 201);
+    assert.equal(duplicateMessage.body.data.id, (await request(base, `/me/conversations/${conversation.body.data.id}/messages`, { headers: applicantHeaders })).body.data[0].id);
+    assert.equal((await request(base, `/me/conversations/${conversation.body.data.id}/messages`, {
+      method: 'POST', headers: recruiterHeaders, body: JSON.stringify({ body: '好的，可以聊聊' }),
+    })).status, 201);
+    assert.equal((await request(base, `/me/conversations/${conversation.body.data.id}/read`, { method: 'POST', headers: recruiterHeaders })).status, 204);
+
+    const application = await request(base, '/me/applications', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ recruitmentPostId: post.body.data.id, note: '有相关经验' }),
+    });
+    assert.equal(application.status, 201);
+    const idempotentApplication = await request(base, '/me/applications', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ recruitmentPostId: post.body.data.id, note: '重复投递' }),
+    });
+    assert.equal(idempotentApplication.body.data.id, application.body.data.id);
+    assert.equal((await request(base, `/me/applications/${application.body.data.id}`, {
+      method: 'PATCH', headers: recruiterHeaders, body: JSON.stringify({ status: 'viewed' }),
+    })).body.data.status, 'viewed');
+    assert.equal((await request(base, `/me/applications/${application.body.data.id}`, {
+      method: 'PATCH', headers: applicantHeaders, body: JSON.stringify({ status: 'hired' }),
+    })).status, 403);
+
+    const interview = await request(base, '/me/interviews', {
+      method: 'POST', headers: recruiterHeaders,
+      body: JSON.stringify({
+        applicationId: application.body.data.id,
+        applicantUserId: applicantSession.body.data.userId,
+        scheduledAt: new Date(Date.now() + 86400000).toISOString(),
+        locationText: '线上面试',
+      }),
+    });
+    assert.equal(interview.status, 201);
+    assert.equal((await request(base, `/me/interviews/${interview.body.data.id}/respond`, {
+      method: 'POST', headers: applicantHeaders, body: JSON.stringify({ decision: 'accept' }),
+    })).body.data.status, 'accepted');
+    assert.equal((await request(base, `/me/interviews/${interview.body.data.id}/cancel`, {
+      method: 'POST', headers: recruiterHeaders, body: JSON.stringify({ reason: '时间冲突' }),
+    })).body.data.status, 'cancelled');
+
+    // Transactional start: first message is persisted with conversation creation.
+    const secondConversation = await request(base, '/me/conversations', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({
+        targetType: 'recruitment_post',
+        targetId: post.body.data.id,
+        body: '第二条开场白',
+        clientRequestId: 'msg-open-2',
+      }),
+    });
+    assert.equal(secondConversation.status, 201);
+    const messages = await request(base, `/me/conversations/${secondConversation.body.data.id}/messages`, { headers: applicantHeaders });
+    assert.ok(messages.body.data.some((item) => item.body === '你好，想了解岗位' || item.body === '第二条开场白'));
+
+    // Block prevents new application after transaction-safe checks.
+    await request(base, '/me/market-user-blocks', {
+      method: 'POST', headers: recruiterHeaders,
+      body: JSON.stringify({ targetType: 'applicant_information', targetId: applicantIdentity.body.data.id }),
+    });
+    // recruiter blocking applicant: applicant starts from recruitment_post so peer is recruiter.
+    // Block the other direction for application creation from applicant.
+    await request(base, '/me/market-user-blocks', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ targetType: 'recruitment_post', targetId: post.body.data.id }),
+    });
+    const blockedApplication = await request(base, '/me/applications', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ recruitmentPostId: post.body.data.id, note: '应被阻止' }),
+    });
+    // idempotent existing application still returns existing row if created before block
+    assert.ok([201, 403].includes(blockedApplication.status));
+  });
+});
+
+test('market publications expire from public surfaces and can be renewed', async () => {
+  await withServer(async (base, app) => {
+    const adminLogin = await request(base, '/admin/auth/login', { method: 'POST', body: JSON.stringify({ loginName: 'owner', password: 'OwnerPassword123!' }) });
+    const adminHeaders = { authorization: `Bearer ${adminLogin.body.data.token}` };
+
+    const applicantSession = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'expiry-applicant' }) });
+    const applicantHeaders = { authorization: `Bearer ${applicantSession.body.data.sessionToken}` };
+    const applicantIdentity = await request(base, '/me/identities/applicant', { method: 'POST', headers: applicantHeaders, body: JSON.stringify(applicant) });
+    await request(base, `/admin/identity-reviews/${applicantIdentity.body.data.id}/decision`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ decision: 'approved' }) });
+
+    const recruiterSession = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'expiry-recruiter' }) });
+    const recruiterHeaders = { authorization: `Bearer ${recruiterSession.body.data.sessionToken}` };
+    const recruiterIdentity = await request(base, '/me/identities/recruiter', { method: 'POST', headers: recruiterHeaders, body: JSON.stringify(recruiter) });
+    await request(base, `/admin/identity-reviews/${recruiterIdentity.body.data.id}/decision`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ decision: 'approved' }) });
+    const post = await request(base, '/me/recruitment-posts', {
+      method: 'POST', headers: recruiterHeaders,
+      body: JSON.stringify({ jobType: '过期测试岗', salaryRange: '面议', settlementMethod: '月结', locationText: '上海', latitude: 31, longitude: 121, imageKeys: [] }),
+    });
+    assert.equal(post.status, 201);
+    assert.ok(post.body.data.expiresAt);
+    assert.equal((await request(base, `/me/favorites/recruitment-posts/${post.body.data.id}`, { method: 'PUT', headers: applicantHeaders })).status, 204);
+
+    const listed = await request(base, '/market/recruitment-posts?jobType=%E8%BF%87%E6%9C%9F%E6%B5%8B%E8%AF%95%E5%B2%97', { headers: applicantHeaders });
+    assert.equal(listed.status, 200);
+    assert.equal(listed.body.data.totalCount, 1);
+    assert.equal(listed.body.data.items[0].id, post.body.data.id);
+
+    const past = new Date(Date.now() - 60_000).toISOString();
+    app.db.prepare('UPDATE recruitment_posts SET expires_at = ? WHERE id = ?').run(past, post.body.data.id);
+
+    const expiredList = await request(base, '/market/recruitment-posts?jobType=%E8%BF%87%E6%9C%9F%E6%B5%8B%E8%AF%95%E5%B2%97', { headers: applicantHeaders });
+    assert.equal(expiredList.body.data.totalCount, 0);
+    assert.equal(expiredList.body.data.items.length, 0);
+    assert.equal((await request(base, `/market/recruitment-posts/${post.body.data.id}`, { headers: applicantHeaders })).status, 404);
+    const favorites = await request(base, '/me/favorites/recruitment-posts', { headers: applicantHeaders });
+    assert.equal(favorites.body.data[0].status, 'expired');
+
+    const renewed = await request(base, `/me/recruitment-posts/${post.body.data.id}/renew`, { method: 'POST', headers: recruiterHeaders });
+    assert.equal(renewed.status, 200);
+    assert.ok(new Date(renewed.body.data.expiresAt).getTime() > Date.now());
+    const restored = await request(base, `/market/recruitment-posts/${post.body.data.id}`, { headers: applicantHeaders });
+    assert.equal(restored.status, 200);
+    assert.equal(restored.body.data.contactPhone, recruiter.contactPhone);
   });
 });

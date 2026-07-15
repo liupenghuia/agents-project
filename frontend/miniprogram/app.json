@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/startup/startup",
     "pages/home/home",
     "pages/register/register",
     "pages/identities/identities",
@@ -8,7 +9,14 @@
     "pages/recruiter-information/recruiter-information",
     "pages/recruitment-post/recruitment-post",
     "pages/market/market",
-    "pages/favorites/favorites"
+    "pages/market-detail/market-detail",
+    "pages/favorites/favorites",
+    "pages/my-center/my-center",
+    "pages/profile/profile",
+    "pages/messages/messages",
+    "pages/conversation/conversation",
+    "pages/applications/applications",
+    "pages/interviews/interviews"
   ],
   "window": {
     "navigationBarTitleText": "寻职",

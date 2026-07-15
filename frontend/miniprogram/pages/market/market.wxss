@@ -1,4 +1,4 @@
-.market-page { padding: 34rpx 28rpx 48rpx; }
+.market-page { padding: 34rpx 28rpx 150rpx; }
 .market-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24rpx; }
 .market-header .title { font-size: 48rpx; }
 .favorite-button { margin: 8rpx 0 0; padding: 0 28rpx; height: 68rpx; border: 1rpx solid #cbded7; background: #fff; color: #0d6f5c; font-size: 25rpx; line-height: 68rpx; }
@@ -8,6 +8,22 @@
 .search-row { display: flex; gap: 12rpx; margin: 18rpx 0; }
 .search-row input { flex: 1; height: 76rpx; padding: 0 22rpx; border: 1rpx solid #d5dfdb; background: #fff; line-height: 76rpx; }
 .search-row button, .detail-head button, .detail-actions button, .contact-row button, .retry-button, .location-notice button { margin: 0; padding: 0 24rpx; height: 76rpx; background: #fff; color: #0d6f5c; font-size: 25rpx; line-height: 76rpx; }
+.filter-trigger { width: 100%; margin: 0 0 18rpx; height: 68rpx; border: 1rpx solid #d5dfdb; background: #fff; color: #0d6f5c; font-size: 25rpx; line-height: 68rpx; text-align: left; }
+.filter-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12rpx 18rpx; margin: 0 0 16rpx; color: #52615c; font-size: 23rpx; }
+.filter-summary .small-button { margin: 0; padding: 0 18rpx; height: 56rpx; line-height: 56rpx; font-size: 22rpx; background: #eef6f3; color: #0d6f5c; }
+.saved-block { margin-top: 20rpx; }
+.saved-block .section-title { display: block; margin-bottom: 10rpx; color: #17332d; font-size: 26rpx; font-weight: 700; }
+.saved-row { display: flex; gap: 12rpx; margin-top: 10rpx; }
+.saved-row button { margin: 0; flex: 1; height: 60rpx; line-height: 60rpx; font-size: 22rpx; background: #f4f7f6; color: #52615c; }
+.filter-sheet { position: fixed; right: 0; bottom: 0; left: 0; z-index: 20; padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); border-radius: 16rpx 16rpx 0 0; background: #fff; box-shadow: 0 -12rpx 48rpx #17332d2b; }
+.filter-head, .filter-actions { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.filter-head { margin-bottom: 20rpx; font-size: 32rpx; font-weight: 700; }
+.filter-head button, .filter-actions button { margin: 0; padding: 0 22rpx; height: 68rpx; background: #f4f7f6; color: #52615c; font-size: 24rpx; line-height: 68rpx; }
+.filter-sheet label { display: block; margin-top: 18rpx; color: #52615c; font-size: 24rpx; }
+.filter-sheet input, .filter-picker { width: 100%; height: 72rpx; margin-top: 10rpx; padding: 0 20rpx; border: 1rpx solid #d5dfdb; background: #f8faf9; line-height: 72rpx; }
+.filter-actions { margin-top: 28rpx; }
+.filter-actions button { flex: 1; }
+.filter-actions .apply-filter { background: #0d7c66; color: #fff; }
 .location-notice { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-bottom: 14rpx; padding: 16rpx 20rpx; background: #fff7e6; color: #73561e; font-size: 23rpx; }
 .location-notice text { flex: 1; }
 .location-notice button { height: 58rpx; padding: 0 18rpx; line-height: 58rpx; }
@@ -23,6 +39,7 @@
 .card-copy { min-width: 0; flex: 1; }
 .action-title { display: block; margin-bottom: 8rpx; color: #17332d; font-size: 31rpx; font-weight: 700; }
 .published, .detail-line { display: block; margin-top: 12rpx; color: #73807c; font-size: 23rpx; }
+.match-line { display: block; margin-top: 10rpx; color: #0d7c66; font-size: 22rpx; }
 .list-progress { padding: 28rpx 0 8rpx; color: #7b8883; font-size: 23rpx; text-align: center; }
 .empty { margin-top: 24rpx; }
 .error { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; }
@@ -38,3 +55,6 @@
 .contact-phone { display: block; margin-top: 6rpx; color: #17332d; font-size: 30rpx; font-weight: 700; }
 .detail-actions { justify-content: flex-start; margin-top: 24rpx; }
 .detail-actions .primary-action { background: #0d7c66; color: #fff; }
+.tabbar { position: fixed; right: 0; bottom: 0; left: 0; z-index: 12; display: flex; padding: 12rpx 28rpx calc(12rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #dce6e2; background: #fffffff5; box-shadow: 0 -8rpx 24rpx #17332d0d; }
+.tab-item { flex: 1; height: 76rpx; margin: 0; padding: 0; background: transparent; color: #73807c; font-size: 25rpx; line-height: 76rpx; }
+.tab-item.active, .tab-item:first-child { color: #0d7c66; font-weight: 700; }

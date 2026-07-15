@@ -77,6 +77,8 @@ Out of scope:
 - [x] 下架、删除或不可用对象显示失效提示，不能查看联系方式。
 - [x] 用户只能访问和修改自己的收藏。
 - [x] 未登录或身份不匹配时收藏操作被拒绝。
+- [ ] 收藏和取消收藏有明确的进行中、成功、失败反馈，并防止重复点击。
+- [ ] 我的收藏支持空、加载、错误、重试、已失效对象和返回详情状态；失效对象不可查看联系方式。
 
 ## Architecture Impact
 
@@ -129,3 +131,4 @@ Out of scope:
 | 2026-07-14 | Backend + Mini Program Agents | Test Agent | Blocked | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/miniprogram/services/api.js`, `frontend/miniprogram/pages/favorites/*`, `frontend/miniprogram/pages/market/*` | Market integration test covers add/list and API syntax checks pass | Unified favorite consistency verification pending | Run the unified validation batch. |
 | 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Approved-target favorite authorization, `isFavorited` projection, Mini Program toggle/confirmation flows | Backend `npm test`: 11 passed with both favorite directions; Mini Program tests passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260714-007/20260714-181440-90d6bd/report.md` | WeChat DevTools/real-device interaction checks pending | Verify add/remove/list consistency and repeated taps in WeChat DevTools/on device. |
 | 2026-07-14 | Test Agent | Coordinator | Blocked | Done | Automated and DevTools favorite evidence; task metadata | User-provided pass report `/tmp/ppfiles-learn-delivery/TASK-20260714-007/20260714-120515-9981e4/report.md`; task-specific DevTools script passed both detail toggles, repeated PUT idempotency, both favorite-list confirmation removals, cross-user isolation and unapproved 403; disabled favorite behavior passed in earlier dependency flow | None | Dependency accepted; begin TASK-010 architecture. |
+| 2026-07-15 | Mini Program Agent | Test Agent | Done | Blocked | `frontend/miniprogram/pages/market-detail/*`, `frontend/miniprogram/pages/favorites/*` | Detail favorite action now prevents duplicate taps with pending feedback; favorites cards open the independent detail page and removal uses event isolation; runner report `/tmp/ppfiles-learn-delivery/TASK-20260714-007/20260715-121322-88db4e/report.md` | WeChat DevTools/real-device interaction and unavailable-object rendering pending | Test add/remove, return to detail, invalid target and repeated taps in platform tools. |

@@ -1,0 +1,21 @@
+<view class="page">
+  <view class="eyebrow">会话</view>
+  <text class="title">{{conversation.peer.displayName || '沟通'}}</text>
+  <view wx:if="{{loading}}" class="loading">正在读取消息...</view>
+  <block wx:elif="{{conversation}}">
+    <view class="message-list">
+      <view wx:if="{{!messages.length}}" class="panel empty">暂无消息</view>
+      <view wx:for="{{messages}}" wx:key="id" class="bubble {{item.mine ? 'mine' : 'theirs'}}">
+        <text>{{item.body}}</text>
+        <text class="time">{{item.createdAt}}</text>
+      </view>
+    </view>
+    <view wx:if="{{conversation.status === 'active'}}" class="composer">
+      <input value="{{draft}}" bindinput="input" maxlength="1000" placeholder="输入文本消息" />
+      <button loading="{{sending}}" disabled="{{sending}}" bindtap="send">发送</button>
+    </view>
+    <view wx:else class="panel empty">会话已{{conversation.status === 'ended' ? '结束' : '阻止'}}，无法继续发送</view>
+    <button wx:if="{{conversation.status === 'active'}}" class="button-secondary" bindtap="end">结束会话</button>
+  </block>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+</view>

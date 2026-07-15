@@ -1,11 +1,11 @@
 ---
 id: TASK-20260714-010
 title: 小程序三 Tab 我的中心与拉黑
-status: Ready for Implementation
+status: In Progress
 priority: P1
 owner: Architect Agent
 created: "2026-07-14"
-updated: "2026-07-14"
+updated: "2026-07-15"
 source_idea: IDEA-20260714-009
 depends_on:
   - TASK-20260714-007
@@ -25,8 +25,8 @@ frontend_target_status:
 scope_status:
   product: Done
   architecture: Done
-  backend: Pending
-  frontend: Pending
+  backend: In Progress
+  frontend: In Progress
   mobile: N/A
   ios: N/A
   android: N/A
@@ -62,6 +62,8 @@ Out of scope:
 ## Acceptance Criteria
 
 - [ ] 三个 Tab 可从任意主工作区稳定切换并保留筛选/返回语义。
+- [ ] 启动页仅展示简短启动信息，登录恢复完成后自动进入已绑定角色的工作区，不要求重复选择角色或授权手机号。
+- [ ] 底部三个 Tab 在地图、列表、我的页面持续可见，当前 Tab 明确高亮，切换不丢失角色和筛选上下文。
 - [ ] 用户可以查看和修改允许修改的个人资料，不能修改身份类型或他人资料。
 - [ ] 用户可以查看自己的发布、收藏和拉黑列表。
 - [ ] 拉黑立即隐藏目标，取消拉黑后目标可以重新出现；不能影响其他用户。
@@ -112,3 +114,5 @@ Out of scope:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-14 | Product Agent | Architect | Draft | Ready for Architecture | `ideas/map-location-tags.md`, `docs/requirements.md`, task | 三 Tab、我的中心和拉黑 MVP 已定义，依赖双向收藏任务 | 设置和账号注销范围待后续确认 | Architect defines blacklist persistence and navigation/API contract |
 | 2026-07-14 | Architect Agent | Backend / Mini Program / Test | Ready for Architecture | Ready for Implementation | ADR-006, architecture/database/OpenAPI and task pre-coding check | Opaque block IDs, shared query filtering, owner profile update and one market state owner defined; OpenAPI parsing/workflow validation required before implementation | None | Implement backend contract, then Mini Program pages. |
+| 2026-07-15 | Backend / Mini Program Agent | Backend / Mini Program | Ready for Implementation | In Progress | `backend/src/db.js`, `backend/src/app.js`, `frontend/miniprogram/app.json`, `frontend/miniprogram/services/api.js`, `frontend/miniprogram/pages/my-center/*`, market and role-home pages | Added private block persistence and owner-scoped create/list/delete APIs; applied block filtering to market list/detail/map/favorites; added My Center, favorites/blocklist links, loading/empty/error/retry states and detail block confirmation. `npm test` 13 passed; Mini Program tests 7 passed; `ruby scripts/deliver.rb my-center-and-blocklist` passed at `/tmp/ppfiles-learn-delivery/TASK-20260714-010/20260715-114953-cad71b/report.md`; workflow validation passed | Profile edit API, true global three-tab navigation, and DevTools/real-device verification remain | Complete profile editing and global tab navigation, then Test Agent verifies acceptance criteria |
+| 2026-07-15 | Mini Program Agent | Test Agent | In Progress | Blocked | `frontend/miniprogram/app.js`, `frontend/miniprogram/app.json`, `frontend/miniprogram/pages/startup/*`, `frontend/miniprogram/pages/role-home/*`, `frontend/miniprogram/pages/market/*`, `frontend/miniprogram/pages/my-center/*`, `frontend/miniprogram/pages/favorites/*`, `frontend/miniprogram/pages/market-detail/*` | Added startup session routing, role-scoped workspace state, persistent map/list/my navigation, legal entries, independent detail and favorites return paths; Mini Program syntax/session/registration tests passed; `ruby scripts/deliver.rb my-center-and-blocklist` passed at `/tmp/ppfiles-learn-delivery/TASK-20260714-010/20260715-121303-f71195/report.md` | Profile editing and WeChat DevTools/real-device navigation remain | Implement or verify remaining profile editing path, then run platform acceptance. |

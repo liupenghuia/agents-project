@@ -17,8 +17,8 @@
       <label class="label">可工作地区或时间偏好 <text>*</text><input data-field="preferredRegionOrTime" value="{{form.preferredRegionOrTime}}" bindinput="input" placeholder="例如：杭州，周末可工作" maxlength="200" /></label>
     </block>
     <label class="label">所在地区 <text>*</text><input data-field="region" value="{{form.region}}" bindinput="input" placeholder="例如：上海市浦东新区" maxlength="120" /></label>
-    <label class="label">联系手机号 <text>*</text><input data-field="contactPhone" value="{{form.contactPhone}}" bindinput="input" type="number" placeholder="用于审核沟通" maxlength="32" /></label>
-    <button class="phone-button" open-type="getPhoneNumber" disabled="{{phoneAuthorizing}}" bindtap="preparePhoneAuth" bindgetphonenumber="getPhone">{{phoneAuthorizing ? '正在请求授权...' : '授权微信手机号'}}</button>
+    <label class="label">联系手机号 <text>*</text><input data-field="contactPhone" value="{{form.contactPhone}}" disabled="{{phoneAuthorized}}" type="number" placeholder="请先授权微信手机号" maxlength="32" /></label>
+    <button class="phone-button" open-type="getPhoneNumber" disabled="{{phoneAuthorizing || phoneAuthorized}}" bindtap="preparePhoneAuth" bindgetphonenumber="getPhone">{{phoneAuthorized ? '微信手机号已授权' : phoneAuthorizing ? '正在请求授权...' : '授权微信手机号'}}</button>
   </view>
   <checkbox-group wx:if="{{!loading}}" class="agreement" bindchange="toggleAgreement"><label><checkbox value="agree" checked="{{agreed}}" /></label><text>我已阅读并同意</text><text class="link">用户协议</text><text>和</text><text class="link">隐私政策</text></checkbox-group>
   <view wx:if="{{error}}" class="error">{{error}}</view>

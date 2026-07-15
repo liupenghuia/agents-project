@@ -2,6 +2,23 @@
 
 ## Architecture Style
 
+Use a modular monolith with a REST API. Physical backend layout follows [ADR-007](./architecture/adr-007-backend-domain-modules.md):
+
+```text
+backend/src/
+  app.js                 # composition root (createApp)
+  http.js                # HTTP helpers / rate limit / errors
+  routes/index.js        # request routing
+  db.js                  # createDatabase + store re-exports
+  domain/
+    time.js / visibility.js
+    schema.js / store.js
+    collaboration.js
+  wechat.js
+```
+
+Shared public visibility (published + not expired + not blocked) lives in `domain/visibility.js` and is used by market projections and collaboration entry checks.
+
 Use a modular monolith with a REST API:
 
 - `frontend/` owns the WeChat Mini Program UI, client state, navigation, and API integration for phase one.
@@ -26,7 +43,7 @@ WeChat Mini Program
   -> approved identity enters its role experience
 ```
 
-The same platform user may have one recruiter identity, one applicant identity, or both. A role profile's `role` is immutable. Creating the other role creates a separate profile; it does not convert the existing profile.
+The authorized phone number is bound to exactly one role. A role profile's `role` is immutable, and the same phone number cannot create or switch to the other role.
 
 ## Module Boundaries
 
@@ -190,6 +207,13 @@ Significant decisions are recorded in [ADR-001](/Users/Penguin/Documents/PPFiles
 - Validate map bounds and zoom limits, cap returned cells/items, and reject oversized or world-spanning requests that could enumerate the market.
 - Apply user blocklists and moderation visibility before aggregation so hidden records do not affect cluster counts.
 - Identity profile edits are owner-only and cannot change role or review state; My Center composes existing owner APIs rather than creating a second profile source.
+
+### Phase One Completion Boundary
+
+- Startup restoration, persistent bottom navigation, owner profile editing, market filters, independent detail actions, favorites, reports and blocks remain inside the existing modular monolith boundaries.
+- The Mini Program may keep role-scoped navigation snapshots for return semantics, but must not persist contact information, session secrets, raw coordinates or detailed addresses in client state.
+- The normalized UI filter model maps to direction-specific API fields at the client boundary; backend authorization, privacy projection, publication status and block predicates remain the source of truth.
+- Profile updates reuse `recruiter_profiles` and `applicant_profiles`; no duplicate profile source is allowed.
 
 ## Revisit Triggers
 

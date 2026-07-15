@@ -1,0 +1,16 @@
+<view class="page">
+  <view class="eyebrow">个人工作区</view><text class="title">我的</text>
+  <view wx:if="{{loading}}" class="loading">正在读取个人信息...</view>
+  <view wx:elif="{{!error}}">
+    <view class="panel"><text class="section-title">身份状态</text><view wx:for="{{identities}}" wx:key="id" class="identity-row"><text>{{item.role === 'applicant' ? '应聘方' : '招人方'}}</text><text class="muted">{{status[item.reviewStatus]}}</text></view><view wx:if="{{!identities.length}}" class="muted">暂无身份，请先完成注册。</view></view>
+    <button class="action-card" bindtap="openProfile"><text class="action-title">个人资料</text><text class="muted">查看或维护当前身份信息</text></button>
+    <button class="action-card" bindtap="openFavorites"><text class="action-title">我的收藏</text><text class="muted">查看已收藏的市场信息</text></button>
+    <button class="action-card" bindtap="openMessages"><text class="action-title">消息</text><text class="muted">站内文本沟通与未读会话</text></button>
+    <button class="action-card" bindtap="openApplications"><text class="action-title">{{role === 'recruiter' ? '收到的投递' : '我的投递'}}</text><text class="muted">查看和处理求职投递状态</text></button>
+    <button class="action-card" bindtap="openInterviews"><text class="action-title">面试安排</text><text class="muted">邀请、接受、拒绝和取消面试</text></button>
+    <view class="panel"><text class="section-title">我的拉黑</text><view wx:if="{{!blocks.length}}" class="muted">暂无拉黑对象</view><view wx:for="{{blocks}}" wx:key="blockId" class="identity-row"><view><text>{{item.displayName}}</text><text class="muted">{{item.role === 'applicant' ? '应聘方' : '招人方'}}</text></view><button class="small-button" data-id="{{item.blockId}}" bindtap="unblock">取消拉黑</button></view></view>
+    <view class="panel"><text class="section-title">隐私与协议</text><text class="muted">地图仅展示区域级位置，不公开楼栋级详细地址。</text><view class="legal-links"><text bindtap="openPrivacy">隐私政策</text><text bindtap="openAgreement">用户协议</text></view></view>
+  </view>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+  <view class="tabbar"><button bindtap="openMarket">地图</button><button bindtap="openList">列表</button><button class="active">我的</button></view>
+</view>

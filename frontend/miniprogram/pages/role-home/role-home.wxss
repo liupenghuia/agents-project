@@ -1,3 +1,4 @@
+.page { padding-bottom: 150rpx; }
 .signed-in { display: flex; align-items: flex-start; gap: 20rpx; margin-top: 40rpx; background: #e9f4f0; border-color: #c9e7dd; }
 .check { display: grid; width: 44rpx; height: 44rpx; place-items: center; border-radius: 50%; background: #0d7c66; color: #fff; font-weight: 700; }
 .signed-title { display: block; margin-bottom: 8rpx; font-weight: 700; }
@@ -17,3 +18,6 @@
 .state-pending_review { background: #fff8db; color: #886813; }
 .state-changes_requested { background: #fff0ee; color: #a53f36; }
 .publication-reason { display: block; margin-top: 8rpx; color: #a53f36; font-size: 22rpx; overflow-wrap: anywhere; }
+.tabbar { position: fixed; right: 0; bottom: 0; left: 0; z-index: 12; display: flex; padding: 12rpx 28rpx calc(12rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #dce6e2; background: #fffffff5; box-shadow: 0 -8rpx 24rpx #17332d0d; }
+.tabbar button { flex: 1; height: 76rpx; margin: 0; padding: 0; background: transparent; color: #73807c; font-size: 25rpx; line-height: 76rpx; }
+.tabbar .active { color: #0d7c66; font-weight: 700; }

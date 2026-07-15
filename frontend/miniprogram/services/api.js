@@ -83,6 +83,7 @@ const createSession = (code) => request('/auth/wechat/session', { method: 'POST'
 const exchangePhone = (code) => request('/auth/wechat/phone', { method: 'POST', data: { code } });
 const listIdentities = () => request('/me/identities');
 const getIdentity = (id) => request(`/me/identities/${id}`);
+const updateIdentityProfile = (id, profile) => request(`/me/identities/${id}/profile`, { method: 'PATCH', data: profile });
 const createIdentity = (role, data) => request(`/me/identities/${role}`, { method: 'POST', data });
 const resubmitIdentity = (id, profile) => request(`/me/identities/${id}/resubmit`, { method: 'POST', data: { profile } });
 const getApplicantJobSeekingInformation = () => request('/me/applicant/job-seeking-information');
@@ -97,6 +98,8 @@ const createRecruitmentPost = (data) => request('/me/recruitment-posts', { metho
 const getRecruitmentPost = (id) => request(`/me/recruitment-posts/${id}`);
 const updateRecruitmentPost = (id, data) => request(`/me/recruitment-posts/${id}`, { method: 'PATCH', data });
 const disableRecruitmentPost = (id) => request(`/me/recruitment-posts/${id}/disable`, { method: 'POST' });
+const renewRecruitmentPost = (id) => request(`/me/recruitment-posts/${id}/renew`, { method: 'POST' });
+const renewApplicantJobSeekingInformation = () => request('/me/applicant/job-seeking-information/renew', { method: 'POST' });
 const listMarketRecruitmentPosts = (query = {}) => request(`/market/recruitment-posts?${queryString(query)}`);
 const mapMarketRecruitmentPosts = (query) => request(`/market/recruitment-posts/map?${queryString(query)}`);
 const getMarketRecruitmentPost = (id) => request(`/market/recruitment-posts/${id}`);
@@ -110,15 +113,39 @@ const listJobSeekingFavorites = () => request('/me/favorites/job-seeking-informa
 const favoriteJobSeekingInformation = (id) => request(`/me/favorites/job-seeking-information/${id}`, { method: 'PUT' });
 const unfavoriteJobSeekingInformation = (id) => request(`/me/favorites/job-seeking-information/${id}`, { method: 'DELETE' });
 const createMarketReport = (data) => request('/me/market-reports', { method: 'POST', data });
+const listMarketUserBlocks = () => request('/me/market-user-blocks');
+const createMarketUserBlock = (data) => request('/me/market-user-blocks', { method: 'POST', data });
+const deleteMarketUserBlock = (id) => request(`/me/market-user-blocks/${id}`, { method: 'DELETE' });
+const startConversation = (data) => request('/me/conversations', { method: 'POST', data });
+const listConversations = () => request('/me/conversations');
+const getConversation = (id) => request(`/me/conversations/${id}`);
+const listConversationMessages = (id) => request(`/me/conversations/${id}/messages`);
+const sendConversationMessage = (id, data) => request(`/me/conversations/${id}/messages`, { method: 'POST', data });
+const markConversationRead = (id) => request(`/me/conversations/${id}/read`, { method: 'POST' });
+const endConversation = (id) => request(`/me/conversations/${id}/end`, { method: 'POST' });
+const createApplication = (data) => request('/me/applications', { method: 'POST', data });
+const listMyApplications = () => request('/me/applications');
+const listRecruitmentApplications = () => request('/me/recruitment-applications');
+const updateApplicationStatus = (id, status) => request(`/me/applications/${id}`, { method: 'PATCH', data: { status } });
+const withdrawApplication = (id) => request(`/me/applications/${id}/withdraw`, { method: 'POST' });
+const createInterview = (data) => request('/me/interviews', { method: 'POST', data });
+const listInterviews = () => request('/me/interviews');
+const respondInterview = (id, decision) => request(`/me/interviews/${id}/respond`, { method: 'POST', data: { decision } });
+const cancelInterview = (id, reason) => request(`/me/interviews/${id}/cancel`, { method: 'POST', data: { reason } });
 
 module.exports = {
-  createSession, exchangePhone, listIdentities, getIdentity, createIdentity, resubmitIdentity,
+  createSession, exchangePhone, listIdentities, getIdentity, updateIdentityProfile, createIdentity, resubmitIdentity,
   getApplicantJobSeekingInformation, saveApplicantJobSeekingInformation, disableApplicantJobSeekingInformation,
   getRecruiterInformation, saveRecruiterInformation, createImageUploadUrl, uploadRecruitmentImage,
-  listRecruitmentPosts, createRecruitmentPost, getRecruitmentPost, updateRecruitmentPost, disableRecruitmentPost,
+  listRecruitmentPosts, createRecruitmentPost, getRecruitmentPost, updateRecruitmentPost, disableRecruitmentPost, renewRecruitmentPost,
+  renewApplicantJobSeekingInformation,
   listMarketRecruitmentPosts, mapMarketRecruitmentPosts, getMarketRecruitmentPost,
   listMarketJobSeekingInformation, mapMarketJobSeekingInformation, getMarketJobSeekingInformation,
   listRecruitmentFavorites, favoriteRecruitmentPost, unfavoriteRecruitmentPost, listJobSeekingFavorites,
   favoriteJobSeekingInformation, unfavoriteJobSeekingInformation, createMarketReport,
+  listMarketUserBlocks, createMarketUserBlock, deleteMarketUserBlock,
+  startConversation, listConversations, getConversation, listConversationMessages, sendConversationMessage,
+  markConversationRead, endConversation, createApplication, listMyApplications, listRecruitmentApplications,
+  updateApplicationStatus, withdrawApplication, createInterview, listInterviews, respondInterview, cancelInterview,
   resolveMediaUrl,
 };

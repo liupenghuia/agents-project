@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="eyebrow">{{role === 'recruiter' ? '招人方' : '应聘方'}}资料</view>
+  <text class="title">个人资料</text>
+  <view wx:if="{{loading}}" class="loading">正在读取资料...</view>
+  <view wx:elif="{{identity}}" class="panel form">
+    <block wx:if="{{role === 'recruiter'}}">
+      <label>招聘主体名称<input data-field="organizationName" value="{{form.organizationName}}" bindinput="input" /></label>
+      <label>主体类型<input disabled value="{{form.organizationType}}" /></label>
+      <label>联系人称呼<input data-field="contactName" value="{{form.contactName}}" bindinput="input" /></label>
+      <label>行业或岗位方向<input data-field="industryOrJobDirection" value="{{form.industryOrJobDirection}}" bindinput="input" /></label>
+    </block>
+    <block wx:else>
+      <label>姓名或展示昵称<input data-field="displayName" value="{{form.displayName}}" bindinput="input" /></label>
+      <label>期望岗位或工种<input data-field="desiredJob" value="{{form.desiredJob}}" bindinput="input" /></label>
+      <label>工作经验<textarea data-field="experienceSummary" value="{{form.experienceSummary}}" bindinput="input" /></label>
+      <label>地区或时间偏好<input data-field="preferredRegionOrTime" value="{{form.preferredRegionOrTime}}" bindinput="input" /></label>
+    </block>
+    <label>所在地区<input data-field="region" value="{{form.region}}" bindinput="input" /></label>
+    <label>联系手机号<input disabled value="{{form.contactPhone}}" /></label>
+  </view>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+  <view wx:if="{{saved}}" class="success">资料已保存</view>
+  <button wx:if="{{!loading && identity}}" class="button-primary" loading="{{saving}}" disabled="{{saving}}" bindtap="save">{{saving ? '正在保存...' : '保存资料'}}</button>
+</view>

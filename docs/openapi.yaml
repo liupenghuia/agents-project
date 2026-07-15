@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Project API
-  version: 0.4.0
+  version: 0.5.0
   description: API contract between the WeChat Mini Program, Web Admin Management System, and backend agents.
 servers:
   - url: http://localhost:3000
@@ -35,6 +35,8 @@ tags:
     description: Administrator account and RBAC management
   - name: Admin Audit
     description: Owner-readable administrator security and operation history
+  - name: Collaboration
+    description: In-app messaging, applications, and interviews
 paths:
   /health:
     get:
@@ -965,6 +967,29 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /me/applicant/job-seeking-information/renew:
+    post:
+      tags:
+        - Applicant Information
+      summary: Renew publication expiry for owned applicant information
+      operationId: renewApplicantJobSeekingInformation
+      security:
+        - PlatformSession: []
+      responses:
+        "200":
+          description: Renewed applicant information
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ApplicantJobSeekingInformation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /me/recruitment-posts/{postId}/disable:
     post:
       tags:
@@ -982,6 +1007,31 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/recruitment-posts/{postId}/renew:
+    post:
+      tags:
+        - Recruitment Posts
+      summary: Renew publication expiry for an owned recruitment post
+      operationId: renewRecruitmentPost
+      security:
+        - PlatformSession: []
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          description: Renewed recruitment post
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RecruitmentPost"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
   /market/recruitment-posts/map:
@@ -1060,6 +1110,16 @@ paths:
             enum:
               - newest
             default: newest
+        - name: publishedFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: publishedTo
+          in: query
+          schema:
+            type: string
+            format: date-time
       responses:
         "200":
           description: Published recruitment summary cards without contact information
@@ -1647,6 +1707,478 @@ paths:
           $ref: "#/components/responses/NotFound"
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
+  /me/conversations:
+    get:
+      tags: [Collaboration]
+      summary: List conversations for the current user
+      operationId: listConversations
+      security: [{ PlatformSession: [] }]
+      responses:
+        "200":
+          description: Conversation summaries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Conversation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Collaboration]
+      summary: Start or resume a conversation about a market target
+      operationId: startConversation
+      security: [{ PlatformSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetType, targetId]
+              properties:
+                targetType:
+                  type: string
+                  enum: [recruitment_post, applicant_information]
+                targetId:
+                  type: string
+                body:
+                  type: string
+                  maxLength: 1000
+                clientRequestId:
+                  type: string
+      responses:
+        "201":
+          description: Conversation created or resumed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Conversation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/conversations/{conversationId}:
+    get:
+      tags: [Collaboration]
+      summary: Get one conversation the user participates in
+      operationId: getConversation
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Conversation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/conversations/{conversationId}/messages:
+    get:
+      tags: [Collaboration]
+      summary: List messages in a conversation
+      operationId: listConversationMessages
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ConversationMessage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Collaboration]
+      summary: Send a text message
+      operationId: sendConversationMessage
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, maxLength: 1000 }
+                clientRequestId: { type: string }
+      responses:
+        "201":
+          description: Message accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ConversationMessage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/conversations/{conversationId}/read:
+    post:
+      tags: [Collaboration]
+      summary: Mark conversation as read
+      operationId: markConversationRead
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Marked read
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/conversations/{conversationId}/end:
+    post:
+      tags: [Collaboration]
+      summary: End a conversation
+      operationId: endConversation
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Conversation ended
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Conversation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/applications:
+    get:
+      tags: [Collaboration]
+      summary: List applications submitted by the current applicant
+      operationId: listMyApplications
+      security: [{ PlatformSession: [] }]
+      responses:
+        "200":
+          description: Applications
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Application"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Collaboration]
+      summary: Submit interest/application for a recruitment post (idempotent)
+      operationId: createApplication
+      security: [{ PlatformSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recruitmentPostId]
+              properties:
+                recruitmentPostId: { type: string }
+                note: { type: string, maxLength: 500 }
+      responses:
+        "201":
+          description: Application created or existing returned
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Application"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/recruitment-applications:
+    get:
+      tags: [Collaboration]
+      summary: List applications received by the current recruiter
+      operationId: listRecruitmentApplications
+      security: [{ PlatformSession: [] }]
+      responses:
+        "200":
+          description: Received applications
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Application"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /me/applications/{applicationId}:
+    patch:
+      tags: [Collaboration]
+      summary: Update application status (recruiter processing or applicant withdraw via dedicated path)
+      operationId: updateApplicationStatus
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [submitted, viewed, contacted, interviewing, hired, rejected, withdrawn, closed]
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Application"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/applications/{applicationId}/withdraw:
+    post:
+      tags: [Collaboration]
+      summary: Withdraw an unprocessed application
+      operationId: withdrawApplication
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Withdrawn application
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Application"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/interviews:
+    get:
+      tags: [Collaboration]
+      summary: List interviews for the current user
+      operationId: listInterviews
+      security: [{ PlatformSession: [] }]
+      responses:
+        "200":
+          description: Interviews
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Interview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Collaboration]
+      summary: Recruiter invites applicant to an interview
+      operationId: createInterview
+      security: [{ PlatformSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [applicantUserId, scheduledAt, locationText]
+              properties:
+                applicationId: { type: string }
+                applicantUserId: { type: string }
+                scheduledAt: { type: string, format: date-time }
+                locationText: { type: string, maxLength: 200 }
+      responses:
+        "201":
+          description: Interview invited
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Interview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /me/interviews/{interviewId}/respond:
+    post:
+      tags: [Collaboration]
+      summary: Applicant accepts or declines an interview invite
+      operationId: respondInterview
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [accept, decline]
+      responses:
+        "200":
+          description: Updated interview
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Interview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/interviews/{interviewId}/cancel:
+    post:
+      tags: [Collaboration]
+      summary: Cancel an interview with a required reason
+      operationId: cancelInterview
+      security: [{ PlatformSession: [] }]
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Cancelled interview
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Interview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /admin/identity-reviews:
     get:
       tags:
@@ -1948,11 +2480,15 @@ components:
           required:
             - items
             - nextCursor
+            - totalCount
           properties:
             items:
               type: array
               items:
                 $ref: "#/components/schemas/MarketRecruitmentPostSummary"
+            totalCount:
+              type: integer
+              minimum: 0
             nextCursor:
               anyOf:
                 - type: string
@@ -2495,6 +3031,9 @@ components:
             status:
               $ref: "#/components/schemas/MarketContentStatus"
             publishedAt:
+              type: string
+              format: date-time
+            expiresAt:
               type: string
               format: date-time
             disabledAt:
@@ -3042,3 +3581,78 @@ components:
           type: string
           maxLength: 1000
           description: Required when decision is changes_requested
+    Conversation:
+      type: object
+      required: [id, status, relatedTargetType, relatedTargetId, peer, unreadCount, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [active, ended, blocked] }
+        relatedTargetType: { type: string, enum: [recruitment_post, applicant_information] }
+        relatedTargetId: { type: string }
+        peer:
+          type: object
+          required: [userId, displayName]
+          properties:
+            userId: { type: string }
+            displayName: { type: string }
+        lastMessage:
+          anyOf:
+            - $ref: "#/components/schemas/ConversationMessage"
+            - type: "null"
+        unreadCount: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ConversationMessage:
+      type: object
+      required: [id, conversationId, senderUserId, body, createdAt, mine]
+      properties:
+        id: { type: string }
+        conversationId: { type: string }
+        senderUserId: { type: string }
+        body: { type: string, maxLength: 1000 }
+        clientRequestId:
+          anyOf:
+            - type: string
+            - type: "null"
+        createdAt: { type: string, format: date-time }
+        mine: { type: boolean }
+    Application:
+      type: object
+      required: [id, recruitmentPostId, applicantUserId, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        recruitmentPostId: { type: string }
+        applicantUserId: { type: string }
+        status:
+          type: string
+          enum: [submitted, viewed, contacted, interviewing, hired, rejected, withdrawn, closed]
+        note: { type: string }
+        jobType: { type: string }
+        salaryRange: { type: string }
+        postStatus: { type: string }
+        recruiterUserId:
+          anyOf:
+            - type: string
+            - type: "null"
+        mineAsApplicant: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Interview:
+      type: object
+      required: [id, recruiterUserId, applicantUserId, scheduledAt, locationText, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        applicationId:
+          anyOf:
+            - type: string
+            - type: "null"
+        recruiterUserId: { type: string }
+        applicantUserId: { type: string }
+        scheduledAt: { type: string, format: date-time }
+        locationText: { type: string }
+        status: { type: string, enum: [invited, accepted, declined, cancelled, completed] }
+        cancelReason: { type: string }
+        mineAsRecruiter: { type: boolean }
+        mineAsApplicant: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }

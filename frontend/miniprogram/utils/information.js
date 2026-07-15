@@ -22,4 +22,16 @@ function validateRecruitmentPost(form, imageCount) {
   return imageCount > 6 ? '最多上传 6 张图片' : '';
 }
 
-module.exports = { validateApplicantInformation, validateRecruiterInformation, validateRecruitmentPost };
+function sensitiveContentHints(form = {}) {
+  const text = Object.values(form).filter((value) => typeof value === 'string').join(' ');
+  const hints = [];
+  if (/(?:微信|wx|wechat)\s*[:：]?\s*[a-zA-Z0-9_-]{4,}/i.test(text) || /1[3-9]\d{9}/.test(text)) {
+    hints.push('检测到疑似联系方式，请勿在公开字段中填写手机号或微信号');
+  }
+  if (/(号楼|单元|室|栋)/.test(text) && text.length > 8) {
+    hints.push('位置描述尽量使用区域级信息，楼栋级地址仅在发布者位置信息中保存');
+  }
+  return hints;
+}
+
+module.exports = { validateApplicantInformation, validateRecruiterInformation, validateRecruitmentPost, sensitiveContentHints };

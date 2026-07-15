@@ -1,0 +1,6 @@
+<view class="startup-page">
+  <view class="startup-mark">寻职</view>
+  <text class="startup-copy">找工作，也找合适的人</text>
+  <text class="startup-status">{{message}}</text>
+  <button wx:if="{{error}}" class="button-primary" bindtap="retry">重新进入</button>
+</view>

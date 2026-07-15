@@ -129,6 +129,7 @@ One current record belongs to each applicant role profile. Updates replace the c
 | preferred_work_scope | string | no | Secondary optional preference |
 | visibility_status | string | yes | `published`, `pending_review`, `changes_requested`, or `disabled` |
 | published_at | datetime | yes | First publication time; returned as `publishedAt` |
+| expires_at | datetime | yes | Public-market expiry; default publish time + 30 days; renewed by owner |
 | disabled_at | datetime | no | Owner/admin disable time |
 | moderation_reason | string | no | Latest administrator return/disable reason; owner/admin only |
 | moderated_by | string | no | Latest administrator actor; foreign key to `admin_accounts.user_id` |
@@ -139,7 +140,7 @@ One current record belongs to each applicant role profile. Updates replace the c
 Constraints:
 
 - Unique `role_profile_id`.
-- New submitted information starts as `published` and receives `published_at`; only `published` information is included in public market queries.
+- New submitted information starts as `published` and receives `published_at`; only `published` and non-expired information is included in public market queries.
 - Editing `changes_requested` information transitions it to `pending_review`; editing an administrator-disabled row does not make it public.
 - The referenced role profile must belong to the authenticated user for API access.
 - Coordinates must be finite and within latitude `[-90, 90]` and longitude `[-180, 180]`.
@@ -178,6 +179,7 @@ One recruiter may own multiple recruitment posts. A successful submission create
 | longitude | decimal | yes | Required submitted longitude |
 | status | string | yes | `published`, `pending_review`, `changes_requested`, or `disabled` |
 | published_at | datetime | yes | Publication time; returned as `publishedAt` |
+| expires_at | datetime | yes | Public-market expiry; default publish time + 30 days; renewed by owner |
 | disabled_at | datetime | no | Owner/admin disable time |
 | moderation_reason | string | no | Latest administrator return/disable reason; owner/admin only |
 | moderated_by | string | no | Latest administrator actor; foreign key to `admin_accounts.user_id` |
@@ -418,6 +420,71 @@ Successful administrator login, account and role changes, user changes, review d
 - Admin session index `(admin_sessions.user_id, admin_sessions.expires_at)`.
 - Admin audit indexes `(admin_audit_logs.created_at, admin_audit_logs.id)` and `(admin_audit_logs.admin_user_id, admin_audit_logs.created_at)`.
 
+## New Entity: conversations / messages / applications / interviews
+
+Collaboration tables support in-app messaging, applications, and interviews after approved counterpart identities exist.
+
+### conversations
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| id | string | yes | Primary key |
+| initiator_user_id | string | yes | User who first opened the conversation |
+| peer_user_id | string | yes | Counterparty user |
+| related_target_type | string | yes | `recruitment_post` or `applicant_information` |
+| related_target_id | string | yes | Target publication id |
+| status | string | yes | `active`, `ended`, or `blocked` |
+| created_at | datetime | yes | Creation time |
+| updated_at | datetime | yes | Last activity time |
+
+Unique `(initiator_user_id, peer_user_id, related_target_type, related_target_id)`.
+
+### messages
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| id | string | yes | Primary key |
+| conversation_id | string | yes | Foreign key to conversations |
+| sender_user_id | string | yes | Sender |
+| body | string | yes | Text only; max 1000 |
+| client_request_id | string | no | Client idempotency key |
+| created_at | datetime | yes | Send time |
+
+Partial unique index on `(conversation_id, sender_user_id, client_request_id)` when `client_request_id` is not null.
+
+### applications
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| id | string | yes | Primary key |
+| applicant_user_id | string | yes | Applicant platform user |
+| recruitment_post_id | string | yes | Target post |
+| status | string | yes | `submitted`, `viewed`, `contacted`, `interviewing`, `hired`, `rejected`, `withdrawn`, `closed` |
+| note | string | no | Optional applicant note |
+| created_at | datetime | yes | Creation time |
+| updated_at | datetime | yes | Last status change |
+
+Unique `(applicant_user_id, recruitment_post_id)` for idempotent apply.
+
+### interviews
+
+| Column | Type | Required | Notes |
+| --- | --- | --- | --- |
+| id | string | yes | Primary key |
+| application_id | string | no | Optional linked application |
+| recruiter_user_id | string | yes | Inviting recruiter |
+| applicant_user_id | string | yes | Invitee |
+| scheduled_at | datetime | yes | Interview time |
+| location_text | string | yes | Location summary (not precise building address) |
+| status | string | yes | `invited`, `accepted`, `declined`, `cancelled`, `completed` |
+| cancel_reason | string | no | Required when cancelled |
+| created_at | datetime | yes | Creation time |
+| updated_at | datetime | yes | Last change |
+
+### collaboration_audits
+
+Append-only security/operation audit for conversation, message, application, and interview actions.
+
 ## Privacy And Security Rules
 
 - Do not store `session_key` or expose `openid` to the client.
@@ -430,6 +497,7 @@ Successful administrator login, account and role changes, user changes, review d
 - Do not expose precise coordinates or detailed addresses in public responses until product and privacy rules define display precision.
 - Contact fields are excluded from market lists and returned only from approved, authenticated detail requests; every detail contact read is logged.
 - Disabled content is excluded from market lists and detail contact responses.
+- Expired publications (`expires_at <= now`) are excluded from public list/map/detail contact and treated as unavailable in favorites; expiry is enforced server-side via the shared visibility policy.
 - Retain rejected/changed profiles according to the product retention policy; do not hard-delete without Product and Architect approval.
 
 ## Migration Notes

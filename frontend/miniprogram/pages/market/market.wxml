@@ -8,6 +8,24 @@
     <button class="mode-button {{mode === 'list' ? 'active' : ''}}" data-mode="list" bindtap="switchMode">列表</button>
   </view>
   <view class="search-row"><input value="{{keyword}}" bindinput="input" confirm-type="search" bindconfirm="search" placeholder="搜索工种" /><button bindtap="search">搜索</button></view>
+  <button class="filter-trigger" bindtap="openFilters">筛选{{activeFilterSummary ? ' · 已选' : ''}}</button>
+  <view wx:if="{{activeFilterSummary || totalCount !== null}}" class="filter-summary">
+    <text wx:if="{{activeFilterSummary}}">已选：{{activeFilterSummary}}</text>
+    <text wx:if="{{totalCount !== null}}">结果 {{totalCount}} 条</text>
+    <button wx:if="{{activeFilterSummary}}" class="small-button" bindtap="saveCurrentFilters">保存筛选</button>
+  </view>
+  <view wx:if="{{showFilters}}" class="filter-sheet">
+    <view class="filter-head"><text>筛选信息</text><button bindtap="closeFilters">关闭</button></view>
+    <label>工种<input data-field="jobType" value="{{draftFilters.jobType}}" bindinput="filterInput" placeholder="例如：服务员" /></label>
+    <label>薪资<input data-field="salaryRange" value="{{draftFilters.salaryRange}}" bindinput="filterInput" placeholder="例如：5K-8K" /></label>
+    <label>位置<input data-field="location" value="{{draftFilters.location}}" bindinput="filterInput" placeholder="区域关键词" /></label>
+    <label>发布时间起<input data-field="publishedFrom" value="{{draftFilters.publishedFrom}}" type="date" bindinput="filterInput" /></label>
+    <label>发布时间止<input data-field="publishedTo" value="{{draftFilters.publishedTo}}" type="date" bindinput="filterInput" /></label>
+    <label>工作方式<picker range="{{['月结','不定时长']}}" bindchange="pickWorkMethod"><view class="filter-picker">{{draftFilters.workMethod === 'monthly_settlement' ? '月结' : draftFilters.workMethod === 'indefinite_duration' ? '不定时长' : '不限'}}</view></picker></label>
+    <view wx:if="{{savedFilters.length}}" class="saved-block"><text class="section-title">已保存筛选</text><view wx:for="{{savedFilters}}" wx:key="savedAt" class="saved-row"><button data-source="saved" data-index="{{index}}" bindtap="applySavedFilter">应用</button><button data-index="{{index}}" bindtap="deleteSavedFilter">删除</button></view></view>
+    <view wx:if="{{recentSearches.length}}" class="saved-block"><text class="section-title">最近搜索</text><view wx:for="{{recentSearches}}" wx:key="savedAt" class="saved-row"><button data-source="recent" data-index="{{index}}" bindtap="applySavedFilter">使用</button></view></view>
+    <view class="filter-actions"><button bindtap="resetFilters">重置</button><button class="apply-filter" bindtap="applyFilters">应用筛选</button></view>
+  </view>
 
   <view wx:if="{{locationNotice && mode === 'map'}}" class="location-notice"><text>{{locationNotice}}</text><button bindtap="retryLocation">重新定位</button></view>
 
@@ -20,11 +38,11 @@
 
   <view wx:else class="list-view">
     <view wx:if="{{loading}}" class="loading">正在加载...</view>
-    <view wx:elif="{{!items.length}}" class="panel empty">暂时没有符合条件的信息</view>
+    <view wx:elif="{{!items.length}}" class="panel empty">暂时没有符合条件的信息{{activeFilterSummary ? '，可调整筛选条件后重试' : ''}}</view>
     <block wx:else>
       <button wx:for="{{items}}" wx:key="id" class="action-card market-card" data-id="{{item.id}}" bindtap="open">
         <image wx:if="{{item.coverImage}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" />
-        <view class="card-copy"><text class="action-title">{{role === 'applicant' ? item.jobType : item.jobTypeName}}</text><text class="muted">{{role === 'applicant' ? item.salaryRange : item.expectedSalary}} · {{item.locationText}}</text><text class="published">发布时间：{{item.publishedAt}}</text></view>
+        <view class="card-copy"><text class="action-title">{{role === 'applicant' ? item.jobType : item.jobTypeName}}</text><text class="muted">{{role === 'applicant' ? item.salaryRange : item.expectedSalary}} · {{item.locationText}}</text><text wx:if="{{item.matchReasons.length}}" class="match-line">{{item.matchReasons.join(' · ')}}</text><text class="published">发布时间：{{item.publishedAt}}</text></view>
       </button>
       <view wx:if="{{loadingMore}}" class="list-progress">正在加载更多...</view>
       <view wx:elif="{{!nextCursor}}" class="list-progress">已显示全部信息</view>
@@ -42,6 +60,11 @@
     <text class="detail-line">发布时间：{{selected.publishedAt}}</text>
     <scroll-view wx:if="{{selected.images.length}}" class="detail-images" scroll-x enhanced show-scrollbar="false"><image wx:for="{{selected.images}}" wx:key="id" src="{{item.url}}" mode="aspectFill" /></scroll-view>
     <view class="contact-row"><view><text class="contact-label">{{selected.contactName || '联系方式'}}</text><text class="contact-phone">{{selected.contactPhone}}</text></view><button bindtap="callContact">拨打</button></view>
-    <view class="detail-actions"><button class="primary-action" loading="{{actionLoading}}" disabled="{{actionLoading}}" bindtap="favorite">{{selected.isFavorited ? '取消收藏' : '收藏'}}</button><button bindtap="report">举报</button></view>
+    <view class="detail-actions"><button class="primary-action" loading="{{actionLoading}}" disabled="{{actionLoading}}" bindtap="favorite">{{selected.isFavorited ? '取消收藏' : '收藏'}}</button><button bindtap="block">拉黑</button><button bindtap="report">举报</button></view>
+  </view>
+  <view class="tabbar">
+    <button class="tab-item" data-mode="map" bindtap="switchMode">地图</button>
+    <button class="tab-item {{mode === 'list' ? 'active' : ''}}" data-mode="list" bindtap="switchMode">列表</button>
+    <button class="tab-item" bindtap="openMyCenter">我的</button>
   </view>
 </view>

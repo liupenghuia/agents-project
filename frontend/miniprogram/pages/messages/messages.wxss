@@ -1,0 +1,4 @@
+.toolbar { display: flex; gap: 12rpx; margin: 20rpx 0; }
+.toolbar button { flex: 1; margin: 0; height: 68rpx; line-height: 68rpx; font-size: 24rpx; background: #eef6f3; color: #0d6f5c; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.badge { min-width: 36rpx; padding: 0 10rpx; border-radius: 999rpx; background: #d94841; color: #fff; font-size: 20rpx; text-align: center; }

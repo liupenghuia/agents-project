@@ -19,6 +19,7 @@
     <view wx:if="{{publicationsError}}" class="error"><text>{{publicationsError}}</text><button class="button-secondary" bindtap="loadPublications">重试</button></view>
   </view>
   <button class="action-card" bindtap="openMarket"><text class="action-title">浏览{{role === 'applicant' ? '招聘' : '求职'}}信息</text><text class="muted">按发布时间查看最新公开信息，并进入详情联系</text></button>
-  <view class="panel placeholder"><text class="section-title">更多服务</text><text class="muted">搜索、匹配、投递和沟通将在后续版本开放。</text></view>
+  <button class="action-card" bindtap="openMessages"><text class="action-title">消息与协作</text><text class="muted">站内沟通、投递状态和面试安排</text></button>
   <button class="button-secondary" bindtap="backHome">切换身份</button>
+  <view class="tabbar"><button bindtap="openMarket">地图</button><button bindtap="openList">列表</button><button class="active" bindtap="openMyCenter">我的</button></view>
 </view>

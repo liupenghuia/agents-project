@@ -28,6 +28,9 @@ Page({
     if (this.data.role === 'applicant') this.openApplicantInformation();
     else this.openRecruitmentPost(event);
   },
-  openMarket() { wx.navigateTo({ url: `/pages/market/market?role=${this.data.role}` }); },
+  openMarket() { wx.redirectTo({ url: `/pages/market/market?role=${this.data.role}&mode=map` }); },
+  openList() { wx.redirectTo({ url: `/pages/market/market?role=${this.data.role}&mode=list` }); },
+  openMyCenter() { wx.redirectTo({ url: `/pages/my-center/my-center?role=${this.data.role}` }); },
+  openMessages() { wx.navigateTo({ url: `/pages/messages/messages?role=${this.data.role}` }); },
   backHome() { wx.reLaunch({ url: '/pages/home/home' }); },
 });

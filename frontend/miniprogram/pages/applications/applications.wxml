@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="eyebrow">招聘协作</view>
+  <text class="title">{{role === 'recruiter' ? '收到的投递' : '我的投递'}}</text>
+  <view wx:if="{{loading}}" class="loading">正在读取投递...</view>
+  <view wx:elif="{{!items.length && !error}}" class="panel empty">暂无投递记录</view>
+  <view wx:for="{{items}}" wx:key="id" class="panel application-card">
+    <text class="action-title">{{item.jobType || '招聘信息'}}</text>
+    <text class="muted">{{item.salaryRange}} · 状态 {{item.status}}</text>
+    <text wx:if="{{item.note}}" class="muted">备注：{{item.note}}</text>
+    <view wx:if="{{role === 'applicant' && (item.status === 'submitted' || item.status === 'viewed')}}" class="actions">
+      <button data-id="{{item.id}}" loading="{{actionId === item.id}}" bindtap="withdraw">撤回投递</button>
+    </view>
+    <view wx:if="{{role === 'recruiter'}}" class="actions">
+      <button wx:for="{{recruiterStatuses}}" wx:for-item="statusOption" wx:key="value" data-id="{{item.id}}" data-status="{{statusOption.value}}" bindtap="updateStatus">{{statusOption.label}}</button>
+      <button data-id="{{item.id}}" bindtap="invite">发起面试</button>
+    </view>
+  </view>
+  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+</view>

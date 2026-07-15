@@ -9,6 +9,7 @@ App({
   globalData: {
     session: null,
     identities: [],
+    workspaces: {},
     apiBaseUrl: '',
   },
 
@@ -22,6 +23,7 @@ App({
   clearSession() {
     this.globalData.session = null;
     this.globalData.identities = [];
+    this.globalData.workspaces = {};
     wx.removeStorageSync('platformSession');
   },
 

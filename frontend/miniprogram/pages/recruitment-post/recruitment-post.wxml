@@ -11,9 +11,13 @@
     <view class="label"><text class="optional-label">图片（可选）</text><button class="upload-button" bindtap="chooseImages">选择图片（{{imageCount}}/6）</button></view>
     <view class="image-list"><view wx:for="{{existingImages}}" wx:key="id" class="image-item existing"><text>已上传图片 {{index + 1}}</text><button data-kind="existing" data-index="{{index}}" bindtap="removeImage">删除</button></view><view wx:for="{{imagePaths}}" wx:key="*this" class="image-item"><image src="{{item}}" mode="aspectFill" /><button data-kind="new" data-index="{{index}}" bindtap="removeImage">删除</button></view></view>
   </view>
+  <view wx:if="{{hints.length}}" class="panel"><text wx:for="{{hints}}" wx:key="*this" class="muted">{{item}}</text></view>
   <view wx:if="{{error}}" class="error">{{error}}<button class="button-secondary" bindtap="retry">重试</button></view>
   <view wx:if="{{saved}}" class="success">{{savedMessage}}</view>
-  <view wx:if="{{!loading && postId}}" class="publication-status status-{{form.status}}"><text class="status-title">{{statusView.label}}</text><text>{{statusView.message}}</text><text wx:if="{{form.moderationReason}}" class="moderation-reason">处理原因：{{form.moderationReason}}</text></view>
-  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving || disabling}}" bindtap="submit">{{saving ? '正在上传并保存...' : postId ? statusView.submitLabel : '发布招聘信息'}}</button>
-  <button wx:if="{{!loading && postId && form.status === 'published'}}" class="danger-action" loading="{{disabling}}" disabled="{{saving || disabling}}" bindtap="disable">下架招聘信息</button>
+  <view wx:if="{{!loading && postId}}" class="publication-status status-{{form.status}}"><text class="status-title">{{statusView.label}}</text><text>{{statusView.message}}</text><text wx:if="{{form.expiresAt}}" class="muted">有效期至：{{form.expiresAt}}</text><text wx:if="{{form.moderationReason}}" class="moderation-reason">处理原因：{{form.moderationReason}}</text></view>
+  <button wx:if="{{!loading}}" class="button-primary" loading="{{saving}}" disabled="{{saving || disabling || renewing}}" bindtap="submit">{{saving ? '正在上传并保存...' : postId ? statusView.submitLabel : '发布招聘信息'}}</button>
+  <button wx:if="{{!loading && !postId}}" class="button-secondary" bindtap="preview">预览并保存草稿</button>
+  <button wx:if="{{!loading && !postId}}" class="button-secondary" bindtap="clearDraft">删除草稿</button>
+  <button wx:if="{{!loading && postId}}" class="button-secondary" loading="{{renewing}}" disabled="{{saving || disabling || renewing}}" bindtap="renew">续期公开信息</button>
+  <button wx:if="{{!loading && postId && form.status === 'published'}}" class="danger-action" loading="{{disabling}}" disabled="{{saving || disabling || renewing}}" bindtap="disable">下架招聘信息</button>
 </view>

@@ -81,6 +81,9 @@ Out of scope:
 - [x] 详情不公开精确楼栋地址、内部用户 ID、微信 provider 信息或会话信息。
 - [x] 禁用或不存在的信息不出现在列表，详情不能继续展示联系方式。
 - [x] 小程序覆盖空、加载、错误、重试、分页和无权限状态。
+- [ ] 筛选使用独立筛选面板，支持已选条件展示、重置、取消、应用和应用后分页重置；地图与列表条件一致。
+- [ ] 列表卡片统一展示标题、关键条件、区域、发布时间和状态，不展示联系方式和精确地址。
+- [ ] 详情使用独立页面，包含返回、完整信息层级、联系方式、收藏、举报、拉黑及对应加载/成功/失败状态。
 
 ## Architecture Impact
 
@@ -126,3 +129,4 @@ Out of scope:
 | 2026-07-14 | Backend + Mini Program Agents | Test Agent | Blocked | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/miniprogram/services/api.js`, `frontend/miniprogram/pages/market/*`, `frontend/miniprogram/pages/role-home/*` | `npm test`: 9 passed; Mini Program JS syntax and registration/information tests passed; workflow validation passed | Unified platform verification pending | Run the unified validation batch. |
 | 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Stable market cursors/DTOs/public images, Mini Program list pagination/detail media, OpenAPI | Backend `npm test`: 11 passed including tie-safe two-way cursor pages and contact DTOs; Mini Program market-list/map tests passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260714-006/20260714-181439-d24ba4/report.md` | WeChat DevTools/real-device list/detail/media checks pending | Run two-way list pagination and detail rendering in WeChat DevTools/on device. |
 | 2026-07-14 | Test Agent | Coordinator | Blocked | Done | Existing automated and DevTools evidence; task metadata | User-provided pass report `/tmp/ppfiles-learn-delivery/TASK-20260714-006/20260714-120515-69824b/report.md`; later DevTools dependency flow verified both list/detail/contact directions, filters, disabled disappearance and screenshots; backend 13-test regression passed | None | Dependency accepted for TASK-007. |
+| 2026-07-15 | Mini Program Agent | Test Agent | Done | Blocked | `frontend/miniprogram/pages/market/*`, `frontend/miniprogram/pages/market-detail/*`, `frontend/miniprogram/services/api.js`, `frontend/miniprogram/app.js` | Added role-scoped filter sheet and persistence, API filter mapping, stable three-tab navigation, compact market entry, independent detail page with contact/favorite/report/block actions; Mini Program JS syntax passed; runner report `/tmp/ppfiles-learn-delivery/TASK-20260714-006/20260715-121322-5e4b96/report.md` | WeChat DevTools/real-device visual and navigation verification pending | Test filter apply/reset, detail actions, back semantics and narrow-screen rendering. |

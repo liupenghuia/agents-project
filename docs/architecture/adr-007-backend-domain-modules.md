@@ -20,18 +20,16 @@ backend/src/
   wechat.js                 # WeChat adapter
   db.js                     # createDatabase + compatibility re-exports
   domain/
-    time.js                 # clock/TTL helpers
-    visibility.js           # publication active, not-expired SQL, block checks
-    schema.js               # schema create + migrations
-    auth.js                 # sessions, provider users
-    identity.js             # role profiles
-    information.js          # applicant/recruiter info, posts, media
-    market.js               # list/map/detail/favorites/safety projections
-    admin.js                # admin accounts, audit, moderation stores
-    collaboration.js        # conversations, applications, interviews
+    time.js / visibility.js
+    schema.js
+    auth.js / identity.js / information.js / users.js
+    market.js / admin.js
+    collaboration.js
+    store.js                # re-export facade for domain stores
   routes/
-    index.js                # mounts all route groups
-    *.js                    # path handlers by domain
+    index.js                # CORS, body parse, domain dispatch
+    auth.js / admin.js / users.js / information.js
+    market.js / identity.js / collaboration.js
 ```
 
 ### Compatibility

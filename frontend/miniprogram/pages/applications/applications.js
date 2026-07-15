@@ -1,4 +1,5 @@
 const api = require('../../services/api');
+const { runRequest } = require('../../utils/request-state');
 
 const recruiterStatuses = [
   { value: 'viewed', label: '已查看' },
@@ -10,29 +11,43 @@ const recruiterStatuses = [
 ];
 
 Page({
-  data: { role: 'applicant', items: [], loading: true, error: '', actionId: '', recruiterStatuses },
+  data: { role: 'applicant', items: [], loading: true, submitting: false, error: '', actionId: '', recruiterStatuses },
   onLoad(options) { this.setData({ role: options.role === 'recruiter' ? 'recruiter' : 'applicant' }); this.load(); },
   onShow() { if (!this.data.loading) this.load(); },
   load() {
-    this.setData({ loading: true, error: '' });
     const action = this.data.role === 'recruiter' ? api.listRecruitmentApplications : api.listMyApplications;
-    action().then((items) => this.setData({ items: items || [], loading: false }))
-      .catch((error) => this.setData({ loading: false, error: error.message }));
+    return runRequest({
+      getState: () => this.data,
+      setState: (patch) => this.setData(patch),
+      mode: 'load',
+      request: () => action(),
+      mapSuccess: (items) => ({ items: items || [], actionId: '' }),
+    }).catch(() => {});
   },
   withdraw(event) {
     const id = event.currentTarget.dataset.id;
-    if (!id || this.data.actionId) return;
-    this.setData({ actionId: id, error: '' });
-    api.withdrawApplication(id).then(() => this.load()).catch((error) => this.setData({ error: error.message, actionId: '' }));
+    if (!id || this.data.submitting) return;
+    this.setData({ actionId: id });
+    runRequest({
+      getState: () => this.data,
+      setState: (patch) => this.setData(patch),
+      mode: 'submit',
+      request: () => api.withdrawApplication(id),
+      mapSuccess: () => ({ actionId: '' }),
+    }).then(() => this.load()).catch(() => this.setData({ actionId: '' }));
   },
   updateStatus(event) {
     const id = event.currentTarget.dataset.id;
     const status = event.currentTarget.dataset.status;
-    if (!id || !status || this.data.actionId) return;
-    this.setData({ actionId: id, error: '' });
-    api.updateApplicationStatus(id, status)
-      .then(() => this.setData({ actionId: '' }, () => this.load()))
-      .catch((error) => this.setData({ error: error.message, actionId: '' }));
+    if (!id || !status || this.data.submitting) return;
+    this.setData({ actionId: id });
+    runRequest({
+      getState: () => this.data,
+      setState: (patch) => this.setData(patch),
+      mode: 'submit',
+      request: () => api.updateApplicationStatus(id, status),
+      mapSuccess: () => ({ actionId: '' }),
+    }).then(() => this.load()).catch(() => this.setData({ actionId: '' }));
   },
   invite(event) {
     const item = this.data.items.find((candidate) => candidate.id === event.currentTarget.dataset.id);

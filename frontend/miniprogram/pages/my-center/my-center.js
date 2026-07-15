@@ -1,13 +1,21 @@
 const api = require('../../services/api');
+const { runRequest } = require('../../utils/request-state');
 
 Page({
-  data: { role: 'applicant', identities: [], blocks: [], loading: true, error: '', status: { pending_review: '待审核', approved: '审核通过', changes_requested: '需修改' } },
+  data: {
+    role: 'applicant', identities: [], blocks: [], loading: true, submitting: false, error: '',
+    status: { pending_review: '待审核', approved: '审核通过', changes_requested: '需修改' },
+  },
   onLoad(options) { this.setData({ role: options.role === 'recruiter' ? 'recruiter' : 'applicant' }); this.load(); },
   onShow() { if (!this.data.loading) this.load(); },
   load() {
-    this.setData({ loading: true, error: '' });
-    Promise.all([api.listIdentities(), api.listMarketUserBlocks()]).then(([identities, blocks]) => this.setData({ identities: identities || [], blocks: blocks || [], loading: false }))
-      .catch((error) => this.setData({ loading: false, error: error.message }));
+    return runRequest({
+      getState: () => this.data,
+      setState: (patch) => this.setData(patch),
+      mode: 'load',
+      request: () => Promise.all([api.listIdentities(), api.listMarketUserBlocks()]),
+      mapSuccess: ([identities, blocks]) => ({ identities: identities || [], blocks: blocks || [] }),
+    }).catch(() => {});
   },
   openProfile() { wx.navigateTo({ url: `/pages/profile/profile?role=${this.data.role}` }); },
   openFavorites() { wx.redirectTo({ url: `/pages/favorites/favorites?role=${this.data.role}` }); },
@@ -20,7 +28,14 @@ Page({
   openAgreement() { wx.showModal({ title: '用户协议', content: '请遵守平台规则，不发布虚假、违法或侵害他人权益的信息。', showCancel: false }); },
   unblock(event) {
     const id = event.currentTarget.dataset.id;
-    api.deleteMarketUserBlock(id).then(() => this.setData({ blocks: this.data.blocks.filter((item) => item.blockId !== id) })).catch((error) => this.setData({ error: error.message }));
+    if (!id || this.data.submitting) return;
+    runRequest({
+      getState: () => this.data,
+      setState: (patch) => this.setData(patch),
+      mode: 'submit',
+      request: () => api.deleteMarketUserBlock(id),
+      mapSuccess: () => ({ blocks: this.data.blocks.filter((item) => item.blockId !== id) }),
+    }).catch(() => {});
   },
   retry() { this.load(); },
 });

@@ -2,6 +2,18 @@
 
 本项目用 Idea Brief、任务、角色、质量门禁和缺陷复测记录组织多 Agent 协作。目标不是让多个 Agent 各自输出代码，而是让一个原始想法经过产品判断、工程交付和独立验证后进入可信的 `Done`，且每次状态变化都有证据和下一步。
 
+## 通用交付套件（agent-delivery-kit）
+
+与业务无关的流程 / 角色 / 脚手架 / 校验 / 交付 runner 已抽到：
+
+**[`agent-delivery-kit/`](./agent-delivery-kit/)**
+
+- 完整使用说明：[`agent-delivery-kit/docs/USAGE.md`](./agent-delivery-kit/docs/USAGE.md)
+- 设计蓝图：[`docs/agent-delivery-kit-design.md`](./docs/agent-delivery-kit-design.md)
+- 新产品：`ruby agent-delivery-kit/scripts/init_product.rb --path ... --name ... --preset api-web`
+
+本 monorepo 的寻职业务仍使用根目录 `scripts/` 与 `docs/` 中的产品真相；kit 用于复用与新开产品仓。
+
 ## 快速开始
 
 ### 自动交付闭环

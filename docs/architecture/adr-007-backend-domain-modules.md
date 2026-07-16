@@ -64,7 +64,7 @@ OpenAPI and database.md are updated in the same change set as structural sync fo
 
 - Positive: clearer ownership, less duplicated safety predicates, safer collaboration writes, contracts catch up.
 - Negative: more files; temporary re-export surface until older deep imports are cleaned.
-- Follow-up: optional deeper DI; move authenticate/admin helpers out of `app.js`; apply `rethrowDomainError` consistently across remaining route modules.
+- Follow-up (partially done): `create-deps.js` keeps only shared infra; routes import domain stores/validators directly; `domain/request-auth.js` owns session/admin auth; `domain/market/*` is physically split; `domain/migrations/*` records `schema_migrations` versions. Remaining: apply `rethrowDomainError` consistently across remaining route modules; optional service-object DI if needed.
 
 ## Rollback
 

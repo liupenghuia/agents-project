@@ -7,13 +7,17 @@ Use a modular monolith with a REST API. Physical backend layout follows [ADR-007
 ```text
 backend/src/
   app.js                 # composition root (createApp)
+  create-deps.js         # shared HTTP/auth/media deps only
   http.js                # HTTP helpers / rate limit / errors
-  routes/                # domain route handlers + index dispatch
+  routes/                # thin domain handlers; import stores/validators directly
     auth / admin / users / information / market / identity / collaboration
   db.js                  # createDatabase + store re-exports
   domain/
+    request-auth.js      # Bearer session + admin auth helpers
     time / visibility / schema
-    auth / identity / information / users / market / admin
+    auth / identity / information / users / admin
+    market.js + market/  # list map favorites blocks reports moderation
+    migrations/          # schema_migrations runner + versioned registry
     collaboration / store (re-export)
   wechat.js
 ```

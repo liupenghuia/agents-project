@@ -1,11 +1,9 @@
 const api = require('../../services/api');
-const { boundsFromCenter, buildMapQuery, toMapMarkers } = require('../../utils/market-map');
-const { mergeMarketItems, normalizeMarketItem } = require('../../utils/market-list');
-const { matchMarketItem } = require('../../utils/matching');
+const marketApp = require('../../services/market-app');
 const { getActiveRole, setActiveRole, getMarketWorkspace, saveMarketWorkspace } = require('../../utils/workspace');
 const navigation = require('../../utils/navigation');
 
-const DEFAULT_CENTER = { latitude: 31.2304, longitude: 121.4737 };
+const { DEFAULT_CENTER } = marketApp;
 
 function createMarketPage({ mode }) {
   const fixedMode = mode === 'list' ? 'list' : 'map';
@@ -40,8 +38,7 @@ function createMarketPage({ mode }) {
     onLoad(options) {
       const role = setActiveRole(options.role || getActiveRole() || 'applicant') || 'applicant';
       const saved = getMarketWorkspace(role);
-      const savedFilters = wx.getStorageSync(`marketFilters:${role}`) || [];
-      const recentSearches = wx.getStorageSync(`marketRecent:${role}`) || [];
+      const history = marketApp.loadFilterHistory(role);
       this.setData({
         role,
         mode: fixedMode,
@@ -49,14 +46,21 @@ function createMarketPage({ mode }) {
         filters: saved.filters || {},
         draftFilters: saved.filters || {},
         scale: saved.scale || 11,
-        savedFilters,
-        recentSearches,
-        activeFilterSummary: this.summarizeFilters(saved.filters || {}),
+        savedFilters: history.savedFilters,
+        recentSearches: history.recentSearches,
+        activeFilterSummary: marketApp.summarizeFilters(saved.filters || {}),
       });
-      saveMarketWorkspace(role, { mode: fixedMode, keyword: saved.keyword, filters: saved.filters, scale: saved.scale });
+      saveMarketWorkspace(role, {
+        mode: fixedMode,
+        keyword: saved.keyword,
+        filters: saved.filters,
+        scale: saved.scale,
+      });
       this._requestSerial = 0;
       if (role === 'applicant') {
-        api.getApplicantJobSeekingInformation().then((profile) => this.setData({ viewerProfile: profile })).catch(() => {});
+        api.getApplicantJobSeekingInformation()
+          .then((profile) => this.setData({ viewerProfile: profile }))
+          .catch(() => {});
       }
     },
 
@@ -78,7 +82,7 @@ function createMarketPage({ mode }) {
     onHide() { this.saveWorkspace(); },
 
     summarizeFilters(filters = {}) {
-      return Object.entries(filters).filter(([, value]) => value).map(([key, value]) => `${key}:${value}`).join(' · ');
+      return marketApp.summarizeFilters(filters);
     },
 
     saveWorkspace() {
@@ -91,34 +95,8 @@ function createMarketPage({ mode }) {
     },
 
     persistFilterHistory(filters) {
-      if (!Object.values(filters || {}).some(Boolean) && !this.data.keyword) return;
-      const entry = { ...filters, keyword: this.data.keyword, savedAt: Date.now() };
-      const recent = [entry, ...(wx.getStorageSync(`marketRecent:${this.data.role}`) || [])]
-        .filter((item, index, list) => list.findIndex((candidate) => JSON.stringify(candidate) === JSON.stringify(item)) === index)
-        .slice(0, 5);
-      wx.setStorageSync(`marketRecent:${this.data.role}`, recent);
+      const recent = marketApp.persistRecentSearch(this.data.role, filters, this.data.keyword);
       this.setData({ recentSearches: recent });
-    },
-
-    apiFilters() {
-      const filters = this.data.filters || {};
-      return this.data.role === 'applicant'
-        ? {
-          jobTypeName: filters.jobType || '',
-          expectedSalary: filters.salaryRange || '',
-          workMethod: filters.workMethod || '',
-          location: filters.location || '',
-          publishedFrom: filters.publishedFrom || '',
-          publishedTo: filters.publishedTo || '',
-        }
-        : {
-          jobType: filters.jobType || '',
-          salaryRange: filters.salaryRange || '',
-          settlementMethod: filters.workMethod || '',
-          location: filters.location || '',
-          publishedFrom: filters.publishedFrom || '',
-          publishedTo: filters.publishedTo || '',
-        };
     },
 
     onReady() {
@@ -144,9 +122,13 @@ function createMarketPage({ mode }) {
 
     openFilters() { this.setData({ showFilters: true, draftFilters: { ...this.data.filters } }); },
     closeFilters() { this.setData({ showFilters: false }); },
-    filterInput(event) { this.setData({ [`draftFilters.${event.currentTarget.dataset.field}`]: event.detail.value }); },
+    filterInput(event) {
+      this.setData({ [`draftFilters.${event.currentTarget.dataset.field}`]: event.detail.value });
+    },
     pickWorkMethod(event) {
-      this.setData({ 'draftFilters.workMethod': ['monthly_settlement', 'indefinite_duration'][event.detail.value] });
+      this.setData({
+        'draftFilters.workMethod': ['monthly_settlement', 'indefinite_duration'][event.detail.value],
+      });
     },
     resetFilters() { this.setData({ draftFilters: {} }); },
 
@@ -157,7 +139,7 @@ function createMarketPage({ mode }) {
         showFilters: false,
         nextCursor: null,
         totalCount: null,
-        activeFilterSummary: this.summarizeFilters(filters),
+        activeFilterSummary: marketApp.summarizeFilters(filters),
       }, () => {
         this.persistFilterHistory(filters);
         this.saveWorkspace();
@@ -166,22 +148,20 @@ function createMarketPage({ mode }) {
     },
 
     saveCurrentFilters() {
-      const filters = { ...this.data.filters, keyword: this.data.keyword };
-      if (!Object.values(filters).some(Boolean)) {
-        wx.showToast({ title: '没有可保存的条件', icon: 'none' });
+      const result = marketApp.saveFiltersPreset(this.data.role, this.data.filters, this.data.keyword);
+      if (!result.ok) {
+        wx.showToast({ title: result.message, icon: 'none' });
         return;
       }
-      const next = [filters, ...(this.data.savedFilters || [])]
-        .filter((item, index, list) => list.findIndex((candidate) => JSON.stringify(candidate) === JSON.stringify(item)) === index)
-        .slice(0, 8);
-      wx.setStorageSync(`marketFilters:${this.data.role}`, next);
-      this.setData({ savedFilters: next });
+      this.setData({ savedFilters: result.savedFilters });
       wx.showToast({ title: '已保存筛选', icon: 'success' });
     },
 
     applySavedFilter(event) {
       const index = Number(event.currentTarget.dataset.index);
-      const source = event.currentTarget.dataset.source === 'recent' ? this.data.recentSearches : this.data.savedFilters;
+      const source = event.currentTarget.dataset.source === 'recent'
+        ? this.data.recentSearches
+        : this.data.savedFilters;
       const selected = source[index];
       if (!selected) return;
       const { keyword = '', savedAt, ...filters } = selected;
@@ -191,7 +171,7 @@ function createMarketPage({ mode }) {
         draftFilters: { ...filters },
         showFilters: false,
         nextCursor: null,
-        activeFilterSummary: this.summarizeFilters(filters),
+        activeFilterSummary: marketApp.summarizeFilters(filters),
       }, () => {
         this.saveWorkspace();
         this.search();
@@ -200,8 +180,7 @@ function createMarketPage({ mode }) {
 
     deleteSavedFilter(event) {
       const index = Number(event.currentTarget.dataset.index);
-      const next = this.data.savedFilters.filter((_, itemIndex) => itemIndex !== index);
-      wx.setStorageSync(`marketFilters:${this.data.role}`, next);
+      const next = marketApp.deleteSavedFilter(this.data.role, index);
       this.setData({ savedFilters: next });
     },
 
@@ -225,7 +204,7 @@ function createMarketPage({ mode }) {
         ...DEFAULT_CENTER,
         loading: false,
         locationNotice: message,
-      }, () => this.loadMap(boundsFromCenter(DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude)));
+      }, () => this.loadMap(marketApp.fallbackBounds()));
     },
 
     retryLocation() { this.initializeMap(); },
@@ -233,25 +212,21 @@ function createMarketPage({ mode }) {
     loadList(append = false) {
       if (this.data.loading || this.data.loadingMore || (append && !this.data.nextCursor)) return;
       const serial = ++this._requestSerial;
-      const action = this.data.role === 'applicant' ? api.listMarketRecruitmentPosts : api.listMarketJobSeekingInformation;
       this.setData({ [append ? 'loadingMore' : 'loading']: true, error: '' });
-      action({
+      marketApp.fetchMarketList(api, {
+        role: this.data.role,
         keyword: this.data.keyword,
-        ...this.apiFilters(),
-        ...(append ? { cursor: this.data.nextCursor } : {}),
+        filters: this.data.filters,
+        cursor: this.data.nextCursor,
+        append,
+        existingItems: this.data.items,
+        viewerProfile: this.data.viewerProfile,
       }).then((result) => {
         if (serial !== this._requestSerial) return;
-        const incoming = (result.items || []).map((item) => {
-          const normalized = normalizeMarketItem(item, api.resolveMediaUrl);
-          const matching = matchMarketItem(normalized, this.data.viewerProfile);
-          return matching.reasons.length
-            ? { ...normalized, matchScore: matching.score, matchReasons: matching.reasons }
-            : normalized;
-        });
         this.setData({
-          items: append ? mergeMarketItems(this.data.items, incoming) : incoming,
-          nextCursor: result.nextCursor || null,
-          totalCount: typeof result.totalCount === 'number' ? result.totalCount : this.data.totalCount,
+          items: result.items,
+          nextCursor: result.nextCursor,
+          totalCount: result.totalCount != null ? result.totalCount : this.data.totalCount,
         });
       }).catch((error) => {
         if (serial === this._requestSerial) this.setData({ error: error.message });
@@ -266,7 +241,7 @@ function createMarketPage({ mode }) {
 
     currentBounds(callback) {
       if (!this._mapContext || !this._mapContext.getRegion) {
-        callback(boundsFromCenter(this.data.latitude, this.data.longitude));
+        callback(marketApp.boundsFromCenter(this.data.latitude, this.data.longitude));
         return;
       }
       this._mapContext.getRegion({
@@ -276,7 +251,7 @@ function createMarketPage({ mode }) {
           north: northeast.latitude,
           east: northeast.longitude,
         }),
-        fail: () => callback(boundsFromCenter(this.data.latitude, this.data.longitude)),
+        fail: () => callback(marketApp.boundsFromCenter(this.data.latitude, this.data.longitude)),
       });
     },
 
@@ -287,17 +262,17 @@ function createMarketPage({ mode }) {
         return;
       }
       const serial = ++this._requestSerial;
-      const query = {
-        ...buildMapQuery(bounds, this.data.scale, this.data.keyword, this.data.role),
-        ...this.apiFilters(),
-      };
-      const action = this.data.role === 'applicant' ? api.mapMarketRecruitmentPosts : api.mapMarketJobSeekingInformation;
       this.setData({ loading: true, error: '' });
-      action(query).then((result) => {
+      marketApp.fetchMarketMap(api, {
+        role: this.data.role,
+        bounds,
+        scale: this.data.scale,
+        keyword: this.data.keyword,
+        filters: this.data.filters,
+      }).then((result) => {
         if (serial !== this._requestSerial) return;
-        const mapped = toMapMarkers(result.items, this.data.role);
-        this._markerTargets = mapped.targets;
-        this.setData({ markers: mapped.markers });
+        this._markerTargets = result.markerTargets;
+        this.setData({ markers: result.markers });
       }).catch((error) => {
         if (serial === this._requestSerial) this.setData({ error: error.message, markers: [] });
       }).finally(() => {
@@ -347,18 +322,16 @@ function createMarketPage({ mode }) {
       const item = this.data.selected;
       if (!item || this.data.actionLoading) return;
       const shouldFavorite = !item.isFavorited;
-      const action = this.data.role === 'applicant'
-        ? (shouldFavorite ? api.favoriteRecruitmentPost : api.unfavoriteRecruitmentPost)
-        : (shouldFavorite ? api.favoriteJobSeekingInformation : api.unfavoriteJobSeekingInformation);
       this.setData({ actionLoading: true, error: '' });
-      action(item.id).then(() => {
-        const selected = { ...item, isFavorited: shouldFavorite };
-        const items = this.data.items.map((candidate) => (
-          candidate.id === item.id ? { ...candidate, isFavorited: shouldFavorite } : candidate
-        ));
-        this.setData({ selected, items });
-        wx.showToast({ title: shouldFavorite ? '已收藏' : '已取消收藏', icon: 'success' });
-      }).catch((error) => this.setData({ error: error.message }))
+      marketApp.toggleFavorite(api, { role: this.data.role, item, shouldFavorite })
+        .then(({ selected }) => {
+          this.setData({
+            selected,
+            items: marketApp.applyFavoriteToItems(this.data.items, item.id, shouldFavorite),
+          });
+          wx.showToast({ title: shouldFavorite ? '已收藏' : '已取消收藏', icon: 'success' });
+        })
+        .catch((error) => this.setData({ error: error.message }))
         .finally(() => this.setData({ actionLoading: false }));
     },
 
@@ -371,9 +344,9 @@ function createMarketPage({ mode }) {
         placeholderText: '请填写举报原因',
         success: (result) => {
           if (!result.confirm || !String(result.content || '').trim()) return;
-          api.createMarketReport({
-            targetType: this.data.role === 'applicant' ? 'recruitment_post' : 'applicant_information',
-            targetId: item.id,
+          marketApp.reportItem(api, {
+            role: this.data.role,
+            item,
             reason: result.content.trim(),
           }).then(() => wx.showToast({ title: '举报已提交', icon: 'success' }))
             .catch((error) => this.setData({ error: error.message }));
@@ -389,14 +362,13 @@ function createMarketPage({ mode }) {
         content: '拉黑后，对方的信息将从你的地图、列表和收藏中隐藏。',
         success: (result) => {
           if (!result.confirm) return;
-          api.createMarketUserBlock({
-            targetType: this.data.role === 'applicant' ? 'recruitment_post' : 'applicant_information',
-            targetId: item.id,
-          }).then(() => {
-            this.closeDetail();
-            this.search();
-            wx.showToast({ title: '已拉黑', icon: 'success' });
-          }).catch((error) => this.setData({ error: error.message }));
+          marketApp.blockPublisher(api, { role: this.data.role, item })
+            .then(() => {
+              this.closeDetail();
+              this.search();
+              wx.showToast({ title: '已拉黑', icon: 'success' });
+            })
+            .catch((error) => this.setData({ error: error.message }));
         },
       });
     },

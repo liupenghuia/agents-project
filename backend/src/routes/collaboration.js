@@ -1,4 +1,11 @@
 import { rethrowDomainError } from '../domain/errors.js';
+import { assertConversationTarget, assertApplicationCreate } from '../domain/validators.js';
+import {
+  startConversation, listConversations, getConversation, listMessages, sendMessage,
+  markConversationRead, endConversation, createApplication, listApplicationsForApplicant,
+  listApplicationsForRecruiter, updateApplicationStatus, createInterview, listInterviews,
+  respondInterview, cancelInterview,
+} from '../collaboration.js';
 
 /** @param {any} ctx */
 export async function tryHandleCollaboration(ctx) {
@@ -7,10 +14,6 @@ export async function tryHandleCollaboration(ctx) {
     db, consumeRateLimit,
     send, httpError, text,
     authenticate,
-    assertConversationTarget, assertApplicationCreate,
-    startConversation, listConversations, getConversation, listMessages, sendMessage, markConversationRead, endConversation,
-    createApplication, listApplicationsForApplicant, listApplicationsForRecruiter, updateApplicationStatus,
-    createInterview, listInterviews, respondInterview, cancelInterview,
   } = ctx;
 
   if (request.method === 'POST' && path === '/me/conversations') {

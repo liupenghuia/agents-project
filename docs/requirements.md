@@ -225,5 +225,19 @@ The complete priority definitions are recorded in:
 - `tasks/phase-one-product-completion.md`: identity restoration, workspaces, profile/publication management, market usability and safety. Status: Done.
 - `tasks/phase-two-discovery-and-quality.md`: advanced search/filter, explainable matching, drafts, preview, validation and expiry. Status: Done.
 - `tasks/phase-three-communication-and-recruitment.md`: messaging, applications, invitations and interviews. Status: Done.
+- `tasks/contact-history-and-online-contact.md`: market card online-contact entry, contact history list, per-user pin and hide/delete. Status: Ready for Architecture（待执行）.
+
+### 在线联系入口与联系历史
+
+在已交付的站内文本沟通之上，增强小程序可达性与历史管理（不替代电话、投递与面试）：
+
+- 市场列表卡片提供「在线联系」快捷入口；详情页主操作统一为「在线联系」。
+- 「消息」列表产品定位为「联系历史」，用于回访既有会话。
+- 用户可对自己的联系历史**置顶**（仅本人列表生效）与**删除**（仅从本人历史隐藏，不销毁对方记录；对方新消息或本人再次发起联系后会话可重新出现）。
+- 「删除」与「结束会话」分离：结束会话限制双方继续发言；删除只管理本人列表可见性。
+- 继续遵守已审核身份、公开目标、拉黑与联系频率限制；列表层不新增手机号暴露。
+- 本项不要求接入第三方 IM；推送、多媒体消息、原生 App 不在范围内。
+
+详细验收与范围见 `tasks/contact-history-and-online-contact.md`。
 
 Any future priority decision must update the relevant task file, acceptance criteria, state/error requirements and handoff log in the same change; conversational planning alone is not considered recorded product scope.

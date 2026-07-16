@@ -1,5 +1,6 @@
 const { createSession } = require('./services/api');
 const { resolveApiBaseUrl } = require('./config');
+const { hydrateAppWorkspace, clearWorkspaceState } = require('./utils/workspace');
 
 function sessionValid(session) {
   return Boolean(session && session.sessionToken && new Date(session.expiresAt).getTime() > Date.now());
@@ -10,11 +11,13 @@ App({
     session: null,
     identities: [],
     workspaces: {},
+    activeRole: null,
     apiBaseUrl: '',
   },
 
   onLaunch() {
     this.globalData.apiBaseUrl = resolveApiBaseUrl();
+    hydrateAppWorkspace(this);
     const session = wx.getStorageSync('platformSession');
     if (sessionValid(session)) this.globalData.session = session;
     else wx.removeStorageSync('platformSession');
@@ -23,7 +26,7 @@ App({
   clearSession() {
     this.globalData.session = null;
     this.globalData.identities = [];
-    this.globalData.workspaces = {};
+    clearWorkspaceState();
     wx.removeStorageSync('platformSession');
   },
 

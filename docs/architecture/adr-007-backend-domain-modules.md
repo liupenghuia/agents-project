@@ -22,12 +22,15 @@ backend/src/
   domain/
     time.js / visibility.js
     schema.js
-    auth.js / identity.js / information.js / users.js
-    market.js / admin.js
-    collaboration.js
+    validators.js           # pure HTTP body/query/media/collaboration input validation
+    errors.js               # domain code -> HTTP status normalize/rethrow
+    auth.js / identity.js   # identity includes create/resubmit/review + DTO mapping
+    information.js          # owner information writes + owner DTO mapping
+    users.js / market.js / admin.js
+    collaboration.js        # write paths use domainError + validators for input checks
     store.js                # re-export facade for domain stores
   routes/
-    index.js                # CORS, body parse, domain dispatch
+    index.js                # CORS, body parse, domain dispatch, normalizeDomainError
     auth.js / admin.js / users.js / information.js
     market.js / identity.js / collaboration.js
 ```
@@ -61,7 +64,7 @@ OpenAPI and database.md are updated in the same change set as structural sync fo
 
 - Positive: clearer ownership, less duplicated safety predicates, safer collaboration writes, contracts catch up.
 - Negative: more files; temporary re-export surface until older deep imports are cleaned.
-- Follow-up: optional deeper DI and route middleware extraction after behavior freeze is proven.
+- Follow-up: optional deeper DI; move authenticate/admin helpers out of `app.js`; apply `rethrowDomainError` consistently across remaining route modules.
 
 ## Rollback
 

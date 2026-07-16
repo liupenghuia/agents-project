@@ -1,3 +1,4 @@
+import { normalizeDomainError } from '../domain/errors.js';
 import { tryHandleAuth } from './auth.js';
 import { tryHandleAdmin } from './admin.js';
 import { tryHandleUsers } from './users.js';
@@ -51,21 +52,6 @@ export async function handleRequest(request, response, deps) {
 
     throw httpError(404, 'NOT_FOUND', '请求地址不存在');
   } catch (error) {
-    if (error.message === 'COUNTERPART_IDENTITY_REQUIRED') {
-      error.status = 403;
-      error.code = 'APPROVED_IDENTITY_REQUIRED';
-      error.message = '需要对应已审核通过的身份';
-    }
-    if (error.message === 'INVALID_IMAGE_REFERENCES') {
-      error.status = 422;
-      error.code = 'INVALID_IMAGE_REFERENCES';
-      error.message = '图片上传引用无效或已过期，请重新上传';
-    }
-    if (error.message === 'INVALID_MARKET_TRANSITION') {
-      error.status = 409;
-      error.code = 'INVALID_MARKET_TRANSITION';
-      error.message = `当前内容状态 ${error.currentStatus} 不允许该操作`;
-    }
-    sendError(response, error);
+    sendError(response, normalizeDomainError(error));
   }
 }

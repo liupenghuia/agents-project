@@ -9,4 +9,8 @@
     <button class="remove-button" data-id="{{item.id}}" loading="{{removingId === item.id}}" disabled="{{!!removingId}}" catchtap="remove">取消收藏</button>
   </view>
   <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+  <view class="subnav">
+    <button class="button-secondary" bindtap="openMarket">回地图</button>
+    <button class="button-secondary" bindtap="openMyCenter">回我的</button>
+  </view>
 </view>

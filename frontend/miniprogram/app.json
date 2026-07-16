@@ -1,6 +1,9 @@
 {
   "pages": [
     "pages/startup/startup",
+    "pages/market/market",
+    "pages/market-list/market-list",
+    "pages/my-center/my-center",
     "pages/home/home",
     "pages/register/register",
     "pages/identities/identities",
@@ -8,10 +11,8 @@
     "pages/applicant-information/applicant-information",
     "pages/recruiter-information/recruiter-information",
     "pages/recruitment-post/recruitment-post",
-    "pages/market/market",
     "pages/market-detail/market-detail",
     "pages/favorites/favorites",
-    "pages/my-center/my-center",
     "pages/profile/profile",
     "pages/messages/messages",
     "pages/conversation/conversation",
@@ -23,6 +24,32 @@
     "navigationBarBackgroundColor": "#f7f8fa",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#f7f8fa"
+  },
+  "tabBar": {
+    "color": "#73807c",
+    "selectedColor": "#0d7c66",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/market/market",
+        "text": "地图",
+        "iconPath": "assets/tab/map.png",
+        "selectedIconPath": "assets/tab/map-active.png"
+      },
+      {
+        "pagePath": "pages/market-list/market-list",
+        "text": "列表",
+        "iconPath": "assets/tab/list.png",
+        "selectedIconPath": "assets/tab/list-active.png"
+      },
+      {
+        "pagePath": "pages/my-center/my-center",
+        "text": "我的",
+        "iconPath": "assets/tab/my.png",
+        "selectedIconPath": "assets/tab/my-active.png"
+      }
+    ]
   },
   "permission": {
     "scope.userLocation": {

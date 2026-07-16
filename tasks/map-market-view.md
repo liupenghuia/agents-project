@@ -3,9 +3,9 @@ id: TASK-20260714-009
 title: 双向市场地图与区域聚合
 status: Blocked
 priority: P1
-owner: Product Agent
+owner: Test Agent
 created: "2026-07-14"
-updated: "2026-07-14"
+updated: "2026-07-16"
 source_idea: IDEA-20260714-009
 depends_on:
   - TASK-20260714-006
@@ -34,10 +34,10 @@ scope_status:
   test: Blocked
   release: N/A
 release_required: false
-blocked_reason: 后端和小程序实现及本地交付 runner 已通过，等待依赖任务统一验证以及微信 DevTools/真机地图渲染、定位授权、缩放聚合和标记交互验收。
+blocked_reason: 依赖任务与本地自动化已通过；仅剩微信 DevTools/真机地图渲染、定位授权、缩放聚合、标记交互和隐私字段人工验收。
 blocked_since: "2026-07-14"
 unblock_owner: Test Agent
-unblock_condition: TASK-20260714-006 和 TASK-20260714-008 完成统一验证，并在微信 DevTools/真机完成双向地图、定位拒绝/重试、缩放聚合、标记详情、下架消失和隐私字段检查。
+unblock_condition: 在微信 DevTools 或真机完成双向地图、定位拒绝/重试、缩放聚合、标记详情、下架消失和隐私字段检查，并记录截图/步骤证据。
 ---
 
 # 任务：双向市场地图与区域聚合
@@ -97,3 +97,4 @@ Out of scope:
 | 2026-07-14 | Architect Agent | Test Agent / Backend / Mini Program | Ready for Architecture | Blocked | `docs/architecture.md`, `docs/architecture/adr-004-market-map-projection.md`, `docs/database.md`, `docs/openapi.yaml`, task | Architecture gate: modular monolith reuse, bounded viewport API, deterministic grid aggregation, privacy projection, rollback and external dependency documented; `ruby scripts/validate_workflow.rb`: Passed; OpenAPI YAML parsed | Prior market and safety tasks remain blocked on unified validation | Test Agent validates dependencies; then Backend and Mini Program implement the stable map contract |
 | 2026-07-14 | Backend + Mini Program Agents | Test Agent | Blocked | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/miniprogram/services/api.js`, `frontend/miniprogram/utils/market-map.js`, `frontend/miniprogram/pages/market/*`, `frontend/miniprogram/tests/market-map.test.js` | `npm test`: 9 passed; all Mini Program JS syntax passed; registration/information/map tests passed; `ruby scripts/deliver.rb map-market-view`: Passed, report `/tmp/ppfiles-learn-delivery/TASK-20260714-009/20260714-153426-3839bd/report.md` | WeChat DevTools/real-device map rendering and dependency acceptance remain | Test Agent runs unified platform verification and records acceptance evidence |
 | 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Map/list shared filters, non-paginated viewport response, Mini Program stale-request handling and market tests | Backend `npm test`: 11 passed; Mini Program market tests passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260714-009/20260714-181440-a2f973/report.md` | WeChat DevTools/real-device map rendering, positioning, clustering and privacy checks pending | Execute the documented platform map acceptance run. |
+| 2026-07-16 | Test Agent | Test Agent | Blocked | Blocked | none (revalidation only) | Dependency tasks TASK-20260714-006/008 are Done; backend `npm test` 17 passed including map privacy projection; Mini Program market-map tests passed; `ruby scripts/deliver.rb map-market-view` passed at `/tmp/ppfiles-learn-delivery/TASK-20260714-009/20260716-103532-f22341/report.md` | Only WeChat DevTools/real-device map acceptance remains | Run DevTools/real-device map checklist and close task when platform evidence is recorded. |

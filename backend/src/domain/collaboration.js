@@ -1,4 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { httpError } from '../http.js';
+import {
+  assertMessageBody,
+  assertApplicationStatus,
+  assertInterviewCreate,
+  assertInterviewResponseDecision,
+  assertInterviewCancelReason,
+} from './validators.js';
 import { now } from './time.js';
 import { isBlockedEitherWay, isPubliclyActionablePublication } from './visibility.js';
 
@@ -13,7 +21,6 @@ function withTransaction(db, work) {
     throw error;
   }
 }
-const APPLICATION_STATUSES = new Set(['submitted', 'viewed', 'contacted', 'interviewing', 'hired', 'rejected', 'withdrawn', 'closed']);
 const APPLICATION_TERMINAL = new Set(['hired', 'rejected', 'withdrawn', 'closed']);
 const RECRUITER_APPLICATION_TRANSITIONS = {
   submitted: ['viewed', 'contacted', 'interviewing', 'hired', 'rejected', 'closed'],
@@ -21,12 +28,10 @@ const RECRUITER_APPLICATION_TRANSITIONS = {
   contacted: ['interviewing', 'hired', 'rejected', 'closed'],
   interviewing: ['hired', 'rejected', 'closed'],
 };
-const INTERVIEW_STATUSES = new Set(['invited', 'accepted', 'declined', 'cancelled', 'completed']);
 
-function httpLike(message, code = 'COLLABORATION_ERROR') {
-  const error = new Error(message);
-  error.code = code;
-  return error;
+/** Domain errors retain stable codes for route mapping; status is set for direct rethrow. */
+function domainError(status, code, message) {
+  return httpError(status, code, message);
 }
 
 export function ensureCollaborationSchema(db) {
@@ -160,12 +165,12 @@ function requireConversationParticipant(db, conversationId, userId) {
 
 export function startConversation(db, userId, { targetType, targetId, body, clientRequestId }) {
   if (!approvedRole(db, userId, targetType === 'recruitment_post' ? 'applicant' : 'recruiter')) {
-    throw httpLike('需要对应已审核通过的身份', 'APPROVED_IDENTITY_REQUIRED');
+    throw domainError(403, 'APPROVED_IDENTITY_REQUIRED', '需要对应已审核通过的身份');
   }
   const owner = resolveTargetOwner(db, targetType, targetId);
-  if (!targetPublic(owner)) throw httpLike('目标信息不可用', 'TARGET_UNAVAILABLE');
-  if (owner.userId === userId) throw httpLike('不能与自己发起沟通', 'INVALID_TARGET');
-  if (isBlockedEitherWay(db, userId, owner.userId)) throw httpLike('双方存在拉黑关系，无法沟通', 'BLOCKED');
+  if (!targetPublic(owner)) throw domainError(404, 'TARGET_UNAVAILABLE', '目标信息不可用');
+  if (owner.userId === userId) throw domainError(404, 'INVALID_TARGET', '不能与自己发起沟通');
+  if (isBlockedEitherWay(db, userId, owner.userId)) throw domainError(403, 'BLOCKED', '双方存在拉黑关系，无法沟通');
   return withTransaction(db, () => {
     const timestamp = now();
     let conversation = db.prepare(`SELECT * FROM conversations
@@ -183,7 +188,7 @@ export function startConversation(db, userId, { targetType, targetId, body, clie
       conversation = db.prepare('SELECT * FROM conversations WHERE id = ?').get(id);
       audit(db, userId, 'conversation.started', 'conversation', id, { targetType, targetId });
     }
-    if (conversation.status === 'blocked') throw httpLike('会话已因拉黑停止', 'CONVERSATION_BLOCKED');
+    if (conversation.status === 'blocked') throw domainError(403, 'CONVERSATION_BLOCKED', '会话已因拉黑停止');
     if (conversation.status === 'ended') {
       db.prepare(`UPDATE conversations SET status = 'active', updated_at = ? WHERE id = ?`).run(timestamp, conversation.id);
       conversation = db.prepare('SELECT * FROM conversations WHERE id = ?').get(conversation.id);
@@ -226,14 +231,13 @@ export function sendMessage(db, userId, conversationId, { body, clientRequestId 
   const run = () => {
     const conversation = requireConversationParticipant(db, conversationId, userId);
     if (!conversation) return null;
-    if (conversation.status !== 'active') throw httpLike('会话已结束或被阻止', 'CONVERSATION_INACTIVE');
+    if (conversation.status !== 'active') throw domainError(403, 'CONVERSATION_INACTIVE', '会话已结束或被阻止');
     const peerId = conversation.initiator_user_id === userId ? conversation.peer_user_id : conversation.initiator_user_id;
     if (isBlockedEitherWay(db, userId, peerId)) {
       db.prepare(`UPDATE conversations SET status = 'blocked', updated_at = ? WHERE id = ?`).run(now(), conversationId);
-      throw httpLike('双方存在拉黑关系，无法发送消息', 'BLOCKED');
+      throw domainError(403, 'BLOCKED', '双方存在拉黑关系，无法发送消息');
     }
-    const text = String(body || '').trim();
-    if (!text || text.length > 1000) throw httpLike('消息内容无效', 'VALIDATION_ERROR');
+    const messageBody = assertMessageBody(body);
     if (clientRequestId) {
       const existing = db.prepare(`SELECT * FROM messages WHERE conversation_id = ? AND sender_user_id = ? AND client_request_id = ?`)
         .get(conversationId, userId, clientRequestId);
@@ -247,14 +251,14 @@ export function sendMessage(db, userId, conversationId, { body, clientRequestId 
     const timestamp = now();
     const id = randomUUID();
     db.prepare(`INSERT INTO messages(id, conversation_id, sender_user_id, body, client_request_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)`).run(id, conversationId, userId, text, clientRequestId || null, timestamp);
+      VALUES (?, ?, ?, ?, ?, ?)`).run(id, conversationId, userId, messageBody, clientRequestId || null, timestamp);
     db.prepare(`UPDATE conversations SET updated_at = ? WHERE id = ?`).run(timestamp, conversationId);
     db.prepare(`INSERT INTO conversation_reads(conversation_id, user_id, last_read_at) VALUES (?, ?, ?)
       ON CONFLICT(conversation_id, user_id) DO UPDATE SET last_read_at = excluded.last_read_at`)
       .run(conversationId, userId, timestamp);
     audit(db, userId, 'message.sent', 'message', id, { conversationId });
     return {
-      id, conversationId, senderUserId: userId, body: text, clientRequestId: clientRequestId || null, createdAt: timestamp, mine: true,
+      id, conversationId, senderUserId: userId, body: messageBody, clientRequestId: clientRequestId || null, createdAt: timestamp, mine: true,
     };
   };
   return options.skipTransaction ? run() : withTransaction(db, run);
@@ -300,11 +304,13 @@ function applicationFromRow(db, row, viewerId) {
 }
 
 export function createApplication(db, userId, { recruitmentPostId, note = '' }) {
-  if (!approvedRole(db, userId, 'applicant')) throw httpLike('需要已审核的应聘身份', 'APPROVED_IDENTITY_REQUIRED');
+  if (!approvedRole(db, userId, 'applicant')) {
+    throw domainError(403, 'APPROVED_IDENTITY_REQUIRED', '需要已审核的应聘身份');
+  }
   const owner = resolveTargetOwner(db, 'recruitment_post', recruitmentPostId);
-  if (!targetPublic(owner)) throw httpLike('招聘信息不可用', 'TARGET_UNAVAILABLE');
-  if (owner.userId === userId) throw httpLike('不能投递自己的招聘', 'INVALID_TARGET');
-  if (isBlockedEitherWay(db, userId, owner.userId)) throw httpLike('双方存在拉黑关系，无法投递', 'BLOCKED');
+  if (!targetPublic(owner)) throw domainError(404, 'TARGET_UNAVAILABLE', '招聘信息不可用');
+  if (owner.userId === userId) throw domainError(404, 'INVALID_TARGET', '不能投递自己的招聘');
+  if (isBlockedEitherWay(db, userId, owner.userId)) throw domainError(403, 'BLOCKED', '双方存在拉黑关系，无法投递');
   const existing = db.prepare('SELECT * FROM applications WHERE applicant_user_id = ? AND recruitment_post_id = ?')
     .get(userId, recruitmentPostId);
   if (existing) return applicationFromRow(db, existing, userId);
@@ -324,7 +330,9 @@ export function listApplicationsForApplicant(db, userId) {
 }
 
 export function listApplicationsForRecruiter(db, userId) {
-  if (!approvedRole(db, userId, 'recruiter')) throw httpLike('需要已审核的招聘身份', 'APPROVED_IDENTITY_REQUIRED');
+  if (!approvedRole(db, userId, 'recruiter')) {
+    throw domainError(403, 'APPROVED_IDENTITY_REQUIRED', '需要已审核的招聘身份');
+  }
   const rows = db.prepare(`SELECT application.* FROM applications application
     JOIN recruitment_posts post ON post.id = application.recruitment_post_id
     JOIN role_profiles role ON role.id = post.recruiter_role_profile_id
@@ -334,23 +342,23 @@ export function listApplicationsForRecruiter(db, userId) {
 }
 
 export function updateApplicationStatus(db, userId, applicationId, status) {
-  if (!APPLICATION_STATUSES.has(status)) throw httpLike('投递状态无效', 'VALIDATION_ERROR');
+  const nextStatus = assertApplicationStatus(status);
   const row = db.prepare('SELECT * FROM applications WHERE id = ?').get(applicationId);
   if (!row) return null;
   const mapped = applicationFromRow(db, row, userId);
-  if (status === 'withdrawn') {
-    if (row.applicant_user_id !== userId) throw httpLike('只能撤回自己的投递', 'FORBIDDEN');
+  if (nextStatus === 'withdrawn') {
+    if (row.applicant_user_id !== userId) throw domainError(403, 'FORBIDDEN', '只能撤回自己的投递');
     if (APPLICATION_TERMINAL.has(row.status) || !['submitted', 'viewed'].includes(row.status)) {
-      throw httpLike('当前状态不可撤回', 'INVALID_TRANSITION');
+      throw domainError(422, 'INVALID_TRANSITION', '当前状态不可撤回');
     }
   } else {
-    if (mapped.recruiterUserId !== userId) throw httpLike('只能处理自己收到的投递', 'FORBIDDEN');
+    if (mapped.recruiterUserId !== userId) throw domainError(403, 'FORBIDDEN', '只能处理自己收到的投递');
     const allowed = RECRUITER_APPLICATION_TRANSITIONS[row.status] || [];
-    if (!allowed.includes(status)) throw httpLike('当前状态不允许该更新', 'INVALID_TRANSITION');
+    if (!allowed.includes(nextStatus)) throw domainError(422, 'INVALID_TRANSITION', '当前状态不允许该更新');
   }
   const timestamp = now();
-  db.prepare('UPDATE applications SET status = ?, updated_at = ? WHERE id = ?').run(status, timestamp, applicationId);
-  audit(db, userId, 'application.status_updated', 'application', applicationId, { from: row.status, to: status });
+  db.prepare('UPDATE applications SET status = ?, updated_at = ? WHERE id = ?').run(nextStatus, timestamp, applicationId);
+  audit(db, userId, 'application.status_updated', 'application', applicationId, { from: row.status, to: nextStatus });
   return applicationFromRow(db, db.prepare('SELECT * FROM applications WHERE id = ?').get(applicationId), userId);
 }
 
@@ -372,24 +380,34 @@ function interviewFromRow(row, viewerId) {
   };
 }
 
-export function createInterview(db, userId, { applicationId = null, applicantUserId, scheduledAt, locationText }) {
-  if (!approvedRole(db, userId, 'recruiter')) throw httpLike('需要已审核的招聘身份', 'APPROVED_IDENTITY_REQUIRED');
-  if (!approvedRole(db, applicantUserId, 'applicant')) throw httpLike('对方需要已审核的应聘身份', 'APPROVED_IDENTITY_REQUIRED');
-  if (isBlockedEitherWay(db, userId, applicantUserId)) throw httpLike('双方存在拉黑关系，无法邀请', 'BLOCKED');
-  if (!scheduledAt || Number.isNaN(Date.parse(scheduledAt))) throw httpLike('面试时间无效', 'VALIDATION_ERROR');
-  const place = String(locationText || '').trim();
-  if (!place || place.length > 200) throw httpLike('面试地点无效', 'VALIDATION_ERROR');
+export function createInterview(db, userId, input) {
+  const { applicationId, applicantUserId, scheduledAt, locationText } = assertInterviewCreate(input);
+  if (!approvedRole(db, userId, 'recruiter')) {
+    throw domainError(403, 'APPROVED_IDENTITY_REQUIRED', '需要已审核的招聘身份');
+  }
+  if (!approvedRole(db, applicantUserId, 'applicant')) {
+    throw domainError(403, 'APPROVED_IDENTITY_REQUIRED', '对方需要已审核的应聘身份');
+  }
+  if (isBlockedEitherWay(db, userId, applicantUserId)) {
+    throw domainError(403, 'BLOCKED', '双方存在拉黑关系，无法邀请');
+  }
   if (applicationId) {
     const application = db.prepare('SELECT * FROM applications WHERE id = ?').get(applicationId);
-    if (!application || application.applicant_user_id !== applicantUserId) throw httpLike('投递记录无效', 'VALIDATION_ERROR');
+    if (!application || application.applicant_user_id !== applicantUserId) {
+      throw domainError(422, 'VALIDATION_ERROR', '投递记录无效');
+    }
     const mapped = applicationFromRow(db, application, userId);
-    if (mapped.recruiterUserId !== userId) throw httpLike('只能基于自己的招聘发起邀请', 'FORBIDDEN');
+    if (mapped.recruiterUserId !== userId) {
+      throw domainError(403, 'FORBIDDEN', '只能基于自己的招聘发起邀请');
+    }
   }
   return withTransaction(db, () => {
     const timestamp = now();
     const id = randomUUID();
     db.prepare(`INSERT INTO interviews(id, application_id, recruiter_user_id, applicant_user_id, scheduled_at, location_text, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'invited', ?, ?)`).run(id, applicationId, userId, applicantUserId, new Date(scheduledAt).toISOString(), place, timestamp, timestamp);
+      VALUES (?, ?, ?, ?, ?, ?, 'invited', ?, ?)`).run(
+      id, applicationId, userId, applicantUserId, scheduledAt, locationText, timestamp, timestamp,
+    );
     if (applicationId) {
       db.prepare(`UPDATE applications SET status = 'interviewing', updated_at = ? WHERE id = ? AND status NOT IN ('hired','rejected','withdrawn','closed')`)
         .run(timestamp, applicationId);
@@ -408,23 +426,26 @@ export function listInterviews(db, userId) {
 export function respondInterview(db, userId, interviewId, decision) {
   const row = db.prepare('SELECT * FROM interviews WHERE id = ?').get(interviewId);
   if (!row) return null;
-  if (row.applicant_user_id !== userId) throw httpLike('只能由求职者接受或拒绝邀请', 'FORBIDDEN');
-  if (row.status !== 'invited') throw httpLike('当前面试状态不可响应', 'INVALID_TRANSITION');
-  if (!['accept', 'decline'].includes(decision)) throw httpLike('响应决定无效', 'VALIDATION_ERROR');
-  const status = decision === 'accept' ? 'accepted' : 'declined';
+  if (row.applicant_user_id !== userId) throw domainError(403, 'FORBIDDEN', '只能由求职者接受或拒绝邀请');
+  if (row.status !== 'invited') throw domainError(422, 'INVALID_TRANSITION', '当前面试状态不可响应');
+  const nextDecision = assertInterviewResponseDecision(decision);
+  const status = nextDecision === 'accept' ? 'accepted' : 'declined';
   const timestamp = now();
   db.prepare('UPDATE interviews SET status = ?, updated_at = ? WHERE id = ?').run(status, timestamp, interviewId);
-  audit(db, userId, 'interview.responded', 'interview', interviewId, { decision });
+  audit(db, userId, 'interview.responded', 'interview', interviewId, { decision: nextDecision });
   return interviewFromRow(db.prepare('SELECT * FROM interviews WHERE id = ?').get(interviewId), userId);
 }
 
 export function cancelInterview(db, userId, interviewId, reason) {
   const row = db.prepare('SELECT * FROM interviews WHERE id = ?').get(interviewId);
   if (!row) return null;
-  if (row.recruiter_user_id !== userId && row.applicant_user_id !== userId) throw httpLike('无权取消该面试', 'FORBIDDEN');
-  if (!['invited', 'accepted'].includes(row.status)) throw httpLike('当前面试状态不可取消', 'INVALID_TRANSITION');
-  const cancelReason = String(reason || '').trim();
-  if (!cancelReason || cancelReason.length > 500) throw httpLike('取消原因必填', 'VALIDATION_ERROR');
+  if (row.recruiter_user_id !== userId && row.applicant_user_id !== userId) {
+    throw domainError(403, 'FORBIDDEN', '无权取消该面试');
+  }
+  if (!['invited', 'accepted'].includes(row.status)) {
+    throw domainError(422, 'INVALID_TRANSITION', '当前面试状态不可取消');
+  }
+  const cancelReason = assertInterviewCancelReason(reason);
   const timestamp = now();
   db.prepare('UPDATE interviews SET status = ?, cancel_reason = ?, updated_at = ? WHERE id = ?')
     .run('cancelled', cancelReason, timestamp, interviewId);

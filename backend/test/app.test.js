@@ -791,6 +791,91 @@ test('messaging, applications and interviews enforce permissions and state trans
   });
 });
 
+test('market user blocks hide targets from list, map, detail and favorites until unblocked', async () => {
+  await withServer(async (base, app) => {
+    const adminLogin = await request(base, '/admin/auth/login', { method: 'POST', body: JSON.stringify({ loginName: 'owner', password: 'OwnerPassword123!' }) });
+    const adminHeaders = { authorization: `Bearer ${adminLogin.body.data.token}` };
+
+    const applicantSession = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'block-applicant' }) });
+    const applicantHeaders = { authorization: `Bearer ${applicantSession.body.data.sessionToken}` };
+    const applicantIdentity = await request(base, '/me/identities/applicant', { method: 'POST', headers: applicantHeaders, body: JSON.stringify(applicant) });
+    await request(base, `/admin/identity-reviews/${applicantIdentity.body.data.id}/decision`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ decision: 'approved' }) });
+
+    const recruiterSession = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'block-recruiter' }) });
+    const recruiterHeaders = { authorization: `Bearer ${recruiterSession.body.data.sessionToken}` };
+    const recruiterIdentity = await request(base, '/me/identities/recruiter', { method: 'POST', headers: recruiterHeaders, body: JSON.stringify(recruiter) });
+    await request(base, `/admin/identity-reviews/${recruiterIdentity.body.data.id}/decision`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ decision: 'approved' }) });
+    const post = await request(base, '/me/recruitment-posts', {
+      method: 'POST', headers: recruiterHeaders,
+      body: JSON.stringify({ jobType: '拉黑测试岗', salaryRange: '面议', settlementMethod: '月结', locationText: '上海', latitude: 31.01, longitude: 121.01, imageKeys: [] }),
+    });
+    assert.equal(post.status, 201);
+    app.db.prepare('UPDATE recruitment_posts SET published_at = ? WHERE id = ?').run(post.body.data.publishedAt, post.body.data.id);
+
+    assert.equal((await request(base, `/me/favorites/recruitment-posts/${post.body.data.id}`, { method: 'PUT', headers: applicantHeaders })).status, 204);
+    const selfBlock = await request(base, '/me/market-user-blocks', {
+      method: 'POST', headers: recruiterHeaders,
+      body: JSON.stringify({ targetType: 'recruitment_post', targetId: post.body.data.id }),
+    });
+    assert.equal(selfBlock.status, 422);
+    assert.equal(selfBlock.body.error.code, 'INVALID_BLOCK_TARGET');
+
+    const blocked = await request(base, '/me/market-user-blocks', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ targetType: 'recruitment_post', targetId: post.body.data.id }),
+    });
+    assert.equal(blocked.status, 201);
+    assert.ok(blocked.body.data.blockId);
+    assert.equal(blocked.body.data.role, 'recruiter');
+    assert.equal('blockedUserId' in blocked.body.data, false);
+    assert.equal('userId' in blocked.body.data, false);
+
+    const idempotent = await request(base, '/me/market-user-blocks', {
+      method: 'POST', headers: applicantHeaders,
+      body: JSON.stringify({ targetType: 'recruitment_post', targetId: post.body.data.id }),
+    });
+    assert.equal(idempotent.status, 201);
+    assert.equal(idempotent.body.data.blockId, blocked.body.data.blockId);
+
+    const blocks = await request(base, '/me/market-user-blocks', { headers: applicantHeaders });
+    assert.equal(blocks.status, 200);
+    assert.equal(blocks.body.data.length, 1);
+    assert.equal(blocks.body.data[0].blockId, blocked.body.data.blockId);
+
+    const peerBlocks = await request(base, '/me/market-user-blocks', { headers: recruiterHeaders });
+    assert.equal(peerBlocks.body.data.length, 0);
+
+    const list = await request(base, '/market/recruitment-posts?jobType=%E6%8B%89%E9%BB%91%E6%B5%8B%E8%AF%95%E5%B2%97', { headers: applicantHeaders });
+    assert.equal(list.body.data.items.length, 0);
+    assert.equal(list.body.data.totalCount, 0);
+    const map = await request(base, '/market/recruitment-posts/map?south=30.5&west=120.5&north=31.5&east=121.5&zoom=20&jobType=%E6%8B%89%E9%BB%91%E6%B5%8B%E8%AF%95%E5%B2%97', { headers: applicantHeaders });
+    assert.equal(map.body.data.items.length, 0);
+    assert.equal((await request(base, `/market/recruitment-posts/${post.body.data.id}`, { headers: applicantHeaders })).status, 404);
+    const favorites = await request(base, '/me/favorites/recruitment-posts', { headers: applicantHeaders });
+    assert.equal(favorites.body.data.length, 0);
+
+    const otherApplicantSession = await request(base, '/auth/wechat/session', { method: 'POST', body: JSON.stringify({ code: 'block-applicant-peer' }) });
+    const otherApplicantHeaders = { authorization: `Bearer ${otherApplicantSession.body.data.sessionToken}` };
+    const otherApplicantIdentity = await request(base, '/me/identities/applicant', {
+      method: 'POST', headers: otherApplicantHeaders,
+      body: JSON.stringify({ ...applicant, displayName: '其他求职者', contactPhone: '13600136011' }),
+    });
+    await request(base, `/admin/identity-reviews/${otherApplicantIdentity.body.data.id}/decision`, { method: 'POST', headers: adminHeaders, body: JSON.stringify({ decision: 'approved' }) });
+    const peerList = await request(base, '/market/recruitment-posts?jobType=%E6%8B%89%E9%BB%91%E6%B5%8B%E8%AF%95%E5%B2%97', { headers: otherApplicantHeaders });
+    assert.equal(peerList.body.data.items.some((item) => item.id === post.body.data.id), true);
+
+    assert.equal((await request(base, `/me/market-user-blocks/${blocked.body.data.blockId}`, { method: 'DELETE', headers: recruiterHeaders })).status, 404);
+    assert.equal((await request(base, `/me/market-user-blocks/${blocked.body.data.blockId}`, { method: 'DELETE', headers: applicantHeaders })).status, 204);
+
+    const restoredList = await request(base, '/market/recruitment-posts?jobType=%E6%8B%89%E9%BB%91%E6%B5%8B%E8%AF%95%E5%B2%97', { headers: applicantHeaders });
+    assert.equal(restoredList.body.data.items.some((item) => item.id === post.body.data.id), true);
+    const restoredFavorites = await request(base, '/me/favorites/recruitment-posts', { headers: applicantHeaders });
+    assert.equal(restoredFavorites.body.data.some((item) => item.id === post.body.data.id), true);
+    const emptyBlocks = await request(base, '/me/market-user-blocks', { headers: applicantHeaders });
+    assert.equal(emptyBlocks.body.data.length, 0);
+  });
+});
+
 test('market publications expire from public surfaces and can be renewed', async () => {
   await withServer(async (base, app) => {
     const adminLogin = await request(base, '/admin/auth/login', { method: 'POST', body: JSON.stringify({ loginName: 'owner', password: 'OwnerPassword123!' }) });

@@ -7,6 +7,39 @@ function locationValid(latitude, longitude) {
     && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
 }
 
+export function mapApplicantJobSeekingInformation(row) {
+  if (!row) return null;
+  return {
+    roleProfileId: row.role_profile_id,
+    jobTypeName: row.job_type_name,
+    age: row.age,
+    expectedSalary: row.expected_salary,
+    workMethod: row.work_method,
+    locationText: row.location_text,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    ...(row.preferred_work_scope ? { preferredWorkScope: row.preferred_work_scope } : {}),
+    status: row.visibility_status || 'published',
+    publishedAt: row.published_at || row.created_at,
+    ...(row.expires_at ? { expiresAt: row.expires_at } : {}),
+    ...(row.disabled_at ? { disabledAt: row.disabled_at } : {}),
+    ...(row.moderation_reason ? { moderationReason: row.moderation_reason } : {}),
+    ...(row.moderated_at ? { moderatedAt: row.moderated_at } : {}),
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapRecruiterInformation(row) {
+  if (!row) return null;
+  return {
+    roleProfileId: row.role_profile_id,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    detailedAddress: row.detailed_address,
+    updatedAt: row.updated_at,
+  };
+}
+
 export function getApplicantJobSeekingInformation(db, userId) {
   const profile = roleProfileForUser(db, userId, 'applicant');
   return db.prepare('SELECT * FROM applicant_job_seeking_information WHERE role_profile_id = ?').get(profile.id) || null;

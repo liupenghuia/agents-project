@@ -3,9 +3,9 @@ id: TASK-20260701-001
 title: User Management
 status: Blocked
 priority: P2
-owner: Architect Agent
+owner: Test Agent
 created: "2026-07-01"
-updated: "2026-07-01"
+updated: "2026-07-16"
 source_idea: null
 depends_on: []
 linked_issues: []
@@ -32,10 +32,10 @@ scope_status:
   test: Blocked
   release: N/A
 release_required: false
-blocked_reason: 代码和自动化检查已完成，等待统一执行 Web 浏览器与管理员权限验收。
+blocked_reason: 遗留样例任务；本地自动化与交付 runner 已通过，等待真实浏览器中的管理员权限与用户 CRUD 验收。
 blocked_since: "2026-07-14"
 unblock_owner: Test Agent
-unblock_condition: 统一验证用户创建、列表、编辑、停用、重复邮箱和权限失败场景。
+unblock_condition: 在真实浏览器验证用户创建、列表、编辑、停用、重复邮箱和权限失败场景，并记录步骤证据。
 ---
 
 # Task: User Management
@@ -151,3 +151,4 @@ Out of scope:
 | 2026-07-01 | Architect Agent | Coordinator / Web | Ready for Architecture | Ready for Implementation | API/database contracts | Contracts documented. | None | Backend and Web implementation. |
 | 2026-07-14 | Backend + Web Agents | Test Agent | Ready for Implementation | Blocked | `backend/src/db.js`, `backend/src/app.js`, `backend/test/app.test.js`, `frontend/web/index.html`, `frontend/web/app.js`, `frontend/web/styles.css` | `npm test`: 9 passed; Node syntax checks passed; Web user CRUD controls and API integration added; `ruby scripts/validate_workflow.rb`: Passed | Unified browser/admin verification pending | Test Agent runs the unified validation batch. |
 | 2026-07-14 | Review Agent | Test Agent | Blocked | Blocked | Owner protection, admin/user session revocation, sanitized audit API/UI, Web role-target controls | Backend `npm test`: 11 passed; Web permission tests and HTTP smoke passed; delivery report `/tmp/ppfiles-learn-delivery/TASK-20260701-001/20260714-181440-1f1b73/report.md` | In-app browser unavailable; responsive/keyboard/admin workflow smoke pending | Run owner/admin account and audit workflows in a real browser. |
+| 2026-07-16 | Test Agent | Test Agent | Blocked | Blocked | none (revalidation only) | Backend user management coverage still green under `npm test` (17); `ruby scripts/deliver.rb user-management` passed at `/tmp/ppfiles-learn-delivery/TASK-20260701-001/20260716-103541-ced3ff/report.md` | Real browser admin CRUD/permission smoke still unavailable | Optional low-priority browser acceptance, or Product may Cancel as superseded by recruitment admin flows. |

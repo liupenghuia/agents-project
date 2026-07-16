@@ -1,4 +1,5 @@
 const { listIdentities } = require('../../services/api');
+const navigation = require('../../utils/navigation');
 
 const statusText = { pending_review: '待人工审核', approved: '审核通过', changes_requested: '需修改资料' };
 
@@ -23,7 +24,7 @@ Page({
   },
 
   enterRole(event) {
-    wx.navigateTo({ url: `/pages/role-home/role-home?role=${event.currentTarget.dataset.role}&identityId=${event.currentTarget.dataset.id}` });
+    navigation.enterApprovedRole(event.currentTarget.dataset.role, event.currentTarget.dataset.id);
   },
 
   createOtherRole() {

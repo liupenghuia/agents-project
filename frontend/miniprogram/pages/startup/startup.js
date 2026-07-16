@@ -1,4 +1,6 @@
 const { listIdentities } = require('../../services/api');
+const { setActiveRole } = require('../../utils/workspace');
+const navigation = require('../../utils/navigation');
 
 Page({
   data: { message: '正在恢复你的工作区' },
@@ -11,7 +13,8 @@ Page({
         getApp().globalData.identities = list;
         const approved = list.find((identity) => identity.reviewStatus === 'approved');
         if (approved) {
-          wx.reLaunch({ url: `/pages/role-home/role-home?role=${approved.role}&identityId=${approved.id}` });
+          setActiveRole(approved.role);
+          navigation.enterApprovedRole(approved.role, approved.id);
           return;
         }
         if (list.length) {

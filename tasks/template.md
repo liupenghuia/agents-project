@@ -24,6 +24,7 @@ frontend_target_status:
 scope_status:
   product: In Progress
   architecture: Pending
+  design: N/A
   backend: N/A
   frontend: N/A
   mobile: N/A
@@ -86,6 +87,45 @@ Out of scope:
 
 Use `None` with a reason when an area is not affected.
 
+## Design Spec
+
+Required when `scope_status.design` is not `N/A`. Owned by Designer Agent (`设计 <task>`). Use `N/A` with reason when the task has no client UI.
+
+### Design Goal
+
+- User problem:
+- Desired experience outcome:
+
+### User Flow And Decisions
+
+1.
+2.
+
+Primary decision per key screen:
+
+### Information Architecture
+
+- Primary content:
+- Secondary / progressive disclosure:
+- Buried in sheet or “更多”:
+
+### Key Screens / Components
+
+| Screen | Purpose | Primary CTA | States to design |
+| --- | --- | --- | --- |
+|  |  |  | loading / empty / error / success |
+
+### Visual And Interaction Notes
+
+- Tokens / patterns to reuse (`docs/design/README.md`):
+- Mini Program / Web / App differences:
+- Explicit non-goals:
+
+### Design Handoff
+
+- Implementing targets:
+- Open questions:
+
 ## Client Architecture Pre-Coding Check
 
 Complete one row per selected Frontend, Mini Program, Web, shared Mobile, iOS, or Android target before implementation. Use `N/A` when the task has no client scope.
@@ -95,6 +135,11 @@ Complete one row per selected Frontend, Mini Program, Web, shared Mobile, iOS, o
 |  |  |  |  |  |  | Not required (reason) / Required (link) |
 
 ## Implementation Checklist
+
+### Design
+
+- [ ] Work or `N/A` reason:
+- [ ] Design Spec complete and handed to implementing targets:
 
 ### Backend
 
@@ -153,6 +198,23 @@ Complete one row per selected Frontend, Mini Program, Web, shared Mobile, iOS, o
 ## Known Limitations
 
 - None
+
+## Runtime Observability
+
+When the user requests delivery / multi-role orchestration, record the agent run here (events live under `.agent-runs/`):
+
+| Run ID | Mode | Status | Timeline command |
+| --- | --- | --- | --- |
+|  | delivery / manual |  | `ruby scripts/agent_run.rb timeline <run_id>` |
+
+Handoff rows below are the human projection; process truth for reconstruction is `events.jsonl`. Dual-write with:
+
+```bash
+ruby scripts/agent_run.rb handoff --run <run_id> \
+  --from "Product Agent" --to "Architect Agent" \
+  --from-status Draft --to-status "Ready for Architecture" \
+  --evidence "..." --next "..."
+```
 
 ## Handoff Log
 

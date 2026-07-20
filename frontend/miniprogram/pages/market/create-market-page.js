@@ -1,5 +1,6 @@
 const api = require('../../services/api');
 const marketApp = require('../../services/market-app');
+const { toMapPreview } = require('../../utils/market-list');
 const { getActiveRole, setActiveRole, getMarketWorkspace, saveMarketWorkspace } = require('../../utils/workspace');
 const navigation = require('../../utils/navigation');
 
@@ -107,20 +108,22 @@ function createMarketPage({ mode }) {
 
     input(event) { this.setData({ keyword: event.detail.value }); },
 
-    switchMode(event) {
-      const next = event.currentTarget.dataset.mode === 'list' ? 'list' : 'map';
-      if (next === fixedMode) return;
-      this.saveWorkspace();
-      navigation.openMainTab(next, { role: this.data.role });
+    clearKeyword() {
+      this.setData({ keyword: '' }, () => this.search());
     },
 
     search() {
       this.saveWorkspace();
-      if (fixedMode === 'map') this.loadMap();
-      else this.loadList(false);
+      if (fixedMode === 'map') {
+        this.closePreview();
+        this.loadMap();
+      } else this.loadList(false);
     },
 
-    openFilters() { this.setData({ showFilters: true, draftFilters: { ...this.data.filters } }); },
+    openFilters() {
+      this.closePreview();
+      this.setData({ showFilters: true, draftFilters: { ...this.data.filters } });
+    },
     closeFilters() { this.setData({ showFilters: false }); },
     filterInput(event) {
       this.setData({ [`draftFilters.${event.currentTarget.dataset.field}`]: event.detail.value });
@@ -292,6 +295,7 @@ function createMarketPage({ mode }) {
       const target = this._markerTargets && this._markerTargets[event.detail.markerId];
       if (!target) return;
       if (target.cluster) {
+        this.closePreview();
         this.setData({
           latitude: target.latitude,
           longitude: target.longitude,
@@ -299,12 +303,25 @@ function createMarketPage({ mode }) {
         }, () => this.loadMap());
         return;
       }
-      this.openById(target.id);
+      // Instant bottom preview — no full-page stack until user confirms.
+      const selected = toMapPreview(target, this.data.role);
+      if (!selected) return;
+      this.setData({ selected, error: '' });
     },
 
     open(event) { this.openById(event.currentTarget.dataset.id); },
-    openById(id) { navigation.openMarketDetail(this.data.role, id); },
-    closeDetail() { this.setData({ selected: null }); },
+    openById(id) {
+      this.closePreview();
+      navigation.openMarketDetail(this.data.role, id);
+    },
+    openSelectedDetail() {
+      const id = this.data.selected && this.data.selected.id;
+      if (!id) return;
+      this.openById(id);
+    },
+    closePreview() { this.setData({ selected: null }); },
+    /** @deprecated alias kept for older handlers */
+    closeDetail() { this.closePreview(); },
 
     callContact() {
       const phoneNumber = this.data.selected && this.data.selected.contactPhone;
@@ -374,8 +391,9 @@ function createMarketPage({ mode }) {
     },
 
     retry() { this.search(); },
-    openFavorites() { navigation.openFavorites(this.data.role); },
     openMyCenter() { navigation.openMainTab('my', { role: this.data.role }); },
+    /** Swallow sheet taps / touchmove so the map under the sheet does not steal events. */
+    noop() {},
   };
 }
 

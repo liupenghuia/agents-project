@@ -1,65 +1,129 @@
-<view class="page market-page">
-  <view class="market-header">
-    <view><view class="eyebrow">{{role === 'applicant' ? '招聘市场' : '人才市场'}}</view><text class="title">附近机会</text></view>
-    <button class="favorite-button" bindtap="openFavorites">收藏</button>
+<view class="market-page market-page--map">
+  <view class="map-shell">
+    <map
+      id="marketMap"
+      class="market-map"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      scale="{{scale}}"
+      markers="{{markers}}"
+      show-location
+      bindmarkertap="markerTap"
+      bindregionchange="regionChange"
+    ></map>
+    <view wx:if="{{loading}}" class="map-toast">正在读取这个区域...</view>
+    <view wx:elif="{{!markers.length && !error}}" class="map-toast">这个区域暂时没有信息</view>
   </view>
-  <view class="mode-switch" role="tablist">
-    <button class="mode-button {{mode === 'map' ? 'active' : ''}}" data-mode="map" bindtap="switchMode">地图</button>
-    <button class="mode-button {{mode === 'list' ? 'active' : ''}}" data-mode="list" bindtap="switchMode">列表</button>
+
+  <view class="map-chrome">
+    <view class="top-bar">
+      <view class="search-bar">
+        <text class="search-icon">⌕</text>
+        <input
+          class="search-input"
+          value="{{keyword}}"
+          bindinput="input"
+          confirm-type="search"
+          bindconfirm="search"
+          placeholder="搜索工种、职位"
+          placeholder-class="search-ph"
+        />
+        <text wx:if="{{keyword}}" class="search-clear" bindtap="clearKeyword">清除</text>
+        <view class="search-submit" bindtap="search">搜索</view>
+      </view>
+      <view
+        class="filter-btn {{activeFilterSummary ? 'on' : ''}}"
+        bindtap="openFilters"
+      >筛选</view>
+    </view>
+
+    <view wx:if="{{activeFilterSummary || totalCount !== null}}" class="result-bar result-bar--float">
+      <text wx:if="{{totalCount !== null}}" class="result-count">共 {{totalCount}} 条</text>
+      <text wx:if="{{activeFilterSummary}}" class="result-filters">{{activeFilterSummary}}</text>
+      <text wx:if="{{activeFilterSummary}}" class="result-save" bindtap="saveCurrentFilters">保存条件</text>
+    </view>
+
+    <view wx:if="{{locationNotice}}" class="notice-bar">
+      <text class="notice-text">{{locationNotice}}</text>
+      <text class="notice-action" bindtap="retryLocation">重新定位</text>
+    </view>
+
+    <view wx:if="{{error}}" class="error-bar error-bar--float">
+      <text>{{error}}</text>
+      <text class="error-retry" bindtap="retry">重试</text>
+    </view>
   </view>
-  <view class="search-row"><input value="{{keyword}}" bindinput="input" confirm-type="search" bindconfirm="search" placeholder="搜索工种" /><button bindtap="search">搜索</button></view>
-  <button class="filter-trigger" bindtap="openFilters">筛选{{activeFilterSummary ? ' · 已选' : ''}}</button>
-  <view wx:if="{{activeFilterSummary || totalCount !== null}}" class="filter-summary">
-    <text wx:if="{{activeFilterSummary}}">已选：{{activeFilterSummary}}</text>
-    <text wx:if="{{totalCount !== null}}">结果 {{totalCount}} 条</text>
-    <button wx:if="{{activeFilterSummary}}" class="small-button" bindtap="saveCurrentFilters">保存筛选</button>
+
+  <!-- Map marker preview (bottom sheet) -->
+  <view
+    wx:if="{{selected}}"
+    class="preview-mask"
+    catchtouchmove="noop"
+    bindtap="closePreview"
+  ></view>
+  <view wx:if="{{selected}}" class="preview-sheet" catchtap="noop">
+    <view class="preview-handle" bindtap="closePreview"></view>
+    <view class="preview-card" bindtap="openSelectedDetail">
+      <view class="preview-top">
+        <view class="preview-copy">
+          <text class="preview-title">{{selected.title}}</text>
+          <text class="preview-loc">{{selected.locationText}}</text>
+        </view>
+        <text class="preview-pay">{{selected.salaryLabel}}</text>
+      </view>
+      <text wx:if="{{selected.publishedAtLabel}}" class="preview-time">发布于 {{selected.publishedAtLabel}}</text>
+    </view>
+    <view class="preview-actions">
+      <view
+        class="preview-btn preview-btn--ghost {{selected.isFavorited ? 'is-on' : ''}}"
+        catchtap="favorite"
+      >{{selected.isFavorited ? '已收藏' : '收藏'}}</view>
+      <view class="preview-btn preview-btn--primary" catchtap="openSelectedDetail">查看详情</view>
+    </view>
   </view>
+
+  <view wx:if="{{showFilters}}" class="filter-mask" bindtap="closeFilters"></view>
   <view wx:if="{{showFilters}}" class="filter-sheet">
-    <view class="filter-head"><text>筛选信息</text><button bindtap="closeFilters">关闭</button></view>
-    <label>工种<input data-field="jobType" value="{{draftFilters.jobType}}" bindinput="filterInput" placeholder="例如：服务员" /></label>
-    <label>薪资<input data-field="salaryRange" value="{{draftFilters.salaryRange}}" bindinput="filterInput" placeholder="例如：5K-8K" /></label>
-    <label>位置<input data-field="location" value="{{draftFilters.location}}" bindinput="filterInput" placeholder="区域关键词" /></label>
-    <label>发布时间起<input data-field="publishedFrom" value="{{draftFilters.publishedFrom}}" type="date" bindinput="filterInput" /></label>
-    <label>发布时间止<input data-field="publishedTo" value="{{draftFilters.publishedTo}}" type="date" bindinput="filterInput" /></label>
-    <label>工作方式<picker range="{{['月结','不定时长']}}" bindchange="pickWorkMethod"><view class="filter-picker">{{draftFilters.workMethod === 'monthly_settlement' ? '月结' : draftFilters.workMethod === 'indefinite_duration' ? '不定时长' : '不限'}}</view></picker></label>
-    <view wx:if="{{savedFilters.length}}" class="saved-block"><text class="section-title">已保存筛选</text><view wx:for="{{savedFilters}}" wx:key="savedAt" class="saved-row"><button data-source="saved" data-index="{{index}}" bindtap="applySavedFilter">应用</button><button data-index="{{index}}" bindtap="deleteSavedFilter">删除</button></view></view>
-    <view wx:if="{{recentSearches.length}}" class="saved-block"><text class="section-title">最近搜索</text><view wx:for="{{recentSearches}}" wx:key="savedAt" class="saved-row"><button data-source="recent" data-index="{{index}}" bindtap="applySavedFilter">使用</button></view></view>
-    <view class="filter-actions"><button bindtap="resetFilters">重置</button><button class="apply-filter" bindtap="applyFilters">应用筛选</button></view>
-  </view>
-
-  <view wx:if="{{locationNotice && mode === 'map'}}" class="location-notice"><text>{{locationNotice}}</text><button bindtap="retryLocation">重新定位</button></view>
-
-  <view wx:if="{{mode === 'map'}}" class="map-shell">
-    <map id="marketMap" class="market-map" latitude="{{latitude}}" longitude="{{longitude}}" scale="{{scale}}" markers="{{markers}}" show-location bindmarkertap="markerTap" bindregionchange="regionChange"></map>
-    <view wx:if="{{loading}}" class="map-state">正在读取这个区域...</view>
-    <view wx:elif="{{!markers.length && !error}}" class="map-state">这个区域暂时没有信息</view>
-    <view class="map-legend"><text class="legend-dot"></text><text>缩放地图查看区域聚合，点击标记进入详情</text></view>
-  </view>
-
-  <view wx:else class="list-view">
-    <view wx:if="{{loading}}" class="loading">正在加载...</view>
-    <view wx:elif="{{!items.length}}" class="panel empty">暂时没有符合条件的信息{{activeFilterSummary ? '，可调整筛选条件后重试' : ''}}</view>
-    <block wx:else>
-      <button wx:for="{{items}}" wx:key="id" class="action-card market-card" data-id="{{item.id}}" bindtap="open">
-        <image wx:if="{{item.coverImage}}" class="card-cover" src="{{item.coverImage}}" mode="aspectFill" />
-        <view class="card-copy"><text class="action-title">{{role === 'applicant' ? item.jobType : item.jobTypeName}}</text><text class="muted">{{role === 'applicant' ? item.salaryRange : item.expectedSalary}} · {{item.locationText}}</text><text wx:if="{{item.matchReasons.length}}" class="match-line">{{item.matchReasons.join(' · ')}}</text><text class="published">发布时间：{{item.publishedAt}}</text></view>
-      </button>
-      <view wx:if="{{loadingMore}}" class="list-progress">正在加载更多...</view>
-      <view wx:elif="{{!nextCursor}}" class="list-progress">已显示全部信息</view>
-    </block>
-  </view>
-
-  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="retry-button" bindtap="retry">重试</button></view>
-
-  <view wx:if="{{selected}}" class="detail-backdrop" bindtap="closeDetail"></view>
-  <view wx:if="{{selected}}" class="detail panel">
-    <view class="detail-head"><view><text class="detail-eyebrow">信息详情</text><text class="detail-title">{{selected.jobType || selected.jobTypeName}}</text></view><button bindtap="closeDetail">关闭</button></view>
-    <text class="detail-line">薪资：{{selected.salaryRange || selected.expectedSalary}}</text>
-    <text class="detail-line">结算：{{selected.settlementMethod || selected.workMethod}}</text>
-    <text class="detail-line">位置：{{selected.locationText}}</text>
-    <text class="detail-line">发布时间：{{selected.publishedAt}}</text>
-    <scroll-view wx:if="{{selected.images.length}}" class="detail-images" scroll-x enhanced show-scrollbar="false"><image wx:for="{{selected.images}}" wx:key="id" src="{{item.url}}" mode="aspectFill" /></scroll-view>
-    <view class="contact-row"><view><text class="contact-label">{{selected.contactName || '联系方式'}}</text><text class="contact-phone">{{selected.contactPhone}}</text></view><button bindtap="callContact">拨打</button></view>
-    <view class="detail-actions"><button class="primary-action" loading="{{actionLoading}}" disabled="{{actionLoading}}" bindtap="favorite">{{selected.isFavorited ? '取消收藏' : '收藏'}}</button><button bindtap="block">拉黑</button><button bindtap="report">举报</button></view>
+    <view class="filter-head">
+      <text class="filter-title">筛选</text>
+      <text class="filter-close" bindtap="closeFilters">关闭</text>
+    </view>
+    <label class="f-label">工种
+      <input data-field="jobType" value="{{draftFilters.jobType}}" bindinput="filterInput" placeholder="例如：服务员" />
+    </label>
+    <label class="f-label">薪资
+      <input data-field="salaryRange" value="{{draftFilters.salaryRange}}" bindinput="filterInput" placeholder="例如：5K-8K" />
+    </label>
+    <label class="f-label">位置
+      <input data-field="location" value="{{draftFilters.location}}" bindinput="filterInput" placeholder="区域关键词" />
+    </label>
+    <label class="f-label">发布时间起
+      <input data-field="publishedFrom" value="{{draftFilters.publishedFrom}}" type="date" bindinput="filterInput" />
+    </label>
+    <label class="f-label">发布时间止
+      <input data-field="publishedTo" value="{{draftFilters.publishedTo}}" type="date" bindinput="filterInput" />
+    </label>
+    <label class="f-label">工作方式
+      <picker range="{{['月结','不定时长']}}" bindchange="pickWorkMethod">
+        <view class="f-picker">{{draftFilters.workMethod === 'monthly_settlement' ? '月结' : draftFilters.workMethod === 'indefinite_duration' ? '不定时长' : '不限'}}</view>
+      </picker>
+    </label>
+    <view wx:if="{{savedFilters.length}}" class="saved-block">
+      <text class="saved-title">已保存筛选</text>
+      <view wx:for="{{savedFilters}}" wx:key="savedAt" class="saved-row">
+        <view class="saved-btn" data-source="saved" data-index="{{index}}" bindtap="applySavedFilter">应用</view>
+        <view class="saved-btn" data-index="{{index}}" bindtap="deleteSavedFilter">删除</view>
+      </view>
+    </view>
+    <view wx:if="{{recentSearches.length}}" class="saved-block">
+      <text class="saved-title">最近搜索</text>
+      <view wx:for="{{recentSearches}}" wx:key="savedAt" class="saved-row">
+        <view class="saved-btn" data-source="recent" data-index="{{index}}" bindtap="applySavedFilter">使用</view>
+      </view>
+    </view>
+    <view class="filter-actions">
+      <view class="btn-ghost" bindtap="resetFilters">重置</view>
+      <view class="btn-primary" bindtap="applyFilters">应用</view>
+    </view>
   </view>
 </view>

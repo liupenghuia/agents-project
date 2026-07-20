@@ -1,15 +1,316 @@
-.page { padding-bottom: 48rpx; }
-.section-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8rpx; }
-.link { color: #0d7c66; font-size: 24rpx; }
-.identity-row { display:flex; justify-content:space-between; align-items:center; padding:22rpx 0; border-bottom:1rpx solid #edf0f1; }
-.identity-row:last-child { border-bottom:0; }
-.small-button { width:auto; min-width:150rpx; height:64rpx; margin:0; padding:0 20rpx; background:#edf5f2; color:#0d7c66; font-size:24rpx; line-height:64rpx; }
-.action-card { width:100%; margin-top:24rpx; padding:28rpx; text-align:left; background:#fff; border:1rpx solid #e3e7e9; border-radius:8rpx; }
-.action-title { display:block; color:#0d7c66; font-size:30rpx; font-weight:700; }
-.publication-row { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; gap: 16rpx; margin-top: 16rpx; padding: 20rpx 0; text-align: left; background: transparent; border: 0; border-top: 1rpx solid #edf0f1; border-radius: 0; }
-.publication-row:first-of-type { border-top: 0; }
-.publication-title { display: block; color: #17332d; font-size: 28rpx; font-weight: 700; }
-.publication-reason { display: block; margin-top: 8rpx; color: #b45309; font-size: 22rpx; }
-.publication-state { flex-shrink: 0; color: #0d7c66; font-size: 22rpx; font-weight: 700; }
-.legal-links { display: flex; gap: 32rpx; margin-top: 24rpx; color: #0d7c66; font-size: 24rpx; }
+page {
+  background: #f5f6f7;
+}
 
+.me-page {
+  min-height: 100%;
+  padding: 8rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: #f5f6f7;
+}
+
+.me-loading {
+  padding: 120rpx 0;
+  color: #8c9591;
+  font-size: 26rpx;
+  text-align: center;
+}
+
+/* —— Header —— */
+.me-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin: 12rpx 0 28rpx;
+  padding: 28rpx 24rpx;
+  background: linear-gradient(135deg, #0e8a70 0%, #0c7a63 55%, #0a6b57 100%);
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 28rpx rgba(12, 122, 99, 0.22);
+}
+
+.me-avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: 700;
+  line-height: 96rpx;
+  text-align: center;
+}
+
+.me-header-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.me-name {
+  display: block;
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.me-sub {
+  display: block;
+  margin-top: 6rpx;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 22rpx;
+}
+
+.me-switch {
+  flex-shrink: 0;
+  height: 60rpx;
+  padding: 0 22rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 60rpx;
+}
+
+.me-identity-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.me-identity.is-active {
+  background: #f4fbf8;
+}
+
+.me-current {
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #e7f5f0;
+  color: #0c7a63;
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+/* —— Groups / cells —— */
+.me-group {
+  margin-bottom: 24rpx;
+}
+
+.me-group-title {
+  display: block;
+  margin: 0 8rpx 12rpx;
+  color: #8c9591;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.me-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 8rpx 12rpx;
+}
+
+.me-group-head .me-group-title {
+  margin: 0;
+}
+
+.me-link {
+  color: #0c7a63;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.me-cell-card {
+  overflow: hidden;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+}
+
+.me-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 28rpx 24rpx;
+  border-bottom: 1rpx solid #f0f2f1;
+}
+
+.me-row:last-child {
+  border-bottom: 0;
+}
+
+.me-row-label {
+  color: #1a1a1a;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.me-status {
+  flex-shrink: 0;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: #eef8f4;
+  color: #0c7a63;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.me-status-pending_review {
+  background: #fff8db;
+  color: #886813;
+}
+
+.me-status-approved {
+  background: #eef8f4;
+  color: #0c7a63;
+}
+
+.me-status-changes_requested {
+  background: #fff1ef;
+  color: #a53b34;
+}
+
+.me-menu {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 26rpx 24rpx;
+  border-bottom: 1rpx solid #f0f2f1;
+}
+
+.me-menu--last {
+  border-bottom: 0;
+}
+
+.me-menu-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.me-menu-title {
+  display: block;
+  color: #1a1a1a;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.me-menu-desc {
+  display: block;
+  margin-top: 6rpx;
+  color: #8c9591;
+  font-size: 22rpx;
+}
+
+.me-arrow {
+  flex-shrink: 0;
+  color: #c5ccc8;
+  font-size: 36rpx;
+  line-height: 1;
+  font-weight: 300;
+}
+
+.me-empty {
+  padding: 36rpx 24rpx;
+  color: #b0b8b4;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.me-pub {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #f0f2f1;
+}
+
+.me-pub--last {
+  border-bottom: 0;
+}
+
+.me-pub-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.me-pub-title {
+  display: block;
+  color: #1a1a1a;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.me-pub-meta {
+  display: block;
+  margin-top: 8rpx;
+  color: #8c9591;
+  font-size: 22rpx;
+}
+
+.me-pub-reason {
+  display: block;
+  margin-top: 8rpx;
+  color: #b45309;
+  font-size: 22rpx;
+}
+
+.me-block-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.me-unblock {
+  flex-shrink: 0;
+  height: 56rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  background: #fff1ef;
+  color: #a53b34;
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 56rpx;
+}
+
+.me-legal {
+  padding: 24rpx;
+}
+
+.me-legal-copy {
+  display: block;
+  color: #8c9591;
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.me-legal-links {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  color: #0c7a63;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.me-dot {
+  color: #c5ccc8;
+}
+
+.me-error {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #fff1ef;
+  color: #8f322c;
+  font-size: 26rpx;
+}
+
+.me-retry {
+  margin-top: 16rpx;
+  color: #0c7a63;
+  font-weight: 700;
+}

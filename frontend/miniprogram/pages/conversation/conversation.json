@@ -1,1 +1,4 @@
-{ "navigationBarTitleText": "会话" }
+{
+  "navigationBarTitleText": "沟通",
+  "disableScroll": true
+}

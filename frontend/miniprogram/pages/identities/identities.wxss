@@ -1,7 +1,66 @@
-.identity-card { margin-top: 24rpx; padding: 32rpx; background: #fff; border: 1rpx solid #e3e7e9; border-radius: 8rpx; }
-.identity-card.focus { border-color: #0d7c66; box-shadow: 0 0 0 2rpx #d8eee8; }
-.card-head { display: flex; align-items: center; justify-content: space-between; }
-.card-title { font-size: 34rpx; font-weight: 700; }
-.card-copy { display: block; margin-top: 24rpx; color: #68747d; line-height: 1.65; }
-.empty { text-align: center; }
-.empty-title { display: block; margin-bottom: 16rpx; font-size: 32rpx; font-weight: 600; }
+.identity-card {
+  margin-top: 20rpx;
+  padding: 32rpx;
+  background: #fff;
+  border: 1rpx solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.identity-card.focus {
+  border-color: #9ed4c4;
+  box-shadow: 0 0 0 4rpx rgba(12, 122, 99, 0.12), var(--shadow-sm);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.status {
+  padding: 10rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.status-pending_review {
+  background: #fff5d6;
+  color: #8e6811;
+}
+
+.status-approved {
+  background: #e6f6ee;
+  color: #187049;
+}
+
+.status-changes_requested {
+  background: #fff0ee;
+  color: #a53b34;
+}
+
+.card-copy {
+  display: block;
+  margin-top: 20rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+  font-size: 26rpx;
+}
+
+.empty {
+  text-align: center;
+}
+
+.empty-title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}

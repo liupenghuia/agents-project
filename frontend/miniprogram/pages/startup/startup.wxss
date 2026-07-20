@@ -1,5 +1,37 @@
-.startup-page { display: flex; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 64rpx; background: #f7f8fa; text-align: center; }
-.startup-mark { color: #0d7c66; font-size: 76rpx; font-weight: 800; letter-spacing: 4rpx; }
-.startup-copy { margin-top: 20rpx; color: #17212b; font-size: 30rpx; }
-.startup-status { margin-top: 88rpx; color: #68747d; font-size: 24rpx; }
-.startup-page .button-primary { width: 100%; margin-top: 36rpx; }
+.startup-page {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64rpx;
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(12, 122, 99, 0.12), transparent 55%),
+    linear-gradient(180deg, #eef7f4 0%, #f3f5f4 45%, #f3f5f4 100%);
+  text-align: center;
+}
+
+.startup-mark {
+  color: var(--color-primary);
+  font-size: 80rpx;
+  font-weight: 800;
+  letter-spacing: 8rpx;
+}
+
+.startup-copy {
+  margin-top: 18rpx;
+  color: var(--color-text);
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+.startup-status {
+  margin-top: 96rpx;
+  color: var(--color-text-muted);
+  font-size: 24rpx;
+}
+
+.startup-page .button-primary {
+  width: 100%;
+  margin-top: 36rpx;
+}

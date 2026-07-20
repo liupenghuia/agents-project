@@ -57,7 +57,9 @@ An `Approved` idea is promoted by:
 5. Translating the brief into observable acceptance criteria rather than copying speculative prose.
 6. Marking the idea `Promoted` only when references are bidirectional and validation passes.
 
-The first task remains `Draft` until the Product Gate in `docs/delivery-workflow.md` passes. Promotion does not authorize architecture, implementation, or production release by itself.
+The first task remains `Draft` until the Product Gate in `docs/delivery-workflow.md` passes. Promotion does not authorize architecture, design, implementation, or production release by itself.
+
+After the Product Gate, Architect and Designer work in parallel (`Ready for Architecture`). Implementation engineers start only at `Ready for Implementation` when architecture is Done and design is Done or N/A. See Canonical Delivery Sequence in `docs/delivery-workflow.md`.
 
 ## Product Brief Ready Gate
 

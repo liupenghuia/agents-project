@@ -1,14 +1,220 @@
-page { background: #f7f8fa; color: #17212b; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; font-size: 28rpx; }
-view, text, button, input, textarea, picker { box-sizing: border-box; }
-.page { min-height: 100vh; padding: 48rpx 40rpx 64rpx; }
-.eyebrow { color: #0d7c66; font-size: 24rpx; font-weight: 600; letter-spacing: 0; }
-.title { display: block; margin-top: 16rpx; color: #101820; font-size: 56rpx; font-weight: 700; line-height: 1.2; }
-.muted { color: #68747d; line-height: 1.65; }
-.section-title { display: block; margin: 48rpx 0 24rpx; font-size: 32rpx; font-weight: 700; }
-.panel { margin-top: 32rpx; padding: 32rpx; background: #fff; border: 1rpx solid #e3e7e9; border-radius: 8rpx; }
-.button-primary { width: 100%; margin: 32rpx 0 0; padding: 0; height: 96rpx; background: #0d7c66; border-radius: 8rpx; color: #fff; font-size: 30rpx; line-height: 96rpx; }
-.button-secondary { width: 100%; margin: 20rpx 0 0; padding: 0; height: 88rpx; background: #edf5f2; border-radius: 8rpx; color: #0d7c66; font-size: 28rpx; line-height: 88rpx; }
-button::after { border: 0; }
-.link { color: #0d7c66; }
-.error { margin-top: 24rpx; padding: 24rpx; background: #fff2f0; border-left: 6rpx solid #d94f45; color: #a53b34; line-height: 1.5; }
-.loading { padding: 80rpx 0; text-align: center; color: #68747d; }
+/* —— Design tokens (寻职) —— */
+page {
+  --color-bg: #f3f5f4;
+  --color-surface: #ffffff;
+  --color-text: #14201c;
+  --color-text-secondary: #5c6b65;
+  --color-text-muted: #8a9691;
+  --color-primary: #0c7a63;
+  --color-primary-soft: #e7f5f0;
+  --color-primary-deep: #095a4a;
+  --color-border: #e4ebe8;
+  --color-border-soft: #eef2f0;
+  --color-danger: #c9443b;
+  --color-danger-soft: #fff1ef;
+  --color-warning: #9a6412;
+  --color-warning-soft: #fff7e8;
+  --radius-sm: 12rpx;
+  --radius-md: 20rpx;
+  --radius-lg: 28rpx;
+  --radius-xl: 36rpx;
+  --shadow-sm: 0 4rpx 16rpx rgba(20, 40, 34, 0.04);
+  --shadow-md: 0 10rpx 32rpx rgba(20, 40, 34, 0.07);
+  --shadow-lg: 0 18rpx 48rpx rgba(20, 40, 34, 0.12);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.5;
+}
+
+view, text, button, input, textarea, picker, label, image, scroll-view {
+  box-sizing: border-box;
+}
+
+button {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+button::after {
+  border: 0;
+}
+
+/* —— Page shell —— */
+.page {
+  min-height: 100vh;
+  padding: 40rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: 22rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+.title {
+  display: block;
+  margin-top: 12rpx;
+  color: var(--color-text);
+  font-size: 48rpx;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.5rpx;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  font-size: 26rpx;
+}
+
+.section-title {
+  display: block;
+  margin: 40rpx 0 20rpx;
+  color: var(--color-text);
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+/* —— Surfaces —— */
+.panel {
+  margin-top: 24rpx;
+  padding: 28rpx;
+  background: var(--color-surface);
+  border: 1rpx solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* —— Buttons —— */
+.button-primary {
+  width: 100%;
+  margin: 28rpx 0 0;
+  height: 96rpx;
+  background: linear-gradient(135deg, #0e8a70 0%, #0c7a63 55%, #0a6b57 100%);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 96rpx;
+  box-shadow: 0 10rpx 24rpx rgba(12, 122, 99, 0.28);
+}
+
+.button-primary[disabled] {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.button-secondary {
+  width: 100%;
+  margin: 16rpx 0 0;
+  height: 88rpx;
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-deep);
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 88rpx;
+}
+
+.link {
+  color: var(--color-primary);
+}
+
+/* —— Feedback —— */
+.error {
+  margin-top: 24rpx;
+  padding: 24rpx 28rpx;
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-md);
+  border-left: 6rpx solid var(--color-danger);
+  color: #8f322c;
+  line-height: 1.55;
+  font-size: 26rpx;
+}
+
+.loading {
+  padding: 96rpx 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 26rpx;
+}
+
+/* —— Shared cards / rows —— */
+.action-card {
+  width: 100%;
+  margin-top: 16rpx;
+  padding: 28rpx;
+  background: var(--color-surface);
+  border: 1rpx solid var(--color-border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+
+.action-title {
+  display: block;
+  color: var(--color-text);
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.small-button {
+  width: auto;
+  min-width: 140rpx;
+  height: 60rpx;
+  margin: 0;
+  padding: 0 20rpx;
+  background: var(--color-primary-soft);
+  border-radius: 999rpx;
+  color: var(--color-primary-deep);
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 60rpx;
+}
+
+/* —— Forms (shared) —— */
+.label {
+  display: block;
+  padding-top: 24rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.label > text {
+  color: var(--color-danger);
+}
+
+input,
+textarea,
+.picker {
+  width: 100%;
+  margin-top: 12rpx;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  background: #f7faf9;
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 28rpx;
+  line-height: 88rpx;
+}
+
+textarea {
+  min-height: 160rpx;
+  padding: 20rpx 24rpx;
+  line-height: 1.55;
+}
+
+.picker {
+  color: var(--color-text-muted);
+}

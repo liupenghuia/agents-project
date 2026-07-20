@@ -1,0 +1,18 @@
+# Local multi-agent runtime observability (append-only runs/events)
+.agent-runs/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and local caches
+*.log
+.cache/
+tmp/

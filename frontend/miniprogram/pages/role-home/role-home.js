@@ -27,8 +27,18 @@ Page({
   },
   openApplicantInformation() { wx.navigateTo({ url: '/pages/applicant-information/applicant-information' }); },
   openRecruiterInformation() { wx.navigateTo({ url: '/pages/recruiter-information/recruiter-information' }); },
+  openStepProfile() {
+    if (this.data.role === 'applicant') this.openApplicantInformation();
+    else this.openRecruiterInformation();
+  },
+  openStepPublish() {
+    if (this.data.role === 'applicant') this.openApplicantInformation();
+    else this.openRecruitmentPost();
+  },
   openRecruitmentPost(event) {
-    const postId = event && event.currentTarget.dataset.id;
+    const postId = event && event.currentTarget && event.currentTarget.dataset
+      ? event.currentTarget.dataset.id
+      : '';
     wx.navigateTo({ url: `/pages/recruitment-post/recruitment-post${postId ? `?postId=${postId}` : ''}` });
   },
   openPublication(event) {

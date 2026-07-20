@@ -1,6 +1,45 @@
-.form { margin-top: 36rpx; padding: 8rpx 32rpx 32rpx; }
-.label { display: block; padding-top: 28rpx; color: #45515a; font-size: 25rpx; }
-.label > text { color: #d94f45; }
-input, .location-button { width: 100%; margin-top: 14rpx; min-height: 84rpx; padding: 0 20rpx; background: #f7f8fa; border: 1rpx solid #e3e7e9; border-radius: 4rpx; color: #17212b; line-height: 84rpx; text-align: left; }
-.location-button { color: #0d7c66; }
-.success { margin-top: 24rpx; padding: 24rpx; background: #e9f4f0; color: #187049; }
+.form {
+  margin-top: 28rpx;
+  padding: 12rpx 28rpx 32rpx;
+}
+
+.label {
+  display: block;
+  padding-top: 24rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.label > text {
+  color: var(--color-danger);
+}
+
+input,
+.location-button {
+  width: 100%;
+  margin-top: 12rpx;
+  min-height: 88rpx;
+  padding: 0 22rpx;
+  background: #f7faf9;
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  line-height: 88rpx;
+  text-align: left;
+}
+
+.location-button {
+  color: var(--color-primary-deep);
+  font-weight: 600;
+  background: var(--color-primary-soft);
+  border-color: #cfe3db;
+}
+
+.success {
+  margin-top: 24rpx;
+  padding: 24rpx 28rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: #187049;
+}

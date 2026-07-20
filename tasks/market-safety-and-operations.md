@@ -27,6 +27,7 @@ frontend_target_status:
 scope_status:
   product: Done
   architecture: Done
+  design: Done
   backend: Done
   frontend: Done
   mobile: N/A

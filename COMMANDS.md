@@ -26,7 +26,17 @@ Expands to: continue discovery when the name matches an idea, or update requirem
 架构 user-management
 ```
 
-Expands to: read architecture rules, update `docs/architecture.md`, `docs/openapi.yaml`, `docs/database.md`, and confirm task readiness.
+Expands to: after Product Gate, read architecture rules, update `docs/architecture.md`, `docs/openapi.yaml`, `docs/database.md`, set `architecture=Done`. Advance to `Ready for Implementation` only if design is already `Done` or `N/A`; otherwise stay in architecture/design phase. Does not start implementation coding.
+
+## Design
+
+```text
+设计 user-management
+```
+
+English equivalent: `design user-management`.
+
+Expands to: after Product Gate (parallel with Architect), read `docs/design/AGENTS.md` and `docs/design/README.md`, produce or update the task **Design Spec**, set `scope_status.design=Done` when the Design Gate passes. Advance to `Ready for Implementation` only if architecture is already `Done`. Does not own product scope, API contracts, or implementation code; developers must not code until that status is reached.
 
 ## Backend
 
@@ -104,7 +114,7 @@ Expands to: read test rules, retest `Ready for Retest` issues first, then test t
 
 English equivalent: `deliver user-management`.
 
-Expands to: promote a matching approved idea when needed, then run Product, Architect, all required implementation scopes, Test, issue fix/retest, and the applicable release gate until the task is `Done` or a documented approval/blocker requires user input. Repository edits and local checks continue without phase-by-phase confirmation; production, destructive, secret, paid, legal, and unresolved product decisions still require approval.
+Expands to: promote a matching approved idea when needed, then run **Product → Architect and Designer in parallel (design skipped only when no client UI) → only then Backend/Frontend/MiniProgram/Web/… → Test → fix/retest → release gate** until `Done` or a documented blocker. Implementation code changes are forbidden until architecture is Done and design is Done or N/A. Production, destructive, secret, paid, legal, and unresolved product decisions still require approval.
 
 ### Local Delivery Runner
 
@@ -114,11 +124,28 @@ The repository also provides an executable local loop:
 ruby scripts/deliver.rb user-management
 ```
 
-The runner validates workflow metadata, executes required module checks, starts local backend/Web services for health checks, saves evidence, and can invoke a configured repair command before retesting. Configure `DELIVERY_REPAIR_COMMAND` or pass `--repair-command`; the default maximum is three rounds.
+The runner validates workflow metadata, executes required module checks, starts local backend/Web services for health checks, saves evidence, **opens an agent run under `.agent-runs/`**, dual-writes check/gate/repair events, and can invoke a configured repair command before retesting. Configure `DELIVERY_REPAIR_COMMAND` or pass `--repair-command`; the default maximum is three rounds.
+
+### Agent Runtime (observability + HITL)
+
+```bash
+ruby scripts/agent_run.rb start --task user-management --mode manual
+ruby scripts/agent_run.rb handoff --run <run_id> \
+  --from "Product Agent" --to "Architect Agent" \
+  --from-status Draft --to-status "Ready for Architecture" \
+  --evidence "Product gate passed" --next "Architect owns contracts"
+ruby scripts/agent_run.rb interrupt --run <run_id> --reason "MVP tradeoff" --options approve,edit_scope,park
+ruby scripts/agent_run.rb decide --run <run_id> --decision approve --by User --note "Ship list-only MVP"
+ruby scripts/agent_run.rb list
+ruby scripts/agent_run.rb timeline <run_id>
+```
+
+See `docs/agent-runtime.md` and `docs/agent-system-positioning.md`.
 
 ## Next Work
 
 ```text
+下一个 设计
 下一个 前端
 下一个 小程序
 下一个 Web

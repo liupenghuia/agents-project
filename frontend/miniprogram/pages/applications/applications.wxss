@@ -1,3 +1,23 @@
-.application-card { margin-top: 16rpx; }
-.actions { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 16rpx; }
-.actions button { margin: 0; padding: 0 18rpx; height: 60rpx; line-height: 60rpx; font-size: 22rpx; background: #eef6f3; color: #0d6f5c; }
+.application-card {
+  margin-top: 14rpx;
+  padding: 26rpx 28rpx;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.actions button {
+  margin: 0;
+  padding: 0 20rpx;
+  height: 60rpx;
+  border-radius: 999rpx;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 60rpx;
+}

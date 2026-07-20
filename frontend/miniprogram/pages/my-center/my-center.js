@@ -4,6 +4,18 @@ const { labels } = require('../../utils/market-status');
 const { getActiveRole, setActiveRole } = require('../../utils/workspace');
 const navigation = require('../../utils/navigation');
 
+function roleMeta(identities, role) {
+  const list = identities || [];
+  const approved = list.filter((item) => item.reviewStatus === 'approved');
+  const canSwitchRole = approved.length >= 2;
+  const otherApproved = approved.find((item) => item.role !== role);
+  let roleHint = '当前工作身份';
+  if (canSwitchRole) roleHint = '双身份已开通 · 可一键切换';
+  else if (list.some((item) => item.reviewStatus === 'pending_review')) roleHint = '有身份正在审核中';
+  else if (list.some((item) => item.reviewStatus === 'changes_requested')) roleHint = '有身份需要修改后重提';
+  return { canSwitchRole, otherApprovedRole: otherApproved ? otherApproved.role : '', roleHint };
+}
+
 Page({
   data: {
     role: 'applicant',
@@ -15,6 +27,9 @@ Page({
     publicationsLoading: false,
     error: '',
     publicationsError: '',
+    canSwitchRole: false,
+    otherApprovedRole: '',
+    roleHint: '当前工作身份',
     status: { pending_review: '待审核', approved: '审核通过', changes_requested: '需修改' },
   },
   onLoad(options) {
@@ -41,16 +56,57 @@ Page({
         api.listMarketUserBlocks(),
         this.fetchPublications(),
       ]),
-      mapSuccess: ([identities, blocks, publications]) => ({
-        identities: identities || [],
-        blocks: blocks || [],
-        publications: publications || [],
-        publicationsError: '',
-      }),
+      mapSuccess: ([identities, blocks, publications]) => {
+        const list = identities || [];
+        const meta = roleMeta(list, this.data.role);
+        return {
+          identities: list,
+          blocks: blocks || [],
+          publications: publications || [],
+          publicationsError: '',
+          ...meta,
+        };
+      },
     }).catch(() => {});
   },
-  fetchPublications() {
-    if (this.data.role === 'recruiter') {
+  applyRole(role) {
+    const next = setActiveRole(role) || role;
+    const meta = roleMeta(this.data.identities, next);
+    this.setData({ role: next, ...meta });
+    this.load();
+    wx.showToast({
+      title: next === 'recruiter' ? '已切换到招人方' : '已切换到应聘方',
+      icon: 'none',
+    });
+  },
+  switchRole() {
+    if (!this.data.canSwitchRole || !this.data.otherApprovedRole) {
+      wx.showToast({ title: '需要两个已通过的身份才能切换', icon: 'none' });
+      return;
+    }
+    this.applyRole(this.data.otherApprovedRole);
+  },
+  onIdentityTap(event) {
+    const role = event.currentTarget.dataset.role;
+    const status = event.currentTarget.dataset.status;
+    if (!role) return;
+    if (status !== 'approved') {
+      wx.showToast({
+        title: status === 'pending_review' ? '该身份审核中' : '请先按要求修改后重提',
+        icon: 'none',
+      });
+      return;
+    }
+    if (role === this.data.role) return;
+    this.applyRole(role);
+  },
+  createOtherRole() {
+    const hasRecruiter = this.data.identities.some((item) => item.role === 'recruiter');
+    const role = hasRecruiter ? 'applicant' : 'recruiter';
+    wx.navigateTo({ url: `/pages/register/register?role=${role}` });
+  },
+  fetchPublications(role = this.data.role) {
+    if (role === 'recruiter') {
       return api.listRecruitmentPosts().then((items) => (items || []).map((item) => ({
         ...item,
         publicationId: item.id,

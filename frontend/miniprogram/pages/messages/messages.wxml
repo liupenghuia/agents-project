@@ -1,17 +1,49 @@
-<view class="page">
-  <view class="eyebrow">站内沟通</view>
-  <text class="title">消息</text>
-  <view class="toolbar">
-    <button bindtap="openApplications">投递</button>
-    <button bindtap="openInterviews">面试</button>
-    <button bindtap="openMyCenter">我的</button>
+<view class="msg-page">
+  <view class="msg-header">
+    <text class="msg-title">消息</text>
+    <text class="msg-sub">{{role === 'recruiter' ? '与求职者的沟通' : '与招聘方的沟通'}}</text>
   </view>
-  <view wx:if="{{loading}}" class="loading">正在读取会话...</view>
-  <view wx:elif="{{!items.length && !error}}" class="panel empty">暂无消息，可从详情页发起沟通</view>
-  <button wx:for="{{items}}" wx:key="id" class="action-card" data-id="{{item.id}}" bindtap="open">
-    <view class="row"><text class="action-title">{{item.peer.displayName}}</text><text wx:if="{{item.unreadCount}}" class="badge">{{item.unreadCount}}</text></view>
-    <text class="muted">{{item.lastMessage.body || '暂无消息'}}</text>
-    <text class="published">{{item.status === 'active' ? '进行中' : item.status === 'ended' ? '已结束' : '已阻止'}}</text>
-  </button>
-  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+
+  <view class="msg-shortcuts">
+    <view class="msg-chip" bindtap="openApplications">
+      {{role === 'recruiter' ? '收到的投递' : '我的投递'}}
+    </view>
+    <view class="msg-chip" bindtap="openInterviews">面试安排</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="msg-state">正在读取会话…</view>
+
+  <view wx:elif="{{!items.length && !error}}" class="msg-empty">
+    <view class="msg-empty-icon">聊</view>
+    <text class="msg-empty-title">还没有会话</text>
+    <text class="msg-empty-desc">在详情页点「聊一聊」或「表达兴趣」后，对话会出现在这里</text>
+  </view>
+
+  <view wx:else class="msg-list">
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="msg-row {{item.unreadCount ? 'has-unread' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="open"
+    >
+      <view class="msg-avatar">{{item.peer.displayName ? item.peer.displayName[0] : '对'}}</view>
+      <view class="msg-body">
+        <view class="msg-row-top">
+          <text class="msg-name">{{item.peer.displayName || '对方'}}</text>
+          <text class="msg-time">{{item.lastMessage.createdAtLabel || item.lastMessage.createdAt || ''}}</text>
+        </view>
+        <view class="msg-row-bottom">
+          <text class="msg-preview">{{item.lastMessage.body || '暂无消息'}}</text>
+          <text wx:if="{{item.unreadCount}}" class="msg-badge">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</text>
+          <text wx:elif="{{item.status !== 'active'}}" class="msg-status">{{item.status === 'ended' ? '已结束' : '已阻止'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{error}}" class="error">
+    <text>{{error}}</text>
+    <button class="button-secondary" bindtap="retry">重试</button>
+  </view>
 </view>

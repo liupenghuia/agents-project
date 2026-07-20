@@ -67,6 +67,25 @@ Page({
     if (!this.data.item || !this.data.item.contactPhone) { this.setData({ error: '当前信息没有可用联系方式' }); return; }
     wx.makePhoneCall({ phoneNumber: this.data.item.contactPhone, fail: () => this.setData({ error: '未能发起电话，请稍后重试' }) });
   },
+  /** Single primary CTA: applicant applies interest; recruiter starts chat. */
+  primaryAction() {
+    if (this.data.role === 'applicant') this.apply();
+    else this.message();
+  },
+  openMore() {
+    if (!this.data.item || this.data.actionLoading) return;
+    const isApplicant = this.data.role === 'applicant';
+    const itemList = isApplicant ? ['站内沟通', '举报', '拉黑'] : ['举报', '拉黑'];
+    wx.showActionSheet({
+      itemList,
+      success: (result) => {
+        const label = itemList[result.tapIndex];
+        if (label === '站内沟通') this.message();
+        else if (label === '举报') this.report();
+        else if (label === '拉黑') this.block();
+      },
+    });
+  },
   message() {
     if (!this.data.item || this.data.submitting) return;
     const targetType = this.data.role === 'applicant' ? 'recruitment_post' : 'applicant_information';

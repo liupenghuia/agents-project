@@ -4,6 +4,7 @@
 
 - Read parent `frontend/AGENTS.md`, then root `AGENTS.md`.
 - Read `docs/delivery-workflow.md`, `docs/client-architecture.md`, the task, requirements, OpenAPI, and linked Mini Program issues.
+- **Hard gate:** do not implement feature UI until task is `Ready for Implementation` (Product + Architecture + Design when UI required). Read the task **Design Spec** and `docs/design/README.md` before coding.
 - Run preflight and verify `frontend_targets.miniprogram: true` before starting feature work.
 - Complete and record the client architecture pre-coding check before editing Mini Program code.
 

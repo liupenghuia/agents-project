@@ -25,6 +25,7 @@ frontend_target_status:
 scope_status:
   product: Done
   architecture: Pending
+  design: Pending
   backend: Pending
   frontend: Pending
   mobile: N/A

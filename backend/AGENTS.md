@@ -2,7 +2,8 @@
 
 ## Load Before Work
 
-- Read root `AGENTS.md`, `docs/delivery-workflow.md`, the task, architecture, OpenAPI, database design, and linked backend issues.
+- Read root `AGENTS.md`, `docs/delivery-workflow.md` (Canonical Delivery Sequence), the task, architecture, OpenAPI, database design, and linked backend issues.
+- **Hard gate:** do not start feature implementation until task `status` is `Ready for Implementation` or later (`product=Done`, `architecture=Done`, `design=Done` or `N/A`).
 - Run the common preflight; owned `P0`/`P1` issues and task blockers outrank new work.
 
 ## Ownership

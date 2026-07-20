@@ -1,5 +1,42 @@
-.form label { display: block; margin-top: 16rpx; color: #52615c; font-size: 24rpx; }
-.form input { width: 100%; height: 72rpx; margin-top: 8rpx; padding: 0 18rpx; border: 1rpx solid #d5dfdb; background: #fff; }
-.interview-card { margin-top: 16rpx; }
-.actions { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 16rpx; }
-.actions button { margin: 0; padding: 0 18rpx; height: 60rpx; line-height: 60rpx; font-size: 22rpx; background: #eef6f3; color: #0d6f5c; }
+.form label {
+  display: block;
+  margin-top: 16rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+}
+
+.form input {
+  width: 100%;
+  height: 80rpx;
+  min-height: 80rpx;
+  margin-top: 8rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+  line-height: 80rpx;
+}
+
+.interview-card {
+  margin-top: 14rpx;
+  padding: 26rpx 28rpx;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.actions button {
+  margin: 0;
+  padding: 0 20rpx;
+  height: 60rpx;
+  border-radius: 999rpx;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 60rpx;
+}

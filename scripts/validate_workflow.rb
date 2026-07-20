@@ -15,10 +15,12 @@ ISSUE_STATUSES = ["Open", "Assigned", "Fixing", "Ready for Retest", "Retest Fail
 SCOPE_STATUSES = ["N/A", "Pending", "In Progress", "Blocked", "Done"].freeze
 PRIORITIES = %w[P0 P1 P2 P3].freeze
 IMPLEMENTATION_SCOPES = %w[backend frontend mobile ios android].freeze
+CLIENT_SCOPES = %w[frontend mobile ios android].freeze
 FRONTEND_TARGETS = %w[miniprogram web].freeze
-ALL_SCOPES = %w[product architecture backend frontend mobile ios android test release].freeze
+ALL_SCOPES = %w[product architecture design backend frontend mobile ios android test release].freeze
 OWNERS = [
-  "Product Agent", "Architect Agent", "Backend Agent", "Frontend Agent", "Mobile Agent",
+  "Product Agent", "Architect Agent", "Designer Agent", "Backend Agent", "Frontend Agent",
+  "Frontend MiniProgram Agent", "Frontend Web Agent", "Mobile Agent",
   "iOS Agent", "Android Agent", "Test Agent", "Orchestrator Agent"
 ].freeze
 
@@ -148,6 +150,17 @@ tasks.each do |path, task|
     end
   end
 
+  client_ui_required = CLIENT_SCOPES.any? { |scope| required[scope] == true } ||
+    FRONTEND_TARGETS.any? { |target| frontend_targets[target] == true }
+  design_status = scopes["design"]
+  if client_ui_required
+    if design_status == "N/A"
+      errors << "#{path}: design scope cannot be N/A when client UI is required"
+    end
+  elsif design_status != "N/A"
+    errors << "#{path}: design scope must be N/A when no client UI scope/target is required"
+  end
+
   if task["release_required"] == false && scopes["release"] != "N/A"
     errors << "#{path}: release scope must be N/A when release_required is false"
   elsif task["release_required"] == true && scopes["release"] == "N/A"
@@ -156,11 +169,22 @@ tasks.each do |path, task|
     errors << "#{path}: release_required must be true or false"
   end
 
-  architecture_ready = [
+  # After product: architecture (+ design when UI) must be complete before/at implementation.
+  implementation_entry = [
     "Ready for Implementation", "In Progress", "Ready for Test", "Test Failed",
     "Ready for Retest", "Ready for Release", "Released", "Done"
   ].include?(task["status"])
-  errors << "#{path}: product and architecture scopes must be Done" if architecture_ready && [scopes["product"], scopes["architecture"]] != ["Done", "Done"]
+  if implementation_entry
+    if scopes["product"] != "Done" || scopes["architecture"] != "Done"
+      errors << "#{path}: product and architecture scopes must be Done before implementation (status #{task['status']})"
+    end
+    if client_ui_required && design_status != "Done"
+      errors << "#{path}: design scope must be Done before implementation when client UI is required (status #{task['status']})"
+    end
+    if !client_ui_required && design_status != "N/A"
+      errors << "#{path}: design scope must be N/A when no client UI is required (status #{task['status']})"
+    end
+  end
 
   implementation_done = ["Ready for Test", "Test Failed", "Ready for Retest", "Ready for Release", "Released", "Done"].include?(task["status"])
   if implementation_done

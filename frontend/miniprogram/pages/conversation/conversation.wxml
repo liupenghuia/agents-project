@@ -1,21 +1,66 @@
-<view class="page">
-  <view class="eyebrow">会话</view>
-  <text class="title">{{conversation.peer.displayName || '沟通'}}</text>
-  <view wx:if="{{loading}}" class="loading">正在读取消息...</view>
+<view class="chat-page">
+  <view wx:if="{{loading}}" class="chat-state">正在读取消息…</view>
+
   <block wx:elif="{{conversation}}">
-    <view class="message-list">
-      <view wx:if="{{!messages.length}}" class="panel empty">暂无消息</view>
-      <view wx:for="{{messages}}" wx:key="id" class="bubble {{item.mine ? 'mine' : 'theirs'}}">
-        <text>{{item.body}}</text>
-        <text class="time">{{item.createdAt}}</text>
+    <view class="chat-peer">
+      <text class="chat-peer-name">{{conversation.peer.displayName || '沟通'}}</text>
+      <text class="chat-peer-status">
+        {{conversation.status === 'active' ? '会话进行中' : conversation.status === 'ended' ? '会话已结束' : '会话已阻止'}}
+      </text>
+    </view>
+
+    <scroll-view
+      class="chat-scroll"
+      scroll-y
+      scroll-into-view="{{scrollIntoView}}"
+      scroll-with-animation
+    >
+      <view wx:if="{{!messages.length}}" class="chat-empty">打个招呼开始沟通吧</view>
+      <view
+        wx:for="{{messages}}"
+        wx:key="id"
+        id="m-{{item.id}}"
+        class="bubble-row {{item.mine ? 'is-mine' : 'is-theirs'}}"
+      >
+        <view class="bubble {{item.mine ? 'mine' : 'theirs'}}">
+          <text class="bubble-text">{{item.body}}</text>
+          <text class="bubble-time">{{item.createdAt}}</text>
+        </view>
       </view>
+      <view id="chat-bottom" class="chat-bottom-spacer"></view>
+    </scroll-view>
+
+    <view wx:if="{{conversation.status === 'active'}}" class="composer safe-bottom">
+      <input
+        class="composer-input"
+        value="{{draft}}"
+        bindinput="input"
+        maxlength="1000"
+        confirm-type="send"
+        bindconfirm="send"
+        placeholder="输入消息"
+        placeholder-class="composer-ph"
+      />
+      <button
+        class="composer-send"
+        loading="{{sending}}"
+        disabled="{{sending || !draft}}"
+        bindtap="send"
+      >发送</button>
     </view>
-    <view wx:if="{{conversation.status === 'active'}}" class="composer">
-      <input value="{{draft}}" bindinput="input" maxlength="1000" placeholder="输入文本消息" />
-      <button loading="{{sending}}" disabled="{{sending}}" bindtap="send">发送</button>
+    <view wx:else class="chat-closed safe-bottom">
+      会话已{{conversation.status === 'ended' ? '结束' : '阻止'}}，无法继续发送
     </view>
-    <view wx:else class="panel empty">会话已{{conversation.status === 'ended' ? '结束' : '阻止'}}，无法继续发送</view>
-    <button wx:if="{{conversation.status === 'active'}}" class="button-secondary" bindtap="end">结束会话</button>
+
+    <view
+      wx:if="{{conversation.status === 'active'}}"
+      class="chat-more"
+      bindtap="end"
+    >结束会话</view>
   </block>
-  <view wx:if="{{error}}" class="error"><text>{{error}}</text><button class="button-secondary" bindtap="retry">重试</button></view>
+
+  <view wx:if="{{error}}" class="error">
+    <text>{{error}}</text>
+    <button class="button-secondary" bindtap="retry">重试</button>
+  </view>
 </view>

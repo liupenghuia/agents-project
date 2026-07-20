@@ -1,10 +1,74 @@
-.form { margin-top: 36rpx; padding: 8rpx 32rpx 32rpx; }
-.label { display: block; padding-top: 28rpx; color: #45515a; font-size: 25rpx; }
-.label > text { color: #d94f45; }
-input, textarea, .picker { width: 100%; margin-top: 14rpx; padding: 0 20rpx; min-height: 84rpx; background: #f7f8fa; border: 1rpx solid #e3e7e9; border-radius: 4rpx; color: #17212b; line-height: 84rpx; }
-textarea { padding-top: 18rpx; min-height: 120rpx; line-height: 1.5; }
-.picker { color: #8a949b; }
-.phone-button { margin-top: 20rpx; padding: 0; height: 76rpx; background: #edf5f2; color: #0d7c66; font-size: 25rpx; line-height: 76rpx; }
-.agreement { display: flex; align-items: center; flex-wrap: wrap; gap: 8rpx; margin-top: 28rpx; color: #68747d; font-size: 23rpx; }
-.agreement checkbox { transform: scale(.8); }
-.footnote { display: block; margin-top: 24rpx; color: #8a949b; font-size: 22rpx; line-height: 1.5; text-align: center; }
+.form {
+  margin-top: 28rpx;
+  padding: 12rpx 28rpx 32rpx;
+}
+
+.label {
+  display: block;
+  padding-top: 24rpx;
+  color: var(--color-text-secondary);
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.label > text {
+  color: var(--color-danger);
+}
+
+input,
+textarea,
+.picker {
+  width: 100%;
+  margin-top: 12rpx;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  background: #f7faf9;
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  line-height: 88rpx;
+}
+
+textarea {
+  min-height: 140rpx;
+  padding: 20rpx 24rpx;
+  line-height: 1.55;
+}
+
+.picker {
+  color: var(--color-text-muted);
+}
+
+.phone-button {
+  margin-top: 20rpx;
+  height: 80rpx;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-deep);
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 80rpx;
+}
+
+.agreement {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 28rpx;
+  color: var(--color-text-secondary);
+  font-size: 23rpx;
+}
+
+.agreement checkbox {
+  transform: scale(0.85);
+}
+
+.footnote {
+  display: block;
+  margin-top: 24rpx;
+  color: var(--color-text-muted);
+  font-size: 22rpx;
+  line-height: 1.5;
+  text-align: center;
+}

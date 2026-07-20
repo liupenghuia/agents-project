@@ -21,15 +21,16 @@
   ],
   "window": {
     "navigationBarTitleText": "寻职",
-    "navigationBarBackgroundColor": "#f7f8fa",
+    "navigationBarBackgroundColor": "#f3f5f4",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f7f8fa"
+    "backgroundColor": "#f3f5f4",
+    "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#73807c",
-    "selectedColor": "#0d7c66",
+    "color": "#8a9691",
+    "selectedColor": "#0c7a63",
     "backgroundColor": "#ffffff",
-    "borderStyle": "black",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/market/market",

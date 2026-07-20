@@ -1,0 +1,229 @@
+# Explicit multi-agent collaboration graph for the delivery OS.
+# Runtime code reads this for node validation and timeline labels.
+# Canonical sequence: Product → (Architect ∥ Designer) → Implementation → Test.
+# schema_version increments only on breaking node/edge renames.
+
+schema_version: 1
+id: delivery-v1
+title: Closed-loop multi-agent delivery
+
+nodes:
+  - id: discover
+    label: Product Discovery
+    actor: Product Agent
+    kind: role
+  - id: product_gate
+    label: Product Gate
+    actor: Product Agent
+    kind: gate
+  - id: architect
+    label: Architecture
+    actor: Architect Agent
+    kind: role
+  - id: architecture_gate
+    label: Architecture Gate
+    actor: Architect Agent
+    kind: gate
+  - id: design
+    label: Experience Design
+    actor: Designer Agent
+    kind: role
+  - id: design_gate
+    label: Design Gate
+    actor: Designer Agent
+    kind: gate
+  - id: backend
+    label: Backend Implementation
+    actor: Backend Agent
+    kind: role
+  - id: frontend_coord
+    label: Frontend Coordination
+    actor: Frontend Agent
+    kind: role
+  - id: miniprogram
+    label: Mini Program Implementation
+    actor: Frontend MiniProgram Agent
+    kind: role
+  - id: web
+    label: Web Implementation
+    actor: Frontend Web Agent
+    kind: role
+  - id: mobile
+    label: Shared Mobile
+    actor: Mobile Agent
+    kind: role
+  - id: ios
+    label: iOS Implementation
+    actor: iOS Agent
+    kind: role
+  - id: android
+    label: Android Implementation
+    actor: Android Agent
+    kind: role
+  - id: implementation_gate
+    label: Implementation Gate
+    actor: Orchestrator Agent
+    kind: gate
+  - id: test
+    label: Independent Test
+    actor: Test Agent
+    kind: role
+  - id: fix
+    label: Issue Fix
+    actor: Orchestrator Agent
+    kind: role
+  - id: release_gate
+    label: Release Gate
+    actor: Orchestrator Agent
+    kind: gate
+  - id: verify
+    label: Local Delivery Verification
+    actor: Orchestrator Agent
+    kind: system
+  - id: repair
+    label: Automated Repair Round
+    actor: Orchestrator Agent
+    kind: system
+  - id: human_approval
+    label: Human Approval
+    actor: User
+    kind: hitl
+  - id: done
+    label: Done
+    actor: Test Agent
+    kind: terminal
+
+edges:
+  # Product first
+  - from: discover
+    to: product_gate
+  - from: product_gate
+    to: human_approval
+    when: needs_decision
+  - from: human_approval
+    to: product_gate
+    when: decide_continue
+
+  # After product: architecture and design in parallel
+  - from: product_gate
+    to: architect
+    when: pass
+  - from: product_gate
+    to: design
+    when: pass_and_client_ui
+  - from: architect
+    to: architecture_gate
+  - from: design
+    to: design_gate
+
+  # Implementation only after both gates (design N/A skips design_gate)
+  - from: architecture_gate
+    to: backend
+    when: pass_and_design_satisfied
+  - from: architecture_gate
+    to: frontend_coord
+    when: pass_and_design_satisfied
+  - from: architecture_gate
+    to: miniprogram
+    when: pass_and_design_satisfied
+  - from: architecture_gate
+    to: web
+    when: pass_and_design_satisfied
+  - from: architecture_gate
+    to: mobile
+    when: pass_and_design_satisfied
+  - from: architecture_gate
+    to: ios
+    when: pass_and_design_satisfied
+  - from: architecture_gate
+    to: android
+    when: pass_and_design_satisfied
+  - from: design_gate
+    to: backend
+    when: pass_and_architecture_done
+  - from: design_gate
+    to: frontend_coord
+    when: pass_and_architecture_done
+  - from: design_gate
+    to: miniprogram
+    when: pass_and_architecture_done
+  - from: design_gate
+    to: web
+    when: pass_and_architecture_done
+  - from: design_gate
+    to: mobile
+    when: pass_and_architecture_done
+  - from: design_gate
+    to: ios
+    when: pass_and_architecture_done
+  - from: design_gate
+    to: android
+    when: pass_and_architecture_done
+
+  - from: backend
+    to: implementation_gate
+  - from: frontend_coord
+    to: implementation_gate
+  - from: miniprogram
+    to: implementation_gate
+  - from: web
+    to: implementation_gate
+  - from: mobile
+    to: implementation_gate
+  - from: ios
+    to: implementation_gate
+  - from: android
+    to: implementation_gate
+  - from: implementation_gate
+    to: test
+    when: pass
+  - from: test
+    to: fix
+    when: fail
+  - from: fix
+    to: test
+    when: ready_for_retest
+  - from: test
+    to: release_gate
+    when: pass_and_release_required
+  - from: test
+    to: done
+    when: pass_and_no_release
+  - from: release_gate
+    to: human_approval
+    when: production
+  - from: release_gate
+    to: done
+    when: pass
+  - from: verify
+    to: repair
+    when: fail
+  - from: repair
+    to: verify
+    when: repaired
+  - from: verify
+    to: done
+    when: pass
+
+hitl_boundaries:
+  - id: product_decision
+    node: human_approval
+    reasons:
+      - unresolved_product_tradeoff
+      - mvp_approval
+  - id: production_release
+    node: human_approval
+    reasons:
+      - production_deploy
+      - secrets_access
+      - paid_external_action
+      - legal_compliance
+      - destructive_data_change
+
+parallel_groups:
+  - id: post_product
+    nodes: [architect, design]
+    join: implementation_entry
+  - id: implementation
+    nodes: [backend, frontend_coord, miniprogram, web, mobile, ios, android]
+    join: implementation_gate

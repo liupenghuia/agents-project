@@ -10,6 +10,7 @@ require "securerandom"
 require "socket"
 require "timeout"
 require "yaml"
+require_relative "lib/agent_runtime"
 
 ROOT = Pathname(__dir__).parent
 DEFAULT_ROUNDS = 3
@@ -54,9 +55,33 @@ run_id = "#{Time.now.strftime('%Y%m%d-%H%M%S')}-#{SecureRandom.hex(3)}"
 run_dir = Pathname("/tmp/ppfiles-learn-delivery").join(task["id"].to_s, run_id)
 FileUtils.mkdir_p(run_dir)
 
-results = []
+agent_run = AgentRuntime.start_run(
+  task: task["id"] || task_name,
+  mode: "delivery",
+  actor: "Orchestrator Agent",
+  delivery_run_dir: run_dir.to_s,
+  metadata: {
+    "delivery_run_id" => run_id,
+    "task_file" => task_file.relative_path_from(ROOT).to_s,
+  }
+)
+agent_run_id = agent_run["run_id"]
+File.write(run_dir.join("agent_run_id.txt"), "#{agent_run_id}\n")
+puts "[delivery] agent run: #{agent_run_id}"
+puts "[delivery] agent timeline: ruby scripts/agent_run.rb timeline #{agent_run_id}"
 
-def execute(label, command, cwd:, env: {}, log_dir:)
+def execute(label, command, cwd:, env: {}, log_dir:, agent_run_id: nil, node: "verify")
+  if agent_run_id
+    AgentRuntime.emit(
+      agent_run_id,
+      type: "tool.called",
+      actor: "Orchestrator Agent",
+      node: node,
+      payload: { "tool" => label, "command" => command.join(" ") }
+    )
+  end
+
+  started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
   log = log_dir.join("#{label.gsub(/[^a-zA-Z0-9_-]/, '_')}.log")
   output = ""
   status = nil
@@ -70,13 +95,46 @@ def execute(label, command, cwd:, env: {}, log_dir:)
     status = Struct.new(:success?).new(false)
   end
   log.write(output)
-  {
+  duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) * 1000).round
+  result = {
     label: label,
     command: command.join(" "),
     success: status&.success? || false,
     log: log.to_s,
     output: output,
+    duration_ms: duration_ms,
   }
+
+  if agent_run_id
+    AgentRuntime.emit(
+      agent_run_id,
+      type: "tool.finished",
+      actor: "Orchestrator Agent",
+      node: node,
+      payload: {
+        "tool" => label,
+        "command" => result[:command],
+        "success" => result[:success],
+        "log" => result[:log],
+        "duration_ms" => duration_ms,
+      }
+    )
+    AgentRuntime.emit(
+      agent_run_id,
+      type: "check.finished",
+      actor: "Orchestrator Agent",
+      node: node,
+      payload: {
+        "label" => label,
+        "command" => result[:command],
+        "success" => result[:success],
+        "log" => result[:log],
+        "duration_ms" => duration_ms,
+      }
+    )
+  end
+
+  result
 end
 
 def node_files(directory)
@@ -140,33 +198,77 @@ rescue StandardError
   Process.wait(process) rescue nil
 end
 
-def run_round(task, round, run_dir)
+def emit_check(agent_run_id, label:, command:, success:, log:)
+  return unless agent_run_id
+
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "check.finished",
+    actor: "Orchestrator Agent",
+    node: "verify",
+    payload: {
+      "label" => label,
+      "command" => command,
+      "success" => success,
+      "log" => log,
+    }
+  )
+end
+
+def run_round(task, round, run_dir, agent_run_id:)
   results = []
-  results << execute("workflow", ["ruby", "scripts/validate_workflow.rb"], cwd: ROOT, log_dir: run_dir)
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "node.entered",
+    actor: "Orchestrator Agent",
+    node: "verify",
+    payload: { "round" => round }
+  )
+
+  workflow = execute(
+    "workflow",
+    ["ruby", "scripts/validate_workflow.rb"],
+    cwd: ROOT,
+    log_dir: run_dir,
+    agent_run_id: agent_run_id,
+    node: "verify"
+  )
+  results << workflow
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "gate.evaluated",
+    actor: "Orchestrator Agent",
+    node: "verify",
+    payload: {
+      "gate" => "workflow",
+      "result" => workflow[:success] ? "pass" : "fail",
+      "evidence" => workflow[:log],
+    }
+  )
 
   required = task.fetch("required_scopes", {})
   targets = task.fetch("frontend_targets", {})
 
   if required["backend"]
-    results << execute("backend-tests", ["npm", "test"], cwd: ROOT.join("backend"), log_dir: run_dir)
+    results << execute("backend-tests", ["npm", "test"], cwd: ROOT.join("backend"), log_dir: run_dir, agent_run_id: agent_run_id)
     node_files("backend/src").each_with_index do |file, index|
-      results << execute("backend-syntax-#{index}", ["node", "--check", file], cwd: ROOT, log_dir: run_dir)
+      results << execute("backend-syntax-#{index}", ["node", "--check", file], cwd: ROOT, log_dir: run_dir, agent_run_id: agent_run_id)
     end
   end
 
   if targets["miniprogram"]
     node_files("frontend/miniprogram").each_with_index do |file, index|
-      results << execute("miniprogram-syntax-#{index}", ["node", "--check", file], cwd: ROOT, log_dir: run_dir)
+      results << execute("miniprogram-syntax-#{index}", ["node", "--check", file], cwd: ROOT, log_dir: run_dir, agent_run_id: agent_run_id)
     end
     test_files = Dir[ROOT.join("frontend/miniprogram/tests", "*.test.js")].sort
     test_files.each_with_index do |file, index|
-      results << execute("miniprogram-test-#{index}", ["node", file], cwd: ROOT, log_dir: run_dir)
+      results << execute("miniprogram-test-#{index}", ["node", file], cwd: ROOT, log_dir: run_dir, agent_run_id: agent_run_id)
     end
   end
 
   if targets["web"]
-    results << execute("web-syntax", ["node", "--check", "frontend/web/app.js"], cwd: ROOT, log_dir: run_dir)
-    results << execute("web-static", ["ruby", "scripts/check_web.rb"], cwd: ROOT, log_dir: run_dir)
+    results << execute("web-syntax", ["node", "--check", "frontend/web/app.js"], cwd: ROOT, log_dir: run_dir, agent_run_id: agent_run_id)
+    results << execute("web-static", ["ruby", "scripts/check_web.rb"], cwd: ROOT, log_dir: run_dir, agent_run_id: agent_run_id)
   end
 
   backend_process = nil
@@ -183,7 +285,15 @@ def run_round(task, round, run_dir)
         run_dir,
         "http://127.0.0.1:#{backend_port}/health"
       )
-      results << { label: "backend-health", command: "GET http://127.0.0.1:#{backend_port}/health", success: true, log: run_dir.join("backend.service.log").to_s, output: "healthy" }
+      health = {
+        label: "backend-health",
+        command: "GET http://127.0.0.1:#{backend_port}/health",
+        success: true,
+        log: run_dir.join("backend.service.log").to_s,
+        output: "healthy",
+      }
+      results << health
+      emit_check(agent_run_id, label: health[:label], command: health[:command], success: true, log: health[:log])
     end
     if targets["web"]
       web_process, = start_service(
@@ -194,20 +304,68 @@ def run_round(task, round, run_dir)
         run_dir,
         "http://127.0.0.1:#{web_port}/index.html"
       )
-      results << { label: "web-health", command: "GET http://127.0.0.1:#{web_port}/index.html", success: true, log: run_dir.join("web.service.log").to_s, output: "healthy" }
+      health = {
+        label: "web-health",
+        command: "GET http://127.0.0.1:#{web_port}/index.html",
+        success: true,
+        log: run_dir.join("web.service.log").to_s,
+        output: "healthy",
+      }
+      results << health
+      emit_check(agent_run_id, label: health[:label], command: health[:command], success: true, log: health[:log])
     end
   rescue StandardError => error
-    results << { label: "service-health", command: "start required local services", success: false, log: run_dir.join("services.log").to_s, output: error.message }
+    failure = {
+      label: "service-health",
+      command: "start required local services",
+      success: false,
+      log: run_dir.join("services.log").to_s,
+      output: error.message,
+    }
+    File.write(failure[:log], error.message)
+    results << failure
+    emit_check(agent_run_id, label: failure[:label], command: failure[:command], success: false, log: failure[:log])
   ensure
     stop_service(web_process)
     stop_service(backend_process)
   end
 
+  round_ok = results.all? { |result| result[:success] }
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "gate.evaluated",
+    actor: "Orchestrator Agent",
+    node: "verify",
+    payload: {
+      "gate" => "delivery_round",
+      "result" => round_ok ? "pass" : "fail",
+      "round" => round,
+      "failed" => results.reject { |result| result[:success] }.map { |result| result[:label] },
+    }
+  )
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "node.exited",
+    actor: "Orchestrator Agent",
+    node: "verify",
+    payload: { "round" => round, "outcome" => round_ok ? "pass" : "fail" }
+  )
+
   results
 end
 
-def write_report(path, task, run_id, rounds, final_results)
-  lines = ["# Delivery Run #{run_id}", "", "- Task: `#{task['id']}`", "- Status: #{final_results.all? { |result| result[:success] } ? 'Passed' : 'Failed'}", "", "## Rounds", ""]
+def write_report(path, task, run_id, rounds, final_results, agent_run_id:)
+  lines = [
+    "# Delivery Run #{run_id}",
+    "",
+    "- Task: `#{task['id']}`",
+    "- Agent run: `#{agent_run_id}`",
+    "- Timeline: `ruby scripts/agent_run.rb timeline #{agent_run_id}`",
+    "- Status: #{final_results.all? { |result| result[:success] } ? 'Passed' : 'Failed'}",
+    "",
+    "## Rounds",
+    "",
+  ]
   rounds.each do |round, results|
     lines << "### Round #{round}"
     results.each do |result|
@@ -226,7 +384,7 @@ final_results = []
   round_dir = run_dir.join("round-#{round}")
   FileUtils.mkdir_p(round_dir)
   puts "[delivery] round #{round}/#{options[:max_rounds]}: running checks"
-  final_results = run_round(task, round, round_dir)
+  final_results = run_round(task, round, round_dir, agent_run_id: agent_run_id)
   rounds[round] = final_results
   failures = final_results.reject { |result| result[:success] }
   if failures.empty?
@@ -241,14 +399,50 @@ final_results = []
   end
   next if round == options[:max_rounds]
 
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "repair.started",
+    actor: "Orchestrator Agent",
+    node: "repair",
+    payload: { "round" => round }
+  )
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "node.entered",
+    actor: "Orchestrator Agent",
+    node: "repair",
+    payload: { "round" => round }
+  )
+
   repair = execute(
     "repair-round-#{round}",
     ["sh", "-lc", options[:repair_command]],
     cwd: ROOT,
-    env: { "DELIVERY_TASK" => task_file.to_s, "DELIVERY_ROUND" => round.to_s, "DELIVERY_RUN_DIR" => run_dir.to_s },
-    log_dir: run_dir
+    env: {
+      "DELIVERY_TASK" => task_file.to_s,
+      "DELIVERY_ROUND" => round.to_s,
+      "DELIVERY_RUN_DIR" => run_dir.to_s,
+      "AGENT_RUN_ID" => agent_run_id,
+    },
+    log_dir: run_dir,
+    agent_run_id: agent_run_id,
+    node: "repair"
   )
   rounds[round] << repair
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "repair.finished",
+    actor: "Orchestrator Agent",
+    node: "repair",
+    payload: { "round" => round, "success" => repair[:success], "log" => repair[:log] }
+  )
+  AgentRuntime.emit(
+    agent_run_id,
+    type: "node.exited",
+    actor: "Orchestrator Agent",
+    node: "repair",
+    payload: { "round" => round, "outcome" => repair[:success] ? "pass" : "fail" }
+  )
   unless repair[:success]
     puts "[delivery] repair command failed; stopping with evidence"
     break
@@ -256,6 +450,37 @@ final_results = []
 end
 
 report = run_dir.join("report.md")
-write_report(report, task, run_id, rounds, final_results)
+write_report(report, task, run_id, rounds, final_results, agent_run_id: agent_run_id)
+passed = final_results.all? { |result| result[:success] }
+
+if passed
+  AgentRuntime.complete!(
+    agent_run_id,
+    result: "passed",
+    actor: "Orchestrator Agent",
+    summary: "Delivery checks passed; report #{report}"
+  )
+else
+  failed_labels = final_results.reject { |result| result[:success] }.map { |result| result[:label] }
+  if options[:repair_command]
+    AgentRuntime.complete!(
+      agent_run_id,
+      result: "failed",
+      actor: "Orchestrator Agent",
+      summary: "Delivery exhausted rounds. Failed: #{failed_labels.join(', ')}. Report: #{report}"
+    )
+  else
+    AgentRuntime.block!(
+      agent_run_id,
+      reason: "Delivery checks failed without repair command: #{failed_labels.join(', ')}",
+      unblock_condition: "Fix failures or re-run with DELIVERY_REPAIR_COMMAND / --repair-command, then ruby scripts/deliver.rb #{task_name}",
+      owner: "Orchestrator Agent",
+      actor: "Orchestrator Agent"
+    )
+  end
+end
+
 puts "[delivery] report: #{report}"
-exit(final_results.all? { |result| result[:success] } ? 0 : 1)
+puts "[delivery] agent run: #{agent_run_id}"
+puts "[delivery] agent summary: #{AgentRuntime.run_dir(agent_run_id).join('summary.md')}"
+exit(passed ? 0 : 1)

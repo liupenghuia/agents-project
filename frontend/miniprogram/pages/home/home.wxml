@@ -12,9 +12,20 @@
       </button>
     </view>
     <view wx:if="{{approvedIdentities.length}}" class="approved-section">
-      <text class="signed-in">已登录 · 可进入已审核通过的身份</text>
-      <button wx:for="{{approvedIdentities}}" wx:key="id" class="entry-card" data-id="{{item.id}}" data-role="{{item.role}}" bindtap="enterRole">
-        <view><text class="entry-title">进入{{item.role === 'recruiter' ? '招人方' : '应聘方'}}</text><text class="entry-desc">审核通过，可进入对应服务</text></view><text class="entry-arrow">进入</text>
+      <text class="signed-in">已登录 · 选择身份进入工作区</text>
+      <button
+        wx:for="{{approvedIdentities}}"
+        wx:key="id"
+        class="entry-card {{item.role === 'recruiter' ? 'entry-card--recruiter' : 'entry-card--applicant'}}"
+        data-id="{{item.id}}"
+        data-role="{{item.role}}"
+        bindtap="enterRole"
+      >
+        <view>
+          <text class="entry-title">{{item.role === 'recruiter' ? '招人方工作区' : '应聘方工作区'}}</text>
+          <text class="entry-desc">{{item.role === 'recruiter' ? '发岗位、看求职者、沟通面试' : '看岗位、表达兴趣、沟通面试'}}</text>
+        </view>
+        <text class="entry-arrow">进入</text>
       </button>
     </view>
     <view wx:if="{{identities.length}}" class="identity-section">

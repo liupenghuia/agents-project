@@ -18,14 +18,16 @@
 ## Shared Ownership
 
 - Keep UI behavior aligned with `docs/requirements.md` and transport shapes aligned with `docs/openapi.yaml`.
-- Coordinate shared API client, error taxonomy, design decisions, accessibility expectations, and cross-target changes.
+- Consume **Designer Agent** output (`scope_status.design`, task Design Spec, `docs/design/`) before substantial UI work when design is required; do not invent a second visual system.
+- Coordinate shared API client, error taxonomy, accessibility expectations, and cross-target changes; visual system changes go through Designer or an explicit design note.
 - Do not let one target silently change the other target's behavior; record a handoff and update the task first.
-- The aggregate frontend scope is `Done` only when every required target is `Done` and its evidence is recorded.
+- The aggregate frontend scope is `Done` only when every required target is `Done` and its evidence is recorded; when design is required it must also be `Done`.
 
 ## Preflight And Handoff
 
-- Scan issues owned by `Frontend Agent`, `Frontend MiniProgram Agent`, or `Frontend Web Agent`.
+- Scan issues owned by `Frontend Agent`, `Frontend MiniProgram Agent`, or `Frontend Web Agent` (and design-related issues owned by `Designer Agent` when blocking UI).
 - Fix target-specific `P0`/`P1` issues before new feature work.
+- **Hard gate:** do not start feature UI coding until task is `Ready for Implementation` (Product Done + Architecture Done + Design Done when UI is required). If design is still open, run or await `设计 <task>` first.
 - Complete the client architecture pre-coding check for every affected target; resolve Architect review triggers before implementation and record the result in the task.
 - Each handoff records target, changed files, exact commands/results, related issues, and next action in the task log and `frontend/HISTORY.md`.
 - Fix owners set issues to `Ready for Retest`; Test Agent closes them.

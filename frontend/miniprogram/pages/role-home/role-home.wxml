@@ -1,26 +1,81 @@
-<view class="page">
-  <view class="eyebrow">{{role === 'recruiter' ? '招人方' : '应聘方'}}工作区</view>
-  <text class="title">{{role === 'recruiter' ? '开始招人' : '开始应聘'}}</text>
-  <view class="signed-in panel"><text class="check">✓</text><view><text class="signed-title">已登录，身份审核通过</text><text class="muted">当前身份已确认，可以进入对应服务。</text></view></view>
-  <block wx:if="{{role === 'applicant'}}">
-    <button class="action-card" bindtap="openApplicantInformation"><text class="action-title">完善求职信息</text><text class="muted">填写工种、年龄、期望薪资和工作位置</text></button>
-  </block>
-  <block wx:else>
-    <button class="action-card" bindtap="openRecruiterInformation"><text class="action-title">填写招聘者信息</text><text class="muted">保存定位和精确到楼栋的招聘地址</text></button>
-    <button class="action-card" bindtap="openRecruitmentPost"><text class="action-title">发布新的招聘信息</text><text class="muted">填写工种、薪资、位置和最多六张图片</text></button>
-  </block>
-  <view class="publication-section">
-    <view class="section-row"><text class="section-title">我的发布</text><text wx:if="{{publicationsLoading}}" class="muted">正在读取...</text></view>
-    <view wx:if="{{!publicationsLoading && !publications.length && !publicationsError}}" class="panel publication-empty">暂无发布信息</view>
-    <button wx:for="{{publications}}" wx:key="publicationId" class="publication-row" data-id="{{role === 'recruiter' ? item.id : ''}}" bindtap="openPublication">
-      <view><text class="publication-title">{{item.jobType || item.jobTypeName}}</text><text class="muted">{{item.salaryRange || item.expectedSalary}} · {{item.publishedAt}}</text><text wx:if="{{item.moderationReason}}" class="publication-reason">处理原因：{{item.moderationReason}}</text></view>
-      <text class="publication-state state-{{item.status}}">{{item.statusLabel}}</text>
-    </button>
-    <view wx:if="{{publicationsError}}" class="error"><text>{{publicationsError}}</text><button class="button-secondary" bindtap="loadPublications">重试</button></view>
+<view class="page onboarding-page">
+  <view class="hero">
+    <text class="eyebrow">{{role === 'recruiter' ? '招人方' : '应聘方'}} · 首次就绪</text>
+    <text class="title">{{role === 'recruiter' ? '三步开始招人' : '三步开始应聘'}}</text>
+    <text class="muted intro">按顺序完成关键信息，即可进入地图与列表找机会。日常入口在底部「地图 / 列表 / 我的」。</text>
   </view>
-  <button class="button-primary" bindtap="enterWorkspace">进入工作区</button>
-  <button class="action-card" bindtap="openMarket"><text class="action-title">浏览{{role === 'applicant' ? '招聘' : '求职'}}信息</text><text class="muted">按发布时间查看最新公开信息，并进入详情联系</text></button>
-  <button class="action-card" bindtap="openMessages"><text class="action-title">消息与协作</text><text class="muted">站内沟通、投递状态和面试安排</text></button>
-  <button class="button-secondary" bindtap="openMyCenter">打开「我的」</button>
-  <button class="button-secondary" bindtap="backHome">切换身份</button>
+
+  <view class="panel ready-banner">
+    <view class="ready-dot">✓</view>
+    <view>
+      <text class="ready-title">身份已通过审核</text>
+      <text class="muted">当前角色已激活，资料可随时在「我的」修改。</text>
+    </view>
+  </view>
+
+  <view class="checklist">
+    <view class="check-item" bindtap="openStepProfile">
+      <view class="check-index">1</view>
+      <view class="check-body">
+        <text class="check-title">{{role === 'recruiter' ? '完善招聘方资料' : '完善求职资料'}}</text>
+        <text class="check-desc">{{role === 'recruiter' ? '地址与联系方式，便于对方信任你' : '工种、薪资与工作位置，便于匹配'}}</text>
+      </view>
+      <text class="check-go">去完善</text>
+    </view>
+
+    <view class="check-item" bindtap="openStepPublish">
+      <view class="check-index">2</view>
+      <view class="check-body">
+        <text class="check-title">{{role === 'recruiter' ? '发布第一条招聘' : '确认求职信息可见'}}</text>
+        <text class="check-desc">{{role === 'recruiter' ? '工种、薪资、位置与图片，审核通过后上地图' : '公开后招人方可在地图与列表看到你'}}</text>
+      </view>
+      <text class="check-go">{{role === 'recruiter' ? '去发布' : '去确认'}}</text>
+    </view>
+
+    <view class="check-item" bindtap="enterWorkspace">
+      <view class="check-index">3</view>
+      <view class="check-body">
+        <text class="check-title">进入市场浏览</text>
+        <text class="check-desc">地图点选预览，列表快速筛选，详情一键联系</text>
+      </view>
+      <text class="check-go">开始</text>
+    </view>
+  </view>
+
+  <view wx:if="{{publications.length || publicationsLoading || publicationsError}}" class="pub-block">
+    <view class="section-row">
+      <text class="section-title">我的发布</text>
+      <text wx:if="{{publicationsLoading}}" class="muted">读取中…</text>
+    </view>
+    <view wx:if="{{!publicationsLoading && !publications.length && !publicationsError}}" class="panel empty-soft">暂无发布，完成上一步后会出现在这里</view>
+    <view
+      wx:for="{{publications}}"
+      wx:key="publicationId"
+      class="pub-row"
+      data-id="{{role === 'recruiter' ? item.id : ''}}"
+      bindtap="openPublication"
+    >
+      <view class="pub-main">
+        <text class="pub-title">{{item.jobType || item.jobTypeName}}</text>
+        <text class="pub-meta">{{item.salaryRange || item.expectedSalary}} · {{item.publishedAt || '未发布'}}</text>
+        <text wx:if="{{item.moderationReason}}" class="pub-reason">{{item.moderationReason}}</text>
+      </view>
+      <text class="pub-state state-{{item.status}}">{{item.statusLabel}}</text>
+    </view>
+    <view wx:if="{{publicationsError}}" class="error">
+      <text>{{publicationsError}}</text>
+      <button class="button-secondary" bindtap="loadPublications">重试</button>
+    </view>
+  </view>
+
+  <view class="footer-actions">
+    <button class="button-primary" bindtap="enterWorkspace">进入工作区</button>
+    <view class="footer-links">
+      <text bindtap="openMessages">消息</text>
+      <text class="dot">·</text>
+      <text bindtap="openMyCenter">我的</text>
+      <text class="dot">·</text>
+      <text bindtap="backHome">切换身份</text>
+    </view>
+  </view>
 </view>

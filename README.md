@@ -2,17 +2,33 @@
 
 本项目用 Idea Brief、任务、角色、质量门禁和缺陷复测记录组织多 Agent 协作。目标不是让多个 Agent 各自输出代码，而是让一个原始想法经过产品判断、工程交付和独立验证后进入可信的 `Done`，且每次状态变化都有证据和下一步。
 
-## 通用交付套件（agent-delivery-kit）
+## 多 Agent 运行时（专业可观测 + HITL）
 
-与业务无关的流程 / 角色 / 脚手架 / 校验 / 交付 runner 已抽到：
+本仓库在「交付 OS」（角色 / 门禁 / 任务状态）之上增加 **Agent Runtime**：
 
-**[`agent-delivery-kit/`](./agent-delivery-kit/)**
+| 能力 | 入口 |
+| --- | --- |
+| 定位与原则 | [`docs/agent-system-positioning.md`](./docs/agent-system-positioning.md) |
+| 事件模型 / HITL 契约 | [`docs/agent-runtime.md`](./docs/agent-runtime.md) |
+| 协作图 | [`docs/agent-graph.yaml`](./docs/agent-graph.yaml) |
+| CLI | `ruby scripts/agent_run.rb` |
+| 交付 runner 双写 | `ruby scripts/deliver.rb <task>` 自动创建 run 并写入 `.agent-runs/` |
+| 运行时自测 | `ruby scripts/test_agent_runtime.rb` |
 
-- 完整使用说明：[`agent-delivery-kit/docs/USAGE.md`](./agent-delivery-kit/docs/USAGE.md)
-- 设计蓝图：[`docs/agent-delivery-kit-design.md`](./docs/agent-delivery-kit-design.md)
-- 新产品：`ruby agent-delivery-kit/scripts/init_product.rb --path ... --name ... --preset api-web`
+```bash
+# 交付（自动产生 agent run + 时间线）
+ruby scripts/deliver.rb recruitment-role-registration
+# 查看：脚本结束时打印 run_id，或
+ruby scripts/agent_run.rb list
+ruby scripts/agent_run.rb timeline <run_id>
 
-本 monorepo 的寻职业务仍使用根目录 `scripts/` 与 `docs/` 中的产品真相；kit 用于复用与新开产品仓。
+# 手动编排：handoff / 人工审批
+ruby scripts/agent_run.rb start --task login-auth --mode manual
+ruby scripts/agent_run.rb interrupt --run <run_id> --reason "MVP 取舍" --options approve,edit_scope,park
+ruby scripts/agent_run.rb decide --run <run_id> --decision approve --by User
+```
+
+过程真相在 `.agent-runs/<run_id>/events.jsonl`（本地 gitignore）；任务 `Handoff Log` 仍是给人看的投影。
 
 ## 快速开始
 
@@ -73,14 +89,16 @@ Orchestrator 会按以下闭环持续推进：
 ```text
 原始想法
   -> Product Brief 与产品决策
-  -> 产品需求和任务
-  -> 架构/API/数据库契约
-  -> required_scopes 中需要的开发范围
+  -> 产品需求和任务（产品门禁）
+  -> 架构/API/库表  ∥  体验设计 Design Spec（产品完成后并行；无 UI 可跳过设计）
+  -> 二者完成后才进入开发落码（后端/小程序/Web/…）
   -> 独立测试
   -> 缺陷修复与复测
   -> 发布门禁（如需要）
   -> Done
 ```
+
+**强制规则（详见 `docs/delivery-workflow.md` Canonical Delivery Sequence）**：产品未完成不做架构/设计以外的实现；架构与设计未齐备不得开发落码。
 
 如果任务不存在但存在同名 `Approved` Idea，`交付 <功能名>` 可以先将它晋升为任务；Idea 尚未批准时会停在产品决策边界，不会擅自进入开发。
 
@@ -257,6 +275,10 @@ iOS user-management
 ├── docs
 │   ├── AGENTS.md                # Product/Architect 角色规则
 │   ├── delivery-workflow.md     # 状态机、门禁、阻塞和恢复
+│   ├── agent-system-positioning.md  # 多 Agent 系统定位
+│   ├── agent-runtime.md         # Run/Event/HITL 契约
+│   ├── agent-graph.yaml         # 协作图
+│   ├── design/                  # Designer Agent 与设计规范
 │   ├── product-discovery.md     # 从 Idea 到任务的方法
 │   ├── requirements.md          # 产品行为
 │   ├── architecture.md          # 系统边界
@@ -270,7 +292,12 @@ iOS user-management
 │   ├── template.md              # 缺陷模板
 │   └── <issue>.md               # 缺陷与复测证据
 ├── scripts
-│   └── validate_workflow.rb     # 工作流静态校验
+│   ├── validate_workflow.rb     # 工作流静态校验
+│   ├── deliver.rb               # 本地交付 runner（双写 agent run）
+│   ├── agent_run.rb             # 多 Agent 运行时 CLI
+│   ├── test_agent_runtime.rb    # 运行时自测
+│   └── lib/agent_runtime.rb     # run/event 库
+├── .agent-runs/                 # 本地 run 事件（gitignore）
 ├── frontend
 │   ├── AGENTS.md              # 前端协调规则
 │   ├── miniprogram/AGENTS.md  # 微信小程序规则
@@ -294,6 +321,8 @@ iOS user-management
 | 数据模型 | `docs/database.md` |
 | 任务和缺陷状态 | `tasks/*.md`、`issues/*.md` 顶部 YAML |
 | 状态流转和质量门禁 | `docs/delivery-workflow.md` |
+| 多 Agent 运行过程 | `.agent-runs/<run_id>/events.jsonl`（`docs/agent-runtime.md`） |
+| 协作图 | `docs/agent-graph.yaml` |
 | 测试策略 | `docs/testing.md` |
 
 如果实现与文档冲突，应先按所有权修正文档或实现，不能在任务交接记录中另造一套约定。
@@ -390,6 +419,7 @@ Closed
 | --- | --- | --- |
 | Product Agent | Idea 发现、证据与假设、产品决策、范围和验收标准 | `ideas/`、`docs/product-discovery.md`、`docs/requirements.md`、`tasks/` |
 | Architect Agent | 架构、API、数据库、兼容与回滚 | `docs/architecture.md`、`docs/openapi.yaml`、`docs/database.md` |
+| Designer Agent | 交互 / 视觉 / 信息架构、Design Spec、设计门禁 | `docs/design/`、任务 **Design Spec**、`scope_status.design` |
 | Backend Agent | API、业务规则、数据与后端测试 | `backend/` |
 | Frontend Agent | 跨目标协调、共享 API/UI 约束和聚合状态 | `frontend/AGENTS.md`、`frontend/HISTORY.md` |
 | Frontend MiniProgram Agent | 微信小程序 UI、生命周期、授权、注册和小程序测试 | `frontend/miniprogram/` |
@@ -405,6 +435,7 @@ Closed
 ## 前端目标端规则
 
 ```text
+设计 <task>       # Designer：流程/视觉/IA，写 Design Spec，过设计门禁
 前端 <task>       # 协调小程序和 Web，维护 aggregate frontend 状态
 小程序 <task>     # 只实现 frontend_targets.miniprogram
 Web <task>        # 只实现 frontend_targets.web

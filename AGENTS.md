@@ -30,10 +30,27 @@
 - Separate confirmed requirements from visual or structural preferences that are still being optimized.
 - End each implementation round with local verification evidence, a diff-scope check, and (only if useful) one clearly prioritized next engineering action—not a gate checklist unless requested.
 
+## Canonical Delivery Sequence（强制）
+
+多角色功能交付**固定顺序**（详见 `docs/delivery-workflow.md`）：
+
+```text
+产品 Product
+  → 架构 Architect  ∥  设计 Designer（有客户端 UI 时；可并行）
+  → 开发 Backend / 前端 / 小程序 / Web / 移动端 …
+  → 测试 Test → 修复/复测 → 发布（如需）→ Done
+```
+
+- **禁止**产品未完成就开始架构/设计以外的实现落码。
+- **禁止**架构与设计门禁未齐（`architecture=Done` 且 `design=Done|N/A`）就进入开发工程师落码。
+- `Ready for Architecture` = 产品已完成，架构师与设计师并行阶段。
+- `Ready for Implementation` = 架构+设计均已完成，开发才可开工。
+- 纯代码修补且用户未要求交付闭环时，仍可走 Code-First；一旦用户要求 `交付` / `顺序完成` / 多角色推进，必须遵守本顺序。
+
 ## Product Owner Entry Point
 
 - Treat the product owner's latest requirement and desired user outcome as the primary intent.
-- Before implementation, Product Agent owns scope and acceptance criteria; Architect owns technical boundaries; Backend and Frontend own implementation; Test owns independent acceptance evidence.
+- Before implementation: Product → (Architect ∥ Designer) → only then Backend/Frontend/…; Test owns independent acceptance evidence.
 - When the product owner says `顺序完成`, continue through the documented delivery phases without asking for confirmation between reversible repository steps.
 - Pause only for product tradeoffs, production release, real user data, secrets, paid external actions, irreversible changes, or unavailable required platform access.
 - Keep the final report non-technical and state whether the product is ready to experience.
@@ -51,6 +68,10 @@
 | Data model | `docs/database.md` |
 | Delivery state (only when user asks for delivery) | YAML front matter in `tasks/*.md` and `issues/*.md` |
 | Gates and transitions (only when user asks for delivery) | `docs/delivery-workflow.md` |
+| **Multi-agent run process (orchestration/delivery)** | `.agent-runs/<run_id>/events.jsonl` — see `docs/agent-runtime.md` |
+| Collaboration graph | `docs/agent-graph.yaml` |
+| Agent system positioning | `docs/agent-system-positioning.md` |
+| Design system / Designer role | `docs/design/` and task **Design Spec** |
 | Test policy | `docs/testing.md` |
 
 ## Role Commands
@@ -60,6 +81,7 @@
 | `想法 <idea>` / `idea <idea>` | Product Discovery |
 | `产品 <task>` / `product <task>` | Product Agent |
 | `架构 <task>` / `architect <task>` | Architect Agent |
+| `设计 <task>` / `design <task>` | Designer Agent |
 | `后端 <task>` / `backend <task>` | Backend Agent |
 | `前端 <task>` / `frontend <task>` | Frontend Agent |
 | `小程序 <task>` / `miniprogram <task>` | Frontend MiniProgram Agent |
@@ -86,15 +108,17 @@ Short task names map to `tasks/<task>.md`. See `COMMANDS.md` for examples.
 
 - `交付 <task>` / `deliver <task>` must use `ruby scripts/deliver.rb <task>` as the local execution entry point after implementation and after every fix round.
 - The delivery runner must execute all required backend, frontend target, service health, and applicable integration checks selected by task front matter.
+- The delivery runner **starts an agent run** and dual-writes structured events under `.agent-runs/` (`tool.*`, `check.finished`, `gate.evaluated`, `repair.*`, terminal status). Point operators to `ruby scripts/agent_run.rb timeline <run_id>`.
 - A failed runner check is actionable failure evidence. Route it to the owning scope, create or update the linked issue, and run the repair/retest loop; do not manually mark the check as passed.
-- The repair/retest loop is bounded by the runner's configured maximum rounds. When no repair command, tool, credential, or platform environment is available, record the exact blocker and stop at `Blocked` or the appropriate failed gate.
+- The repair/retest loop is bounded by the runner's configured maximum rounds. When no repair command, tool, credential, or platform environment is available, record the exact blocker and stop at `Blocked` or the appropriate failed gate; emit `run.blocked` / `interrupt.requested` when human input is required.
 - A runner pass is necessary evidence, but it does not by itself close issues or mark a task `Done`; Test Agent still owns acceptance-criterion evidence, independent retest, and final test status.
-- Preserve runner reports and log paths in the task verification evidence or handoff. The default evidence root is `/tmp/ppfiles-learn-delivery/<task-id>/`.
+- Preserve runner reports, agent `run_id`, and log paths in the task verification evidence or handoff. The default evidence root is `/tmp/ppfiles-learn-delivery/<task-id>/`.
+- On role handoffs during delivery/orchestration, dual-write with `ruby scripts/agent_run.rb handoff ...` (or the Ruby API) and paste the printed markdown row into the task `Handoff Log`. Process reconstruction prefers events over chat history.
 - Never bypass production deployment approval, secret access, destructive changes, real WeChat authorization, or unavailable platform-specific checks through the runner.
 
 ## Autonomous Delivery
 
-`交付 <task>` runs the full loop: Product -> Architect -> required implementation scopes -> Test -> issue fix/retest -> release gate -> Done.
+`交付 <task>` runs the full loop: **Product → (Architect ∥ Designer when UI) → Implementation engineers → Test → issue fix/retest → release gate → Done**. Never start implementation scopes before architecture is Done and design is Done or N/A.
 
 The executable local loop is `ruby scripts/deliver.rb <task>`. The command is an orchestrator aid, not a replacement for role ownership or Test Agent closure.
 
@@ -109,6 +133,7 @@ The executable local loop is `ruby scripts/deliver.rb <task>`. The command is an
 
 - No application package manager is defined at repository root.
 - Validate workflow files with `ruby scripts/validate_workflow.rb`.
+- Multi-agent runtime: `ruby scripts/agent_run.rb` (start / handoff / interrupt / decide / list / timeline); tests via `ruby scripts/test_agent_runtime.rb`.
 - Use the closest module's documented file-scoped test, lint, and typecheck commands when implementation tooling exists.
 
 ## Commit Attribution
